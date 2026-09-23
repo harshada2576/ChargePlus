@@ -3,29 +3,67 @@
 -- Migration: 20260923000001_step_1_6_constraints_indexes.sql
 --
 -- PURPOSE:
--- Synthesizes the four independent schema audits into ONE minimal, production-safe,
+-- Final reconciled synthesis of all four schema audits into ONE minimal, production-safe,
 -- idempotent migration for Phase 1 Step 1.6.
 --
--- AUDIT SYNTHESIS SUMMARY:
--- 1. Data-Integrity Constraint Audit:
---    - Enforces observation and report causality (received_at/created_at >= observed_at).
---    - Enforces connector physical ownership on station_observations and user_reports.
---    - Enforces capacity-group uniqueness per station (station_id, type, power, standard).
---    - Enforces strict moderation audit consistency and rejection reason requirements.
---    - Enforces canonical slug character format on stations and operators.
---    - Enforces non-negative alert threshold values and source-link chronological ranges.
---    - Enforces analytics dimension hours mirror, connector vocabulary parity, and
---      deterministic surrogate-key self-consistency (using strictly IMMUTABLE expressions).
---    - Enforces analytics fact causality, UTC dimension alignment, and moderation provenance.
---    - Enforces daily OLAP status-count conservation.
---    - Enforces ML experiment intra-layer dataset FK, lifecycle timestamps, dataset time range,
---      and model ready-gate prerequisites.
--- 2. Index Optimization & Redundancy Review:
---    - Replaces single-column idx_reviews_station with composite (station_id, created_at DESC).
---    - Adds partial index idx_user_reports_pending for fast admin moderation queue access.
---    - Adds idx_dim_station_effective for SCD2 point-in-time historical lookups.
---    - Adds FK-supporting indexes on ml.model_versions (training_dataset_key, eval_dataset_key).
---    - Drops exact duplicate and prefix-redundant indexes covered by existing UNIQUE/PK constraints.
+-- AUDIT RECONCILIATION SUMMARY:
+-- 1. Integrity Constraints Added:
+--    - Public (13 ADD CONSTRAINT + 1 Unique Index):
+--        * Observation causality: chk_observations_causal_time (received_at >= observed_at)
+--        * Report causality: chk_report_created_after_observed (created_at >= observed_at)
+--        * Connector ownership: uq_connectors_id_station (UNIQUE superkey on connectors)
+--        * Observation connector ownership: fk_observations_connector_owner (FK to connectors(station_id, id))
+--        * Report connector ownership: fk_reports_connector_owner (FK to connectors(station_id, id))
+--        * Report moderation audit: chk_user_reports_moderation_audit
+--        * Report rejection reason: chk_user_reports_rejection_reason
+--        * Review moderation audit: chk_reviews_moderation_audit
+--        * Review rejection reason: chk_reviews_rejection_reason
+--        * Station slug format: chk_stations_slug_format
+--        * Operator slug format: chk_operators_slug_format
+--        * Alert threshold non-negative: chk_alerts_threshold_positive
+--        * Source-link chronology: chk_source_link_seen_range
+--        * Capacity-group uniqueness: uq_connectors_station_type_power (UNIQUE INDEX)
+--    - Analytics (10 ADD CONSTRAINT):
+--        * Operating hours mirror: chk_dim_station_hours
+--        * Deterministic dim_date self-consistency: chk_dim_date_self_consistent (IMMUTABLE expressions only)
+--        * Deterministic dim_time self-consistency: chk_dim_time_self_consistent
+--        * Connector vocabulary parity: chk_dim_connector_type
+--        * Fact observation causality: chk_fact_observation_causal_time
+--        * Fact observation dim alignment: chk_fact_observation_dim_alignment (UTC convention)
+--        * Fact report dim alignment: chk_fact_report_dim_alignment (UTC convention)
+--        * Fact report moderation provenance: chk_fact_report_moderated
+--        * Fact review moderation provenance: chk_fact_review_moderated
+--        * Fact daily status-count conservation: chk_fact_daily_status_counts
+--    - ML (4 ADD CONSTRAINT):
+--        * Intra-layer dataset FK: fk_experiments_dataset (dataset_key -> ml.datasets(dataset_key))
+--        * Experiment lifecycle timestamps: chk_experiments_lifecycle
+--        * Dataset time range ordering: chk_datasets_time_range
+--        * Model ready gate: chk_model_ready_gate
+--    Total Constraints: 27 ADD CONSTRAINT statements + 1 Unique Index = 28 constraints.
+--
+-- 2. Index Operations:
+--    - Dropped Redundant/Duplicate Indexes (9 total):
+--        * public.idx_reviews_station (dropped to be replaced by composite index)
+--        * public.idx_reviews_user (covered by uq_reviews_user_station leading col)
+--        * public.idx_favorites_user (covered by pk_favorites leading col)
+--        * public.idx_station_source_link_source (covered by uq_station_source_link_source_record leading col)
+--        * ml.idx_ml_features_name (exact duplicate of UNIQUE feature_name)
+--        * ml.idx_ml_datasets_name (exact duplicate of uq_datasets_name_version)
+--        * ml.idx_ml_modelversions_experiment (covered by uq_modelversions_experiment_version leading col)
+--        * ml.idx_ml_metrics_model (covered by uq_metrics_model_name_split leading col)
+--        * ml.idx_ml_predictionruns_model (covered by uq_predictionruns_model_station_datetime leading col)
+--    - Created / Replaced Indexes (6 total):
+--        * public.idx_reviews_station (composite on station_id, created_at DESC)
+--        * public.idx_user_reports_pending (partial index on created_at WHERE moderation_status = 'pending')
+--        * public.uq_connectors_station_type_power (UNIQUE INDEX on static capacity group)
+--        * analytics.idx_dim_station_effective (SCD2 resolution index on station_id, effective_from, effective_to)
+--        * ml.idx_ml_modelversions_training_dataset (FK-supporting index on training_dataset_key)
+--        * ml.idx_ml_modelversions_eval_dataset (FK-supporting index on eval_dataset_key)
+--    - Final Explicit Index Count:
+--        * public: 18 baseline - 4 dropped + 3 created = 17
+--        * analytics: 14 baseline - 0 dropped + 1 created = 15
+--        * ml: 16 baseline - 5 dropped + 2 created = 13
+--        * Total explicit indexes in final schema = 45
 --
 -- ARCHITECTURAL BOUNDARIES PRESERVED:
 -- - public: Operational OLTP (no cross-layer FKs)
@@ -42,13 +80,8 @@
 -- ============================================================================
 
 -- 1.1 Drop redundant single-column indexes covered by UNIQUE/PK leading columns
--- idx_reviews_user: covered by uq_reviews_user_station(user_id, station_id)
 DROP INDEX IF EXISTS public.idx_reviews_user;
-
--- idx_favorites_user: covered by pk_favorites(user_id, station_id)
 DROP INDEX IF EXISTS public.idx_favorites_user;
-
--- idx_station_source_link_source: covered by uq_station_source_link_source_record(source_id, source_station_id)
 DROP INDEX IF EXISTS public.idx_station_source_link_source;
 
 -- 1.2 Replace single-column reviews index with newest-first composite index
@@ -66,7 +99,7 @@ CREATE INDEX IF NOT EXISTS idx_user_reports_pending
 CREATE UNIQUE INDEX IF NOT EXISTS uq_connectors_station_type_power
   ON public.connectors (station_id, connector_type, power_kw, COALESCE(charging_standard, ''));
 
--- 1.5 Constraints for Public Schema
+-- 1.5 Constraints for Public Schema (Idempotent DO block)
 DO $$
 BEGIN
   -- A1. Observation causality: a feed cannot be received before it is observed
@@ -174,7 +207,7 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_dim_station_effective
   ON analytics.dim_station (station_id, effective_from, effective_to);
 
--- 2.2 Constraints for Analytics Schema
+-- 2.2 Constraints for Analytics Schema (Idempotent DO block)
 DO $$
 BEGIN
   -- B1. dim_station operating hours consistency (mirrors public.chk_stations_hours)
@@ -301,12 +334,12 @@ END $$;
 -- PART 3: ML SCHEMA (METADATA & CONTROL)
 -- ============================================================================
 
--- 3.1 Drop exact duplicate indexes in ml schema
--- idx_ml_features_name is identical to UNIQUE (feature_name)
+-- 3.1 Drop exact duplicate and redundant prefix indexes in ml schema
 DROP INDEX IF EXISTS ml.idx_ml_features_name;
-
--- idx_ml_datasets_name is identical to uq_datasets_name_version (dataset_name, version_str)
 DROP INDEX IF EXISTS ml.idx_ml_datasets_name;
+DROP INDEX IF EXISTS ml.idx_ml_modelversions_experiment;
+DROP INDEX IF EXISTS ml.idx_ml_metrics_model;
+DROP INDEX IF EXISTS ml.idx_ml_predictionruns_model;
 
 -- 3.2 Add foreign key supporting indexes on ml.model_versions
 CREATE INDEX IF NOT EXISTS idx_ml_modelversions_training_dataset
@@ -315,7 +348,7 @@ CREATE INDEX IF NOT EXISTS idx_ml_modelversions_training_dataset
 CREATE INDEX IF NOT EXISTS idx_ml_modelversions_eval_dataset
   ON ml.model_versions (eval_dataset_key);
 
--- 3.3 Constraints for ML Schema
+-- 3.3 Constraints for ML Schema (Idempotent DO block)
 DO $$
 BEGIN
   -- C1. Intra-schema foreign key: experiments.dataset_key -> datasets.dataset_key
