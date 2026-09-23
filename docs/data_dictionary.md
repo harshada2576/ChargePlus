@@ -375,30 +375,32 @@ GRAIN: one row per model version/run. Business key `(experiment_key, version_str
 - **UNIQUE `uq_modelversions_experiment_version`** `(experiment_key, version_str)`.  
 - **CHECK `chk_model_maturity_status`:** `status='ready'` requires `data_maturity IN (warming, ready)`.  
 - **CHECK `chk_model_ready_gate`:** `status='ready'` requires `trained_at`, `completed_at`, `training_dataset_key`, and `eval_dataset_key`.  
-*Indexes: `idx_ml_modelversions_experiment`, `..._status`, `..._maturity`, `..._trained` (partial), `idx_ml_modelversions_training_dataset`, `idx_ml_modelversions_eval_dataset`.*
+*Indexes: `idx_ml_modelversions_status`, `..._maturity`, `..._trained` (partial), `idx_ml_modelversions_training_dataset`, `idx_ml_modelversions_eval_dataset`. (Redundant `idx_ml_modelversions_experiment` dropped in Step 1.6 as covered by UNIQUE leading column).*
 
 ## 3.5 `ml.metrics` — model evaluation metrics
 GRAIN: one row per metric recording (name/value/split).
 
 `metric_key UUID PK`, `model_key UUID FK → ml.model_versions ON DELETE CASCADE`, `metric_name`, `metric_value NUMERIC(12,6)`, `split IN (train,validation,test,holdout)`, `epoch_or_step`, `created_at`, `updated_at`.  
-**UNIQUE `uq_metrics_model_name_split` `(model_key, metric_name, split)`.** *Indexes: `idx_ml_metrics_model`, `idx_ml_metrics_name_split`.*
+**UNIQUE `uq_metrics_model_name_split` `(model_key, metric_name, split)`.**  
+*Index: `idx_ml_metrics_name_split`. (Redundant `idx_ml_metrics_model` dropped in Step 1.6 as covered by UNIQUE leading column).*
 
 ## 3.6 `ml.prediction_runs` — prediction-run metadata (not values)
 GRAIN: one row per prediction-run metadata.
 
 `prediction_run_key UUID PK`, `model_key UUID FK → ml.model_versions ON DELETE CASCADE`, `station_id UUID NULL`, `date_key INTEGER NULL`, `time_key SMALLINT NULL`, `prediction_horizon`, `run_at TIMESTAMPTZ`, `status`, `created_at`, `updated_at`.  
-**UNIQUE `uq_predictionruns_model_station_datetime` `(model_key, station_id, date_key, time_key, run_at)`.** *Indexes: `idx_ml_predictionruns_model`, `..._station_date`, `..._horizon`, `..._run_at`.*
+**UNIQUE `uq_predictionruns_model_station_datetime` `(model_key, station_id, date_key, time_key, run_at)`.**  
+*Indexes: `idx_ml_predictionruns_station_date`, `..._horizon`, `..._run_at`. (Redundant `idx_ml_predictionruns_model` dropped in Step 1.6 as covered by UNIQUE leading column).*
 
 ---
 
-# 4. Step 1.6 Synthesized Inventory Summary
+# 4. Step 1.6 Reconciled Inventory Summary
 
-| Layer | Tables | Active Indexes | Key Constraints Enforced in Step 1.6 |
+| Layer | Tables | Active Explicit Indexes | Key Constraints Enforced in Step 1.6 |
 |---|---|---|---|
-| `public` | 11 | 17 (1 GIST, 1 partial, 15 b-tree) | Causality (`observations_causal_time`, `report_created_after_observed`), connector ownership (`uq_connectors_id_station`, 2 composite FKs), capacity uniqueness (`uq_connectors_station_type_power`), moderation consistency (reports & reviews), slug format, alert threshold, source chronology |
-| `analytics` | 12 | 15 (2 UNIQUE, 13 b-tree) | SCD2 effective-range index (`idx_dim_station_effective`), hours mirror, connector vocabulary parity, deterministic surrogate-key self-consistency (immutable), fact causality, UTC alignment, moderation provenance, daily status conservation |
-| `ml` | 6 | 16 (all b-tree) | Intra-layer FK (`fk_experiments_dataset`), FK-supporting indexes (`training_dataset_key`, `eval_dataset_key`), lifecycle timestamps, dataset time range, model ready-gate |
-| **Total** | **29** | **48** | **23 synthesized constraints & optimizations** |
+| `public` | 11 | 17 (1 GIST, 1 partial, 15 b-tree) | 13 ADD CONSTRAINT + 1 Unique Index: Causality (`chk_observations_causal_time`, `chk_report_created_after_observed`), connector ownership superkey (`uq_connectors_id_station`) + 2 composite FKs (`fk_observations_connector_owner`, `fk_reports_connector_owner`), capacity uniqueness (`uq_connectors_station_type_power`), moderation consistency & reason checks (reports & reviews), slug format regex, alert threshold non-negative, source chronology |
+| `analytics` | 12 | 15 (2 UNIQUE, 13 b-tree) | 10 ADD CONSTRAINT: SCD2 effective-range index (`idx_dim_station_effective`), hours mirror, connector vocabulary parity, deterministic surrogate-key self-consistency (immutable), fact causality, UTC alignment, moderation provenance, daily status-count conservation |
+| `ml` | 6 | 13 (all b-tree) | 4 ADD CONSTRAINT: Intra-layer FK (`fk_experiments_dataset`), FK-supporting indexes (`training_dataset_key`, `eval_dataset_key`), lifecycle timestamps, dataset time range, model ready-gate |
+| **Total** | **29** | **45 explicit indexes** | **28 total constraints** (27 ADD CONSTRAINT + 1 Unique Index) |
 
 ---
 
