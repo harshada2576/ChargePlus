@@ -147,8 +147,3 @@ supabase db push
 
 No live Supabase project is linked yet (`supabase/config.toml` absent); end-to-end verification is Phase 1 Step 1.10.
 
----
-
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
