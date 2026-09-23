@@ -128,3 +128,30 @@ Full interactive session verified and recorded by browser subagent:
 - [x] Every file/component listed as protected in Section A, Rule 3, is untouched
 - [x] No dependency changes beyond `maplibre-gl` for Task 1
 - [x] Existing i18n strings (all three languages) preserved intact
+
+---
+
+## 4. Phase 1 Step 1.6 — Constraints & Indexes Synthesis
+
+### Summary of Database Work
+- Consolidated four independent audits into ONE minimal, production-safe, idempotent migration:
+  `supabase/migrations/20260923000001_step_1_6_constraints_indexes.sql`
+- **Integrity Constraints Added (23):**
+  - `public`: Observation causality (`received_at >= observed_at`), report causality (`created_at >= observed_at`), connector ownership superkey (`uq_connectors_id_station`) + 2 composite FKs (`fk_observations_connector_owner`, `fk_reports_connector_owner`), capacity uniqueness (`uq_connectors_station_type_power`), moderation consistency & reason rules on `user_reports` & `reviews`, safe token regex on `stations.slug` & `operators.slug`, non-negative `alerts.threshold_value`, and source-link chronology (`last_seen_at >= first_seen_at`).
+  - `analytics`: `dim_station` operating hours mirror (`chk_dim_station_hours`), connector vocabulary parity (`chk_dim_connector_type`), deterministic surrogate-key self-consistency (`chk_dim_date_self_consistent`, `chk_dim_time_self_consistent` using immutable CASE/EXTRACT arithmetic), fact observation causality (`chk_fact_observation_causal_time`), UTC date/time alignment (`chk_fact_observation_dim_alignment`, `chk_fact_report_dim_alignment`), moderation provenance (`chk_fact_report_moderated`, `chk_fact_review_moderated`), and daily status-count conservation (`chk_fact_daily_status_counts`).
+  - `ml`: Intra-layer dataset FK (`fk_experiments_dataset`), experiment lifecycle timestamps (`chk_experiments_lifecycle`), dataset time range (`chk_datasets_time_range`), and model ready-gate (`chk_model_ready_gate`).
+- **Index Optimizations:**
+  - Public: Replaced single-column `idx_reviews_station` with composite `(station_id, created_at DESC)`; added partial index `idx_user_reports_pending` on `(created_at) WHERE moderation_status = 'pending'`.
+  - Analytics: Added SCD2 point-in-time resolution index `idx_dim_station_effective` on `(station_id, effective_from, effective_to)`.
+  - ML: Added FK-supporting indexes `idx_ml_modelversions_training_dataset` and `idx_ml_modelversions_eval_dataset`.
+  - Dropped 5 redundant/duplicate indexes: `idx_reviews_user`, `idx_favorites_user`, `idx_station_source_link_source`, `idx_ml_features_name`, `idx_ml_datasets_name`.
+- **Validation Checklist:**
+  - [x] Static SQL validation (parentheses, DO blocks, syntax clean)
+  - [x] Verify no destructive statements (0 drop table/column/schema/truncate/constraint)
+  - [x] Verify no legacy table changes (legacy `public.dim_*` / `public.fact_*` untouched)
+  - [x] Verify no frontend changes (`src/` untouched)
+  - [x] Verify no data insertion (0 INSERT/UPDATE/DELETE)
+  - [x] Verify all referenced tables/columns exist across Step 1.3, 1.4, 1.5 schemas
+  - [x] Verify indexes are not duplicates (redundant dropped, new targeted)
+  - [x] Verify constraints don't conflict (strict reinforcement of invariants)
+
