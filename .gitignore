@@ -18,6 +18,13 @@
 # Supabase local CLI
 supabase/.temp/
 
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
 # Archives and reference files
 *.zip
 
