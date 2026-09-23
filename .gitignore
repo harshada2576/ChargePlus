@@ -15,6 +15,9 @@
 # TypeScript build info
 *.tsbuildinfo
 
+# Supabase local CLI
+supabase/.temp/
+
 # Archives and reference files
 *.zip
 
