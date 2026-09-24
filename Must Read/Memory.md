@@ -79,6 +79,11 @@ Every entry should include:
 - Conceptual verification: OLTP views respect RLS via security_invoker; zero raw user_reports exposed; zero internal provenance/source links exposed; no fake data; honest null handling when observations/reviews are absent; PostGIS spatial search bounded; warehouse OLAP view isolated from frontend.
 - Blockers / waiting on: Step 1.9 environment variables & secrets.
 - Next step: Step 1.9 — Establish environment variables/secrets.
-
-
+### 25 Sep 2026 — Phase 1 Step 1.9 Environment variables & secrets
+- Phase / Step: Phase 1/6 — Step 1.9
+- What we built/changed: Comprehensive environment and secrets audit and configuration: (1) Complete git history and working tree secret scan (0 secret leaks in git log or tracked files); (2) Created authoritative `.env.example` clearly separating PUBLIC-SAFE client credentials (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, optional `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`) from SERVER-ONLY credentials (`DATABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`); (3) Strengthened `.gitignore` to explicitly block all environment variations (`.env`, `.env*.local`, `.env.development`, `.env.test`, `.env.production`, `.env.staging`) while explicitly preserving `.env.example` (`!.env.example`); (4) Verified client/server boundary (`src/lib/supabase.ts` imports only public-safe anon credentials; `DATABASE_URL` is isolated in server-only `src/db/index.ts` called exclusively by `src/app/api/health/route.ts`; 0 service-role keys imported or bundled); (5) Documented Supabase Phone OTP architectural boundary (handled natively via Supabase Auth provider dashboard without mock credentials in code); (6) Authored complete audit documentation `docs/step_1_9_environment_secrets_audit.md`.
+- Current state: AUDITED + CONFIGURED + VERIFIED. Zero secrets leaked. All environment files tested with `git check-ignore`. Frontend typecheck (`tsc --noEmit`) and lint clean (0 errors).
+- Conceptual verification: Strict credential classification; browser client uses public-safe credentials governed by Supabase RLS; privileged `DATABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` reserved exclusively for server routes, backend workers, and future Python ETL; no synthetic credentials invented; no database schema or RLS policies altered.
+- Blockers / waiting on: Step 1.10 final Phase 1 verification.
+- Next step: Step 1.10 — Phase 1 complete foundation verification.
 

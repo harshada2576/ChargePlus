@@ -31,7 +31,7 @@ We will also perform a conceptual check, not just a code check.
 1.6 Add indexes and constraints — COMPLETE  
 1.7 Add RLS policies — COMPLETE  
 1.8 Add safe database views/functions where justified — COMPLETE (EXECUTED + LIVE VERIFIED)  
-1.9 Establish environment variables/secrets  
+1.9 Establish environment variables/secrets — COMPLETE (AUDITED + CONFIGURED)  
 1.10 Verify database with a clean test flow
 
 ### Concept check

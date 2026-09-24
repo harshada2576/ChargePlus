@@ -104,13 +104,17 @@ npm install
 
 ### 2. Configure Environment Variables
 
-Create a `.env.local` file in the root directory:
+Copy `.env.example` to `.env.local` and populate your project secrets:
 
-```env
-DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/chargeplus"
-NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
+```bash
+cp .env.example .env.local
 ```
+
+Key environment classifications:
+- **Client (Public-Safe)**: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are safe for browser exposure and protected by Supabase Row-Level Security (RLS).
+- **Server-Only**: `DATABASE_URL` (direct PostgreSQL connection) and `SUPABASE_SERVICE_ROLE_KEY` (admin bypass) must NEVER have a `NEXT_PUBLIC_` prefix and must never be exposed to the browser.
+
+See [`docs/step_1_9_environment_secrets_audit.md`](docs/step_1_9_environment_secrets_audit.md) for full credentials classification and security architecture.
 
 ### 3. Start Development Server
 
@@ -136,7 +140,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to explore t
 
 ## 🗄️ Database Management
 
-The **authoritative schema is `supabase/migrations/*.sql`** (Phase 1 Steps 1.3/1.4/1.5/1.6/1.7/1.8 authored and executed the `public`, `analytics`, and `ml` schemas — 29 tables, 4 views, 2 functions — with Step 1.6 constraints/indexes, Step 1.7 RLS & security policies, and Step 1.8 Views & Functions EXECUTED + VERIFIED on the linked Supabase project). Apply them to a linked Supabase project:
+The **authoritative schema is `supabase/migrations/*.sql`** (Phase 1 Steps 1.3/1.4/1.5/1.6/1.7/1.8 authored and executed the `public`, `analytics`, and `ml` schemas — 29 tables, 4 views, 2 functions — with Step 1.6 constraints/indexes, Step 1.7 RLS & security policies, Step 1.8 Views & Functions EXECUTED + VERIFIED on the linked Supabase project, and Step 1.9 Environment & Secrets AUDITED + CONFIGURED). Apply them to a linked Supabase project:
 
 ```bash
 supabase link --project-ref <project_ref>
@@ -145,6 +149,7 @@ supabase db push
 
 [Drizzle ORM](https://orm.drizzle.team/) is installed and configured (`drizzle.config.json`, `src/db/`) but `src/db/schema.ts` is currently empty — Drizzle is an optional dev layer and **not** the schema-management source of truth. Do not use `drizzle-kit push` to alter the database.
 
-Step 1.6 constraints & indexes synthesis, Step 1.7 RLS & security policies, and Step 1.8 views & functions migrations are EXECUTED + VERIFIED against the linked Supabase project (29 active target tables with RLS enabled, 29 public RLS policies, 0 analytics/ml client policies, 4 views with `security_invoker = true`, 2 functions with safe search paths, defense-in-depth table/column grants, 0 cross-layer FKs, 9 frozen legacy tables untouched). Full end-to-end clean flow verification is Phase 1 Step 1.10.
+Step 1.6 constraints & indexes synthesis, Step 1.7 RLS & security policies, and Step 1.8 views & functions migrations are EXECUTED + VERIFIED against the linked Supabase project (29 active target tables with RLS enabled, 29 public RLS policies, 0 analytics/ml client policies, 4 views with `security_invoker = true`, 2 functions with safe search paths, defense-in-depth table/column grants, 0 cross-layer FKs, 9 frozen legacy tables untouched). Step 1.9 Environment & Secrets is AUDITED + CONFIGURED. Full end-to-end clean flow verification is Phase 1 Step 1.10.
+
 
 
