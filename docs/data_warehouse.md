@@ -1,10 +1,11 @@
-# ChargePlus — Data Warehouse (Step 1.4, Step 1.6 & Step 1.7 Synthesis)
+# ChargePlus — Data Warehouse (Step 1.4, Step 1.6, Step 1.7 & Step 1.8 Synthesis)
 
 > Migration: `supabase/migrations/20260922000001_step_1_4_analytics_warehouse_schema.sql`  
 > Synthesized Integrity & Indexes Migration: `supabase/migrations/20260923000001_step_1_6_constraints_indexes.sql`  
 > RLS & Security Policies Migration: `supabase/migrations/20260924000001_step_1_7_rls_security_policies.sql`  
-> Status: canonical warehouse documentation for the implemented Step 1.4 schema, Step 1.6 integrity synthesis, and Step 1.7 RLS isolation.  
-> Constraints/indexes verified in Step 1.6; RLS enabled on all 12 warehouse tables with 0 client policies (Step 1.7 EXECUTED + VERIFIED against linked Supabase project).  
+> Views & Functions Migration: `supabase/migrations/20260925000001_step_1_8_views_functions.sql`  
+> Status: canonical warehouse documentation for the implemented Step 1.4 schema, Step 1.6 integrity synthesis, Step 1.7 RLS isolation, and Step 1.8 views.  
+> Constraints/indexes verified in Step 1.6; RLS enabled on all 12 warehouse tables with 0 client policies (Step 1.7 EXECUTED + VERIFIED); OLAP reporting view `analytics.v_station_daily_summary` created with `security_invoker = true` (Step 1.8 EXECUTED + VERIFIED).  
 > Table inventory in `docs/data_dictionary.md`.
 
 ---
@@ -300,3 +301,21 @@ The warehouse is the ML-ready substrate, not the model layer:
 - Baseline-first discipline applies: establish a naive baseline on
   warehouse aggregates, then train, evaluate against it, and expose
   only sufficiently supported intelligence with explanations.
+
+## 13. Analytics Warehouse Views (Step 1.8)
+
+Step 1.8 established the first canonical star-schema dimensional reporting view:
+
+### `analytics.v_station_daily_summary`
+- **Purpose:** Composes `analytics.fact_station_daily` with conformed dimensions `dim_date`, `dim_station`, and `dim_operator` for Python ETL verification, BI dashboards, and ML feature inspection.
+- **Grain:** One row per station per calendar date.
+- **Columns Exposed:**
+  - Date context: `full_date`, `year`, `month`, `day_name`, `is_weekend`
+  - Station context: `station_key`, `operational_station_id`, `station_name`, `operator_name`, `latitude`, `longitude`
+  - Activity counts: `observation_count`, `available_count`, `busy_count`, `broken_count`
+  - Ratios: `availability_ratio`, `busy_ratio`, `broken_ratio`
+  - Congestion: `avg_queue_score`, `peak_queue_score`
+  - Community metrics: `report_count`, `review_count`, `avg_rating`
+  - Quality & maturity: `data_completeness_score`, `source_count`, `maturity`, `has_evidence`
+- **Security & Access:** Created `WITH (security_invoker = true)`. Granted exclusively to `service_role`. Client roles (`anon`, `authenticated`) have zero access, preserving warehouse isolation.
+

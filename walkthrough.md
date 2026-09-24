@@ -216,5 +216,62 @@ Full interactive session verified and recorded by browser subagent:
 - [x] Step 1.6 constraints (28) and explicit indexes (45) preserved intact
 - [x] `npm run typecheck` passed with 0 errors
 
+---
+
+## 6. Phase 1 Step 1.8 — Views + Functions
+
+### Summary of Database Work
+- Migration: `supabase/migrations/20260925000001_step_1_8_views_functions.sql`
+- **Execution Status:** EXECUTED + VERIFIED against linked Supabase project (`abclmxvaxkdbiqdfgdvl`).
+- Executed cleanly as one atomic transaction with self-verifying assertion blocks.
+
+### Objects Created (4 Views, 2 Functions)
+1. **`public.get_author_display_name(author_id uuid)`** (Function):
+   - `SECURITY DEFINER` with fixed `search_path = public, pg_temp`.
+   - Returns sanitized author nickname for approved customer reviews without exposing the `profiles` table or auth UUIDs.
+   - Granted to `anon`, `authenticated`, `service_role`.
+2. **`public.v_station_current_state`** (View):
+   - Created `WITH (security_invoker = true)` to inherit caller's RLS.
+   - Composes physical station metadata, operator details, static connector specs, latest live observation status, derived freshness (`minutes_since_observation`), and approved review metrics.
+   - If no observation exists, status and counts default honestly to `NULL`.
+   - Client write privileges revoked; only `SELECT` granted to `anon`, `authenticated`, `service_role`.
+3. **`public.v_station_connectors`** (View):
+   - Created `WITH (security_invoker = true)`.
+   - Exposes connector specifications per station alongside latest connector-level live observation (if present).
+   - Client writes revoked; `SELECT` granted to `anon`, `authenticated`, `service_role`.
+4. **`public.v_station_approved_reviews`** (View):
+   - Created `WITH (security_invoker = true)`.
+   - Public feed of approved driver reviews with author display names.
+   - Deliberately excludes `user_id`, `moderated_by`, `moderated_at`, `moderation_reason`, `is_flagged`, and unapproved reviews.
+   - Client writes revoked; `SELECT` granted to `anon`, `authenticated`, `service_role`.
+5. **`public.nearby_stations`** (Function / RPC):
+   - `SECURITY INVOKER` with fixed `search_path = public, extensions, pg_temp`.
+   - PostGIS spatial discovery utilizing GIST index `idx_stations_geom` on `stations.geom`.
+   - Evaluates `ST_DWithin` and `ST_Distance` on geography points.
+   - Bounded inputs: latitude range check (`-90..90`), longitude range check (`-180..180`), radius capped at 200km (`LEAST(radius_meters, 200000.0)`), and results capped at 100 (`LEAST(GREATEST(max_results, 1), 100)`).
+   - Granted to `anon`, `authenticated`, `service_role`.
+6. **`analytics.v_station_daily_summary`** (View):
+   - Created `WITH (security_invoker = true)`.
+   - Pure OLAP star-schema reporting view joining `fact_station_daily` with conformed dimensions `dim_date`, `dim_station`, and `dim_operator`.
+   - Granted strictly to `service_role`. Zero client access, preserving warehouse isolation.
+
+### Live Verification Results
+- [x] Exactly 4 views verified present (`v_station_current_state`, `v_station_connectors`, `v_station_approved_reviews`, `v_station_daily_summary`)
+- [x] All 4 views verified with `security_invoker = true` in `pg_class.reloptions`
+- [x] Exactly 2 functions verified present (`get_author_display_name` SECURITY DEFINER, `nearby_stations` SECURITY INVOKER)
+- [x] Functions verified with fixed, safe `search_path`
+- [x] View writes (`INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `REFERENCES`, `TRIGGER`) confirmed revoked from `anon` and `authenticated`
+- [x] `analytics.v_station_daily_summary` verified with 0 client permissions (`service_role` only)
+- [x] All 29 active tables retain RLS enabled
+- [x] Public policies remain exactly 29
+- [x] Analytics and ML policies remain 0 (deny-all client default)
+- [x] 0 cross-layer FKs confirmed via `pg_constraint`
+- [x] 9 legacy tables remain intact with 0 rows and RLS disabled
+- [x] Reference data counts verified (`dim_date` = 3288, `dim_time` = 96)
+- [x] Operational stations, facts, and ML metadata verified at 0 rows (no fake data)
+- [x] Live query execution tests against empty state passed cleanly for all views and functions (returned 0 rows without errors)
+- [x] `npm run typecheck` passed with 0 errors
+
+
 
 

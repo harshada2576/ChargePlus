@@ -23,14 +23,14 @@ We will also perform a conceptual check, not just a code check.
 **Goal:** replace prototype storage assumptions with the actual product foundation.
 
 ### Steps
-1.1 Create/configure Supabase project  
-1.2 Enable required PostgreSQL/PostGIS capabilities  
-1.3 Create core operational schema  
-1.4 Create analytics schema  
-1.5 Create ML metadata schema  
-1.6 Add indexes and constraints  
-1.7 Add RLS policies  
-1.8 Add safe database views/functions where justified  
+1.1 Create/configure Supabase project — COMPLETE  
+1.2 Enable required PostgreSQL/PostGIS capabilities — COMPLETE  
+1.3 Create core operational schema — COMPLETE  
+1.4 Create analytics schema — COMPLETE  
+1.5 Create ML metadata schema — COMPLETE  
+1.6 Add indexes and constraints — COMPLETE  
+1.7 Add RLS policies — COMPLETE  
+1.8 Add safe database views/functions where justified — COMPLETE (EXECUTED + LIVE VERIFIED)  
 1.9 Establish environment variables/secrets  
 1.10 Verify database with a clean test flow
 
