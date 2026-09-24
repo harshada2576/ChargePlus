@@ -72,8 +72,9 @@ export type Connector = {
 
 | Field | Where Used | DB Placement |
 |-------|-----------|--------------|
-| `connectors[]` (array) | StationCard (connectors.map, max 2 types shown, kW, available count), StationDetail (connectors.map with type, power, available), StationPreviewSheet (connectors.map), Admin (table Connectors column, s.connectors.map((c) => c.type).join(", ")}']>", status));"}]}));" : status)}'));"; break; }"`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`; break; }`
-<tool_call>
-<function=bash>
-<parameter=command>
-cd C:\Users\Admin\Desktop\Projects\ChargePlus && python -m pytest -xvs
+| `connectors[]` (array) | StationCard (connectors.map, max 2 types shown, kW, available count), StationDetail (connectors.map with type, power, available), StationPreviewSheet (connectors.map), Admin (table Connectors column, `s.connectors.map((c) => c.type).join(", ")`) | **connectors** (child of stations) authenticated views in Step 1.8 |
+
+> **Repair note (Phase 1 Step 1.6, 23 Sep 2026):** the tail of this file was corrupted
+> (binary/garbage content plus a pasted `<tool_call>` block on lines 75–79) and has been
+> truncated back to this point. Any content originally lost here should be re-derived from
+> the implemented schema — see `docs/data_dictionary.md` and `docs/step_1_6_constraints_indexes_audit.md`.
