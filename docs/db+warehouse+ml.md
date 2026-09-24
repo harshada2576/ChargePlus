@@ -16,11 +16,11 @@
 > **Authoritative documents for the implemented architecture:**
 > `Must Read/Architecture.md` · `docs/data_warehouse.md` (canonical warehouse docs) ·
 > `docs/data_dictionary.md` (table inventory) · `docs/step_1_6_constraints_indexes_audit.md` ·
-> `supabase/migrations/*.sql` (the actual DDL including Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql`).
+> `supabase/migrations/*.sql` (the actual DDL including Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql` and Step 1.7 `20260924000001_step_1_7_rls_security_policies.sql` — EXECUTED + VERIFIED).
 >
-> Locked boundary: `public` = operational OLTP · `analytics` = canonical data warehouse OLAP ·
-> `ml` = ML metadata/control · Python = ETL/ML boundary · legacy `public.dim_*` / `public.fact_*`
-> untouched/future-reserved · no fake production data.
+> Locked boundary: `public` = operational OLTP (29 RLS policies) · `analytics` = canonical data warehouse OLAP (RLS enabled, 0 client policies) ·
+> `ml` = ML metadata/control (RLS enabled, 0 client policies) · Python = ETL/ML boundary · legacy `public.dim_*` / `public.fact_*`
+> untouched/future-reserved (RLS disabled) · no fake production data.
 
 This is the next implementation artifact after the SRS.
 ---

@@ -172,15 +172,18 @@ We will also perform a conceptual check, not just a code check.
 
 Frontend design and implementation are complete enough to freeze.
 
-**Current: Phase 1/6 — Step 1.6** (Steps 1.1–1.2 scaffolded in `walkthrough.md`; Steps 1.3/1.4/1.5/1.6 migrations authored; Step 1.6 synthesized migration CREATED & statically verified / NOT YET EXECUTED against Supabase — `supabase/migrations/20260923000001_step_1_6_constraints_indexes.sql`.)
-
-Completed in Phase 1:
-- **1.3** Core operational OLTP schema (`public`, 11 tables) — `supabase/migrations/20260918000001_step_1_3_core_operational_schema.sql`
-- **1.4** Analytics warehouse schema (`analytics`, 12 tables + dim_date/dim_time seeds + verification assertions) — `supabase/migrations/20260922000001_step_1_4_analytics_warehouse_schema.sql`
-- **1.5** ML metadata schema (`ml`, 6 tables + verification assertions) — `supabase/migrations/20260922000001_step_1_5_ml_metadata_schema.sql`
-- **1.6** Synthesized constraints & indexes migration authored & statically verified (27 ADD CONSTRAINT statements + 1 unique index = 28 total constraints: public=14, analytics=10, ml=4; 9 redundant indexes dropped, 6 indexes created/optimized, 45 explicit indexes in final schema; 0 destructive statements, no cross-layer FKs; Supabase execution pending Step 1.10) — `supabase/migrations/20260923000001_step_1_6_constraints_indexes.sql`; documentation synchronised — `docs/step_1_6_constraints_indexes_audit.md`, `docs/data_dictionary.md`
+**Current: Phase 1/6 — Step 1.7 EXECUTED + VERIFIED**
+- 1.1 COMPLETE
+- 1.2 COMPLETE
+- 1.3 COMPLETE
+- 1.4 COMPLETE
+- 1.5 COMPLETE
+- 1.6 COMPLETE
+- 1.7 COMPLETE (EXECUTED + VERIFIED against linked Supabase project: `supabase/migrations/20260924000001_step_1_7_rls_security_policies.sql`; 29 active target tables with RLS enabled [public=11, analytics=12, ml=6]; 29 explicit public policies; 0 analytics client policies; 0 ml client policies; column-level privilege protection on profiles.role; moderation-field tampering protection on user_reports and reviews; user_reports direct anon select denied; 9 legacy tables untouched; 0 cross-layer FKs; 0 production data seeded; ETL/service-role boundary intact)
+- 1.8 PENDING (Add safe database views/functions where justified)
+- 1.9 PENDING (Establish environment variables/secrets)
+- 1.10 PENDING (Verify database with a clean test flow)
 
 Next immediate task:
-**Step 1.7 — Add RLS policies** (`public` user-owned rows + anonymous station reads, `analytics`/`ml` read-only grants, Python ETL via service/privileged context).
+**Step 1.8 — Add safe database views/functions where justified** (Do NOT start yet).
 
-Note: Steps 1.1/1.2 (linked Supabase project, PostGIS/pgcrypto) are scaffolded as prerequisites; clean-flow **live** verification belongs to Step 1.10.

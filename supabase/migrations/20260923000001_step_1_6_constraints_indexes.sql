@@ -396,21 +396,34 @@ END $$;
 DO $$
 DECLARE
   v_cross_fk_count INTEGER;
-  v_seeded_row_count INTEGER;
 BEGIN
-  -- 1. Assert NO cross-layer foreign keys exist from analytics or ml
-  SELECT count(*) INTO v_cross_fk_count
-  FROM information_schema.table_constraints tc
-  JOIN information_schema.referential_constraints rc ON tc.constraint_name = rc.constraint_name
-  JOIN information_schema.constraint_column_usage ccu ON rc.unique_constraint_name = ccu.constraint_name
-  WHERE tc.constraint_type = 'FOREIGN KEY'
-    AND ((tc.table_schema = 'analytics' AND ccu.table_schema <> 'analytics')
-      OR (tc.table_schema = 'ml' AND ccu.table_schema <> 'ml'));
+  SELECT count(*)
+  INTO v_cross_fk_count
+  FROM pg_constraint con
+  JOIN pg_class src_table
+    ON src_table.oid = con.conrelid
+  JOIN pg_namespace src_schema
+    ON src_schema.oid = src_table.relnamespace
+  JOIN pg_class ref_table
+    ON ref_table.oid = con.confrelid
+  JOIN pg_namespace ref_schema
+    ON ref_schema.oid = ref_table.relnamespace
+  WHERE con.contype = 'f'
+    AND src_schema.nspname IN ('analytics', 'ml')
+    AND ref_schema.nspname <> src_schema.nspname;
 
   IF v_cross_fk_count > 0 THEN
-    RAISE EXCEPTION 'CRITICAL: Architecture violation — cross-layer foreign keys detected (count=%)', v_cross_fk_count;
+    RAISE EXCEPTION
+      'CRITICAL: Architecture violation — cross-layer foreign keys detected (count=%)',
+      v_cross_fk_count;
   END IF;
+END
+$$;
 
+DO $$
+DECLARE
+  v_seeded_row_count INTEGER;
+BEGIN
   -- 2. Assert NO rows were inserted into operational or ML tables (DDL-only verification)
   SELECT count(*) INTO v_seeded_row_count FROM public.stations;
   IF v_seeded_row_count > 0 THEN
@@ -422,3 +435,4 @@ BEGIN
     RAISE EXCEPTION 'CRITICAL: Data seeding violation — ml.features contains rows';
   END IF;
 END $$;
+

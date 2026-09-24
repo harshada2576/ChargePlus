@@ -1,11 +1,11 @@
-# ChargePlus — Data Warehouse (Step 1.4 & Step 1.6 Synthesis)
+# ChargePlus — Data Warehouse (Step 1.4, Step 1.6 & Step 1.7 Synthesis)
 
 > Migration: `supabase/migrations/20260922000001_step_1_4_analytics_warehouse_schema.sql`  
 > Synthesized Integrity & Indexes Migration: `supabase/migrations/20260923000001_step_1_6_constraints_indexes.sql`  
-> Status: canonical warehouse documentation for the implemented Step 1.4 schema and Step 1.6 integrity synthesis.  
-> Constraints/indexes verified in Step 1.6 (see `docs/step_1_6_constraints_indexes_audit.md`);  
-> table inventory in `docs/data_dictionary.md`. Execution against a linked Supabase project  
-> is verified in Step 1.10 (clean test flow), not asserted by this document.
+> RLS & Security Policies Migration: `supabase/migrations/20260924000001_step_1_7_rls_security_policies.sql`  
+> Status: canonical warehouse documentation for the implemented Step 1.4 schema, Step 1.6 integrity synthesis, and Step 1.7 RLS isolation.  
+> Constraints/indexes verified in Step 1.6; RLS enabled on all 12 warehouse tables with 0 client policies (Step 1.7 EXECUTED + VERIFIED against linked Supabase project).  
+> Table inventory in `docs/data_dictionary.md`.
 
 ---
 

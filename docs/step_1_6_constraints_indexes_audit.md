@@ -122,9 +122,22 @@ All 12 validation requirements were verified:
 
 ## 5. Current Status & Next Step
 
-- **Step 1.6 Status: CREATED & STATICALLY VERIFIED / NOT YET EXECUTED against Supabase.**
-- Supabase execution is deferred until the clean test flow in **Step 1.10**.
-- **Next scheduled task: Step 1.7 — Add RLS Policies** (`public` user-owned rows + anonymous station reads, `analytics`/`ml` read-only grants, Python ETL via service/privileged context).
+- **Step 1.6 Status: EXECUTED + VERIFIED against linked Supabase project.**
+  - *Execution History:* Initial execution attempt rolled back due to a false-positive cross-layer FK assertion joining `information_schema.referential_constraints` and `information_schema.constraint_column_usage` without matching schemas (colliding with legacy `public.dim_*` table constraints). Corrected to authoritative `pg_catalog` query. The second execution attempt succeeded completely as one atomic transaction.
+  - *Verification Summary:*
+    - Constraints: Public (13 ADD CONSTRAINT + 1 Unique Index = 14), Analytics (10 ADD CONSTRAINT), ML (4 ADD CONSTRAINT) = 28 total constraints verified.
+    - Explicit Indexes: Public (17), Analytics (15), ML (13) = 45 explicit indexes verified.
+    - 6 required new indexes verified present; 8 redundant indexes verified dropped.
+    - Reference data intact (`analytics.dim_date` = 3,288 rows; `analytics.dim_time` = 96 rows).
+    - Operational/analytics/ML tables and all 9 frozen legacy `public.dim_*` / `public.fact_*` tables verified at 0 rows.
+    - Cross-layer FK count confirmed = 0 via `pg_constraint`.
+- **Step 1.7 Status: EXECUTED + VERIFIED against linked Supabase project.**
+  - Migration file: `supabase/migrations/20260924000001_step_1_7_rls_security_policies.sql`
+  - 29 active target tables with RLS enabled (`public`=11, `analytics`=12, `ml`=6).
+  - 29 explicit policies created on `public` schema; 0 client policies on `analytics` and `ml`.
+  - Defense-in-depth: table/column privileges sanitized (`profiles.role` column write revoked from authenticated; normal users cannot tamper with moderation fields on `user_reports` or `reviews`; `user_reports` direct anonymous SELECT denied).
+  - Legacy tables untouched (9 legacy tables remain with RLS disabled).
+- **Next scheduled task: Step 1.8 — Add safe database views/functions where justified** (station_current_status, safe aggregation).
 
 ---
 
@@ -135,6 +148,7 @@ All 12 validation requirements were verified:
   - `supabase/migrations/20260922000001_step_1_4_analytics_warehouse_schema.sql`
   - `supabase/migrations/20260922000001_step_1_5_ml_metadata_schema.sql`
   - `supabase/migrations/20260923000001_step_1_6_constraints_indexes.sql`
+  - `supabase/migrations/20260924000001_step_1_7_rls_security_policies.sql`
 - Documentation:
   - `Must Read/Architecture.md`, `Must Read/Phases.md`, `Must Read/Memory.md`, `Must Read/Rules.md`
   - `docs/data_dictionary.md`, `docs/data_warehouse.md`, `docs/db+warehouse+ml.md`

@@ -1,13 +1,13 @@
 # ChargePlus — Data Dictionary / Schema & Table Inventory
 
-**Phase:** 1/6 — Step 1.6/10  
-**Status:** generated from the actual implemented migrations (source of truth = `supabase/migrations/`).  
+**Phase:** 1/6 — Step 1.7/10 (EXECUTED + VERIFIED)  
+**Status:** verified against linked Supabase project (source of truth = `supabase/migrations/`).  
 **Boundary lock (must never drift):**
-- `public` = operational OLTP (frontend reads/writes under future Step 1.7 RLS)
-- `analytics` = canonical data warehouse OLAP (Python ETL writes only; no frontend writes)
-- `ml` = ML metadata/control (metadata only; populated by Python ETL/ML pipeline)
+- `public` = operational OLTP (29 explicit RLS policies, defense-in-depth column grants)
+- `analytics` = canonical data warehouse OLAP (RLS enabled, 0 client policies, Python ETL writes only; no frontend writes)
+- `ml` = ML metadata/control (RLS enabled, 0 client policies; metadata only; populated by Python ETL/ML pipeline)
 - Python = ETL/ML boundary
-- legacy `public.dim_*` / `public.fact_*` = untouched, empty, future-reserved
+- legacy `public.dim_*` / `public.fact_*` = untouched, empty, future-reserved (RLS disabled)
 - no fake/synthetic production data anywhere
 
 ---
@@ -16,9 +16,9 @@
 
 | Schema | Role | Tables | Authoritative Migration(s) |
 |---|---|---|---|
-| `public` | Operational OLTP | 11 operational tables (**+ 9 legacy empty tables**) | Step 1.3 `20260918000001_step_1_3_core_operational_schema.sql`<br>Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql` |
-| `analytics` | Data warehouse OLAP | 12 (8 dims + 4 facts) | Step 1.4 `20260922000001_step_1_4_analytics_warehouse_schema.sql`<br>Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql` |
-| `ml` | ML metadata/control | 6 | Step 1.5 `20260922000001_step_1_5_ml_metadata_schema.sql`<br>Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql` |
+| `public` | Operational OLTP | 11 operational tables (**+ 9 legacy empty tables**) | Step 1.3 `20260918000001_step_1_3_core_operational_schema.sql`<br>Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql`<br>Step 1.7 `20260924000001_step_1_7_rls_security_policies.sql` |
+| `analytics` | Data warehouse OLAP | 12 (8 dims + 4 facts) | Step 1.4 `20260922000001_step_1_4_analytics_warehouse_schema.sql`<br>Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql`<br>Step 1.7 `20260924000001_step_1_7_rls_security_policies.sql` |
+| `ml` | ML metadata/control | 6 | Step 1.5 `20260922000001_step_1_5_ml_metadata_schema.sql`<br>Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql`<br>Step 1.7 `20260924000001_step_1_7_rls_security_policies.sql` |
 | `auth` | Supabase-managed authentication | (managed by Supabase) | never modified manually |
 | extensions | `postgis`, `pgcrypto` | — | enabled in Step 1.3 (`CREATE EXTENSION IF NOT EXISTS`) |
 
@@ -50,7 +50,7 @@ One row per Supabase Auth user. Auth is the source of truth; no passwords/OTPs s
 | `home_city` | TEXT | NULL |
 | `created_at` / `updated_at` | TIMESTAMPTZ | NOT NULL DEFAULT now() |
 
-*Indexes: none beyond PK. RLS arrives in Step 1.7.*
+*Indexes: none beyond PK. RLS: enabled (Step 1.7: profiles_select_own, profiles_insert_own, profiles_update_own; column privileges protect `role` from user manipulation).*
 
 ## 1.2 `public.operators`
 Canonical CPO registry; `stations.operator_id` FKs here (never free text).
@@ -401,6 +401,7 @@ GRAIN: one row per prediction-run metadata.
 | `analytics` | 12 | 15 (2 UNIQUE, 13 b-tree) | 10 ADD CONSTRAINT: SCD2 effective-range index (`idx_dim_station_effective`), hours mirror, connector vocabulary parity, deterministic surrogate-key self-consistency (immutable), fact causality, UTC alignment, moderation provenance, daily status-count conservation |
 | `ml` | 6 | 13 (all b-tree) | 4 ADD CONSTRAINT: Intra-layer FK (`fk_experiments_dataset`), FK-supporting indexes (`training_dataset_key`, `eval_dataset_key`), lifecycle timestamps, dataset time range, model ready-gate |
 | **Total** | **29** | **45 explicit indexes** | **28 total constraints** (27 ADD CONSTRAINT + 1 Unique Index) |
+*Execution note: Step 1.6 migration executed and fully verified against linked Supabase project as one atomic transaction (initial attempt rolled back due to false-positive information_schema join; corrected to pg_catalog).*
 
 ---
 
