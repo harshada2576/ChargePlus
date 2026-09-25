@@ -1,9 +1,9 @@
 # ChargePlus — Data Dictionary / Schema & Table Inventory
 
-**Phase:** 1/6 — Step 1.7/10 (EXECUTED + VERIFIED)  
-**Status:** verified against linked Supabase project (source of truth = `supabase/migrations/`).  
+**Phase:** 1/6 — Complete Foundation (Steps 1.1–1.10 EXECUTED + LIVE VERIFIED + SIGNED OFF)  
+**Status:** fully verified against linked Supabase project (source of truth = `supabase/migrations/`).  
 **Boundary lock (must never drift):**
-- `public` = operational OLTP (29 explicit RLS policies, defense-in-depth column grants)
+- `public` = operational OLTP (29 explicit RLS policies, defense-in-depth column grants, security_invoker views)
 - `analytics` = canonical data warehouse OLAP (RLS enabled, 0 client policies, Python ETL writes only; no frontend writes)
 - `ml` = ML metadata/control (RLS enabled, 0 client policies; metadata only; populated by Python ETL/ML pipeline)
 - Python = ETL/ML boundary
@@ -14,10 +14,10 @@
 
 ## Schema map
 
-| Schema | Role | Tables | Authoritative Migration(s) |
+| Schema | Role | Tables / Views | Authoritative Migration(s) |
 |---|---|---|---|
-| `public` | Operational OLTP | 11 operational tables (**+ 9 legacy empty tables**) | Step 1.3 `20260918000001_step_1_3_core_operational_schema.sql`<br>Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql`<br>Step 1.7 `20260924000001_step_1_7_rls_security_policies.sql` |
-| `analytics` | Data warehouse OLAP | 12 (8 dims + 4 facts) | Step 1.4 `20260922000001_step_1_4_analytics_warehouse_schema.sql`<br>Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql`<br>Step 1.7 `20260924000001_step_1_7_rls_security_policies.sql` |
+| `public` | Operational OLTP | 11 operational tables (**+ 9 legacy empty tables**)<br>3 views, 2 functions | Step 1.3 `20260918000001_step_1_3_core_operational_schema.sql`<br>Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql`<br>Step 1.7 `20260924000001_step_1_7_rls_security_policies.sql`<br>Step 1.8 `20260925000001_step_1_8_views_functions.sql` |
+| `analytics` | Data warehouse OLAP | 12 (8 dims + 4 facts)<br>1 view | Step 1.4 `20260922000001_step_1_4_analytics_warehouse_schema.sql`<br>Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql`<br>Step 1.7 `20260924000001_step_1_7_rls_security_policies.sql`<br>Step 1.8 `20260925000001_step_1_8_views_functions.sql` |
 | `ml` | ML metadata/control | 6 | Step 1.5 `20260922000001_step_1_5_ml_metadata_schema.sql`<br>Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql`<br>Step 1.7 `20260924000001_step_1_7_rls_security_policies.sql` |
 | `auth` | Supabase-managed authentication | (managed by Supabase) | never modified manually |
 | extensions | `postgis`, `pgcrypto` | — | enabled in Step 1.3 (`CREATE EXTENSION IF NOT EXISTS`) |
@@ -405,6 +405,21 @@ GRAIN: one row per prediction-run metadata.
 
 ---
 
+# 5. Step 1.8 Views & Functions Inventory
+
+All objects created in Step 1.8 migration `supabase/migrations/20260925000001_step_1_8_views_functions.sql`.
+
+| Schema | Object Name | Type | Security Mode | Access Grants | Description & Boundary Guarantee |
+|---|---|---|---|---|---|
+| `public` | `get_author_display_name(author_id uuid)` | Function | `SECURITY DEFINER`<br>`SET search_path = public, pg_temp` | `EXECUTE`: `anon, authenticated, service_role` | Returns sanitized author nickname for approved reviews without exposing `profiles` table or auth UUIDs. |
+| `public` | `v_station_current_state` | View | `WITH (security_invoker = true)` | `SELECT`: `anon, authenticated, service_role` | Composes physical station metadata, operator details, connector capacity summary, latest live observation status, derived freshness, and approved review metrics. Zero fake data; observations default to NULL when absent. |
+| `public` | `v_station_connectors` | View | `WITH (security_invoker = true)` | `SELECT`: `anon, authenticated, service_role` | Exposes connector specifications per station alongside latest connector-level live observation (if present). |
+| `public` | `v_station_approved_reviews` | View | `WITH (security_invoker = true)` | `SELECT`: `anon, authenticated, service_role` | Public feed of approved driver reviews with author display names. Deliberately hides `user_id`, `moderated_by`, `moderation_reason`, and unapproved reviews. |
+| `public` | `nearby_stations(user_lat, user_lng, radius_meters, max_results)` | Function | `SECURITY INVOKER`<br>`SET search_path = public, extensions, pg_temp` | `EXECUTE`: `anon, authenticated, service_role` | PostGIS spatial discovery utilizing GIST index `idx_stations_geom` on `stations.geom`. Bounded radius (max 200km) and limit (max 100). |
+| `analytics` | `v_station_daily_summary` | View | `WITH (security_invoker = true)` | `SELECT`: `service_role` only | OLAP star-schema reporting view joining `fact_station_daily` with `dim_date`, `dim_station`, and `dim_operator` for Python ETL and BI tools. No client access. |
+
+---
+
 ## Cross-references
 
 - Authoritative Migrations:
@@ -412,6 +427,9 @@ GRAIN: one row per prediction-run metadata.
   - `supabase/migrations/20260922000001_step_1_4_analytics_warehouse_schema.sql`
   - `supabase/migrations/20260922000001_step_1_5_ml_metadata_schema.sql`
   - `supabase/migrations/20260923000001_step_1_6_constraints_indexes.sql`
+  - `supabase/migrations/20260924000001_step_1_7_rls_security_policies.sql`
+  - `supabase/migrations/20260925000001_step_1_8_views_functions.sql`
 - Warehouse grain/SCD/ETL design: `docs/data_warehouse.md`.
 - Step 1.6 synthesis audit report: `docs/step_1_6_constraints_indexes_audit.md`.
+- Step 1.8 views & functions audit: `docs/step_1_8_views_functions_audit.md`.
 - Conceptual architecture & rules: `Must Read/Architecture.md`, `Must Read/PRD.md`, `Must Read/Rules.md`, `Must Read/Phases.md`.

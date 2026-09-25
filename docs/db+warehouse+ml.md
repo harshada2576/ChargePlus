@@ -1,6 +1,6 @@
 # ChargePlus — Database & API Specification v1.0
 
-> **⚠️ SUPERSEDED DESIGN — documentation synchronisation (Phase 1 Step 1.6).**
+> **⚠️ SUPERSEDED DESIGN — documentation synchronisation (Phase 1 Step 1.8).**
 > This is the *pre-implementation* database/API design that preceded the actual migrations.
 > It is retained for historical reference only and must **not** be treated as the implemented schema.
 > Several objects named here were **not** built:
@@ -12,13 +12,16 @@
 > - `analytics.fact_station_hourly`, `analytics.fact_forecast` → not created (explicitly deferred).
 > - `public.notification_events`, `public.station_current_status`, `public.station_sources`,
 >   `public.station_search_view`, `ml.forecasts` → not created.
+>   Implemented views and functions are: `public.v_station_current_state`, `public.v_station_connectors`,
+>   `public.v_station_approved_reviews`, `public.nearby_stations`, `public.get_author_display_name`,
+>   and `analytics.v_station_daily_summary` (Step 1.8 `20260925000001_step_1_8_views_functions.sql` — EXECUTED + VERIFIED).
 >
 > **Authoritative documents for the implemented architecture:**
 > `Must Read/Architecture.md` · `docs/data_warehouse.md` (canonical warehouse docs) ·
-> `docs/data_dictionary.md` (table inventory) · `docs/step_1_6_constraints_indexes_audit.md` ·
-> `supabase/migrations/*.sql` (the actual DDL including Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql` and Step 1.7 `20260924000001_step_1_7_rls_security_policies.sql` — EXECUTED + VERIFIED).
+> `docs/data_dictionary.md` (table inventory) · `docs/step_1_6_constraints_indexes_audit.md` · `docs/step_1_8_views_functions_audit.md` ·
+> `supabase/migrations/*.sql` (the actual DDL including Step 1.6, Step 1.7, and Step 1.8 — EXECUTED + VERIFIED).
 >
-> Locked boundary: `public` = operational OLTP (29 RLS policies) · `analytics` = canonical data warehouse OLAP (RLS enabled, 0 client policies) ·
+> Locked boundary: `public` = operational OLTP (29 RLS policies, 3 views, 2 functions) · `analytics` = canonical data warehouse OLAP (RLS enabled, 0 client policies, 1 view) ·
 > `ml` = ML metadata/control (RLS enabled, 0 client policies) · Python = ETL/ML boundary · legacy `public.dim_*` / `public.fact_*`
 > untouched/future-reserved (RLS disabled) · no fake production data.
 

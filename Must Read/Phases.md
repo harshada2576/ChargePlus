@@ -23,24 +23,25 @@ We will also perform a conceptual check, not just a code check.
 **Goal:** replace prototype storage assumptions with the actual product foundation.
 
 ### Steps
-1.1 Create/configure Supabase project  
-1.2 Enable required PostgreSQL/PostGIS capabilities  
-1.3 Create core operational schema  
-1.4 Create analytics schema  
-1.5 Create ML metadata schema  
-1.6 Add indexes and constraints  
-1.7 Add RLS policies  
-1.8 Add safe database views/functions where justified  
-1.9 Establish environment variables/secrets  
-1.10 Verify database with a clean test flow
+1.1 Create/configure Supabase project — COMPLETE  
+1.2 Enable required PostgreSQL/PostGIS capabilities — COMPLETE  
+1.3 Create core operational schema — COMPLETE  
+1.4 Create analytics schema — COMPLETE  
+1.5 Create ML metadata schema — COMPLETE  
+1.6 Add indexes and constraints — COMPLETE  
+1.7 Add RLS policies — COMPLETE  
+1.8 Add safe database views/functions where justified — COMPLETE (EXECUTED + LIVE VERIFIED)  
+1.9 Establish environment variables/secrets — COMPLETE (AUDITED + CONFIGURED)  
+1.10 Verify database with a clean test flow — COMPLETE (AUDITED + LIVE VERIFIED + PHASE 1 SIGN-OFF)  
 
-### Concept check
-- Does the schema represent physical stations correctly?
-- Are connectors children of stations?
-- Can Mumbai expand to India?
-- Are operational and analytics concerns separated?
-- Are user-owned records protected?
-- Is provenance retained?
+### Concept check (All Verified)
+- Does the schema represent physical stations correctly? Yes (Step 1.3/1.6/1.8).
+- Are connectors children of stations? Yes (composite FKs enforce station ownership).
+- Can Mumbai expand to India? Yes (PostGIS coordinates, country/state/city in dimensions).
+- Are operational and analytics concerns separated? Yes (public OLTP vs analytics OLAP warehouse).
+- Are user-owned records protected? Yes (29 public RLS policies, role escalation defenses).
+- Is provenance retained? Yes (data_sources, station_source_link, observation timestamps).
+
 
 ---
 
@@ -172,18 +173,19 @@ We will also perform a conceptual check, not just a code check.
 
 Frontend design and implementation are complete enough to freeze.
 
-**Current: Phase 1/6 — Step 1.7 EXECUTED + VERIFIED**
-- 1.1 COMPLETE
-- 1.2 COMPLETE
-- 1.3 COMPLETE
-- 1.4 COMPLETE
-- 1.5 COMPLETE
-- 1.6 COMPLETE
-- 1.7 COMPLETE (EXECUTED + VERIFIED against linked Supabase project: `supabase/migrations/20260924000001_step_1_7_rls_security_policies.sql`; 29 active target tables with RLS enabled [public=11, analytics=12, ml=6]; 29 explicit public policies; 0 analytics client policies; 0 ml client policies; column-level privilege protection on profiles.role; moderation-field tampering protection on user_reports and reviews; user_reports direct anon select denied; 9 legacy tables untouched; 0 cross-layer FKs; 0 production data seeded; ETL/service-role boundary intact)
-- 1.8 PENDING (Add safe database views/functions where justified)
-- 1.9 PENDING (Establish environment variables/secrets)
-- 1.10 PENDING (Verify database with a clean test flow)
+**Current: Phase 1/6 — Foundation & Real Database — COMPLETE**
+- 1.1 COMPLETE — Supabase project created & configured
+- 1.2 COMPLETE — PostgreSQL + PostGIS enabled and verified
+- 1.3 COMPLETE — Core operational schema created (11 active public operational tables)
+- 1.4 COMPLETE — Analytics / Data Warehouse schema created (12 canonical warehouse tables)
+- 1.5 COMPLETE — ML metadata schema created (6 metadata tables)
+- 1.6 COMPLETE — Constraints and explicit indexes synthesized and verified
+- 1.7 COMPLETE — Row Level Security policies, role escalation defenses, and ETL boundary verified (29 public policies, 0 client analytics/ml policies)
+- 1.8 COMPLETE — Database views (4) and functions (2) executed with security_invoker and safe search paths
+- 1.9 COMPLETE — Environment variables and secrets audited, configured, and protected
+- 1.10 COMPLETE — Final Foundation Verification live audited and signed off
 
-Next immediate task:
-**Step 1.8 — Add safe database views/functions where justified** (Do NOT start yet).
+**Next: Phase 2/6 — Real Data Ingestion & Data Quality**
+- Next step: Step 2.1 — Define canonical station/connector input contract
+
 
