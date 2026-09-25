@@ -93,6 +93,15 @@ from backend.ingestion.normalization import (
     normalize_station_record,
     normalize_voltage,
 )
+from backend.ingestion.deduplication import (
+    CanonicalDecisionState,
+    CanonicalDeduplicationEngine,
+    CanonicalResolutionDecision,
+    ExistingCanonicalStation,
+    FieldSurvivorshipDecision,
+    FieldSurvivorshipPolicy,
+    SurvivorshipStrategy,
+)
 
 __all__ = [
     "CONTRACT_VERSION",
@@ -167,6 +176,13 @@ __all__ = [
     "normalize_pricing",
     "normalize_station_record",
     "normalize_voltage",
+    "CanonicalDecisionState",
+    "SurvivorshipStrategy",
+    "ExistingCanonicalStation",
+    "FieldSurvivorshipDecision",
+    "CanonicalResolutionDecision",
+    "FieldSurvivorshipPolicy",
+    "CanonicalDeduplicationEngine",
 ]
 
 

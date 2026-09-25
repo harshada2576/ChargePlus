@@ -32,7 +32,7 @@ Every entry should include:
 
 ## Current project state
 
-**ACTIVE PHASE / STEP: Phase 2/6 — Step 2.5 COMPLETE (Ready for Step 2.6)**
+**ACTIVE PHASE / STEP: Phase 2/6 — Step 2.7 COMPLETE (Ready for Step 2.8)**
 - **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF (All 29 active tables, RLS, 4 views, 2 functions, constraints, indexes live verified on Supabase).
 - **Phase 2 (Real Data Ingestion & Data Quality)**:
   - Step 2.1 COMPLETE (Canonical Station/Connector Input Contract, Pydantic models, validation engine, 17/17 tests passing).
@@ -40,7 +40,9 @@ Every entry should include:
   - Step 2.3 COMPLETE & LOCKED (Operational persistence service, idempotent runner, live Supabase PostgreSQL verified, 52/52 tests passing).
   - Step 2.4 COMPLETE & LOCKED (Cross-source entity resolution, multi-signal evidence fusion, 67/67 tests passing).
   - Step 2.5 COMPLETE & LOCKED (Cross-source field normalization & standard vocabulary, 97/97 tests passing).
-- **Next Immediate Step**: Step 2.6 — Validate records (ingestion-wide data quality validation & anomaly quarantine) (Do NOT start until explicitly instructed).
+  - Step 2.6 COMPLETE & LOCKED (Ingestion-wide data quality validation & anomaly quarantine, 137/137 tests passing).
+  - Step 2.7 COMPLETE & LOCKED (Canonical deduplication decision layer & source merging, 176/176 tests passing).
+- **Next Immediate Step**: Step 2.8 — Persist deduplicated canonical stations & connectors (Do NOT start until explicitly instructed).
 - **Production Database**: Live compatibility verified against Supabase; zero schema modifications; legacy warehouse tables untouched.
 
 
@@ -267,9 +269,43 @@ Every entry should include:
      - `npm run build` (verified production build).
   5. Documentation:
      - Authored comprehensive specification in `docs/step_2_6_data_quality_validation.md`.
-- Current state: STEP 2.6 COMPLETE & LOCKED — READY FOR STEP 2.7.
+- Current state: STEP 2.6 COMPLETE & LOCKED.
 - Conceptual verification: Validator evaluates records against data-quality rules and physical plausibility; it does NOT merge entities, does NOT assign station UUIDs, and does NOT decide source precedence (deferred to Step 2.7). Zero database migrations required.
-- Blockers / waiting on: Step 2.7 (Canonical station decision layer).
-- Next step: Phase 2 Step 2.7 — Canonical station decision layer (source precedence & survivorship).
+
+### 25 Sep 2026 — Phase 2 Step 2.7 Canonical Deduplication Decision Layer & Source Merging
+- Phase / Step: Phase 2/6 — Step 2.7
+- What we built/changed:
+  1. Authoritative Canonical Deduplication Decision Engine (`backend/ingestion/deduplication.py`):
+     - Implemented `CanonicalDecisionState` (`MERGE`, `LINK_TO_CANONICAL`, `KEEP_SEPARATE`, `REVIEW`).
+     - Implemented `SurvivorshipStrategy` (`UNANIMOUS_AGREEMENT`, `SINGLE_REPORTING_SOURCE`, `HIGHEST_QUALITY_SCORE`, `MOST_COMPLETE_VALUE`, `EXPLICIT_FIELD_POLICY`, `DEDUPLICATED_SET`, `CONFLICT_UNRESOLVED`).
+     - Defined typed models: `ExistingCanonicalStation`, `FieldSurvivorshipDecision`, and `CanonicalResolutionDecision`.
+     - Built pure functional `FieldSurvivorshipPolicy`:
+       - Coordinates: Deterministic selection from highest-quality source for close coordinates ($\le 50$m); material contradiction ($> 50$m) triggers `REVIEW`; zero synthetic coordinate averaging.
+       - Names: Unanimous agreement or most complete descriptive name.
+       - Operators: Exact and alias agreement; rebrand/takeover temporal recency policy; unaliased conflicts trigger `REVIEW`; full provenance preserved.
+       - Pricing: Missing preserved as unknown (never ₹0); explicit free preserved; conflicting rates or Free vs Paid trigger `REVIEW`.
+       - Connectors: Deduplicated by `(connector_type, round(power_kw))` using `max(quantity)`; blind summation strictly prevented; incompatible signatures trigger `REVIEW`.
+     - Built stateless `CanonicalDeduplicationEngine`:
+       - Deterministic input sorting by `(source_id, source_station_id)`.
+       - Strict validation gating: `REJECT` records immediately isolated and blocked; `QUARANTINE` records routed to `REVIEW` with `is_blocked = True`.
+       - Cluster concordance verification: Transitive contradictions across multi-source candidate clusters detected and routed to `REVIEW` (preventing transitive false merges).
+       - Existing canonical reconciliation: Safely links to single existing stations; prevents multi-canonical bridges and silent collapse.
+       - Deterministic cluster hashing (`cluster_` + SHA-256 of sorted source IDs); zero `datetime.now()` execution drift.
+  2. Integration & Module Exports:
+     - Exported all Step 2.7 models and engines in `backend/ingestion/__init__.py`.
+  3. Comprehensive Unit Test Suite (`tests/test_canonical_deduplication.py`):
+     - 39 unit tests covering all required scenarios: basic identity, validation gating, field survivorship, coordinates, connectors, operators, pricing, multi-source clusters, existing canonical stations, determinism/idempotence, and provenance.
+     - Full automated test suite passes: 176/176 tests (17 contract + 20 adapter + 15 persistence + 15 resolution + 30 normalization + 40 quality validation + 39 deduplication).
+  4. Quality Gates:
+     - `pytest tests/` (176/176 passing).
+     - `npx tsc --noEmit` (0 errors).
+     - `npm run lint` (0 errors).
+     - `npm run build` (verified production build).
+  5. Documentation:
+     - Authored comprehensive specification in `docs/step_2_7_canonical_deduplication_and_source_merging.md`.
+- Current state: STEP 2.7 COMPLETE & LOCKED — READY FOR STEP 2.8.
+- Conceptual verification: "2.7 DECIDES. 2.8 PERSISTS." Pure in-memory decision layer; zero database writes; zero schema modifications; external source IDs preserved; one physical station = one canonical ID.
+- Blockers / waiting on: Step 2.8 (Persist deduplicated canonical stations & connectors).
+- Next step: Phase 2 Step 2.8 — Persist deduplicated canonical stations & connectors into operational tables (`public.stations`, `public.connectors`, `public.station_source_link`).
 
 

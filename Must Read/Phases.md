@@ -54,9 +54,9 @@ We will also perform a conceptual check, not just a code check.
 2.3 Connect first legitimate station data source — COMPLETE / LOCKED (PERSISTENCE SERVICE, IDEMPOTENT RUNNER, LIVE SUPABASE VERIFIED, 52/52 TESTS PASSED)  
 2.4 Cross-source entity resolution (candidate generation & evidence fusion) — COMPLETE / LOCKED (PURE RESOLVER, MULTI-SIGNAL EVIDENCE FUSION, 67/67 TESTS PASSED)  
 2.5 Normalize fields (cross-source operator, connector, tariff & electrical vocabulary) — COMPLETE / LOCKED (CANONICAL VOCABULARIES, SAFE ALIASES, UNIT CONVERSIONS, 97/97 TESTS PASSED)  
-2.6 Validate records (ingestion-wide data quality validation & anomaly quarantine) — NEXT  
-2.7 Deduplicate/entity-match stations (canonical decision layer, source priority arbitration & survivorship)  
-2.8 Load canonical stations/connectors (transactional operational loading & mutation isolation)  
+2.6 Validate records (ingestion-wide data quality validation & anomaly quarantine) — COMPLETE / LOCKED (MULTI-LAYERED VALIDATOR, STABLE DQ RULES, ANOMALY QUARANTINE, 137/137 TESTS PASSED)  
+2.7 Deduplicate/entity-match stations (canonical decision layer, source priority arbitration & survivorship) — COMPLETE / LOCKED (CANONICAL DECISION LAYER, DEDUPLICATION, REFINED CONNECTOR SURVIVORSHIP, 176/176 TESTS PASSED)  
+2.8 Load canonical stations/connectors (transactional operational loading & mutation isolation) — NEXT  
 2.9 Record freshness/provenance (freshness decay engine & observation provenance tracking)  
 2.10 Schedule/repeat ingestion (polling daemons, cron scheduling & retry/backoff policies)  
 2.11 Verify Mumbai coverage (spatial audit, missing-field rates & Phase 2 quality sign-off)
@@ -250,17 +250,33 @@ We will also perform a conceptual check, not just a code check.
     - Strict boundary enforcement: Zero merging, zero deduplication, zero canonical UUID assignment, zero source precedence decisions (deferred to Step 2.7)
     - 40 comprehensive unit tests in `tests/test_data_quality_validation.py`; all 137 tests passing in `tests/`
     - Complete documentation in `docs/step_2_6_data_quality_validation.md`
+  - 2.7 Canonical station decision layer (source precedence & survivorship) — COMPLETE / LOCKED
+    - Deterministic in-memory decision layer (`backend/ingestion/deduplication.py`) implementing `CanonicalDeduplicationEngine` and `FieldSurvivorshipPolicy`
+    - 4 authoritative decision states: `MERGE`, `LINK_TO_CANONICAL`, `KEEP_SEPARATE`, `REVIEW`
+    - Invariant: "2.7 DECIDES. 2.8 PERSISTS." Pure functional logic, zero database writes, zero schema migrations
+    - One physical station = One ChargePlus canonical ID; external provider IDs never overwrite canonical UUIDs
+    - Provenance completely preserved: `participating_source_identities`, `participating_values`, and pairwise evidence retained
+    - Never invent source precedence: No universal "CPO > OCM > OSM" ranking; missing != conflict; unresolvable field contradictions trigger `REVIEW`
+    - Transitive contradiction protection: Pairs in candidate clusters verified for mutual concordance; transitive contradictions force `REVIEW`
+    - Refined Two-Level Connector Survivorship: Level 1 intra-source summation per distinct plug specification + Level 2 cross-source reconciliation (max(quantity)); co-located multi-tier chargers cleanly preserved; single-tier contradictory power ratings route to REVIEW
+    - Coordinate integrity: Close coordinates (<= 50m) select deterministically from highest-quality source without averaging; > 50m spread triggers `REVIEW`
+    - Pricing honesty: Missing price remains unknown (never fabricated as ₹0); explicit free preserved; conflicting tariffs trigger `REVIEW`
+    - Validation gating: `REJECT` records blocked from merging; `QUARANTINE` records cannot become canonical operational data (routed to `REVIEW`)
+    - Existing canonical reconciliation: Accurately links to established stations; prevents multi-canonical bridges and silent collapse
+    - Deterministic & idempotent: Deterministic cluster hashing, order-independent evaluation, zero `datetime.now()` execution drift
+    - 39 comprehensive unit tests in `tests/test_canonical_deduplication.py`; all 176 tests passing in `tests/`
+    - Complete documentation in `docs/step_2_7_canonical_deduplication_and_source_merging.md`
 
 ### Current Phase & Step:
 - Current Phase: Phase 2/6 (Real Data Ingestion & Data Quality)
 - Remaining Phases: 4 (Phases 3, 4, 5, 6)
-- Current Step: Step 2.6 COMPLETE / LOCKED
-- Remaining Steps in Phase 2: 5 (Steps 2.7 through 2.11)
+- Current Step: Step 2.7 COMPLETE / LOCKED
+- Remaining Steps in Phase 2: 4 (Steps 2.8 through 2.11)
 
 ### What we are doing now:
-- Step 2.6 completed, verified, tested, and locked. Ready to begin Step 2.7 upon instruction.
+- Step 2.7 completed, verified, tested, and locked. Ready to begin Step 2.8 upon instruction.
 
 ### What comes next:
-- **Step 2.7 — Canonical station decision layer (source precedence & survivorship)**: Canonical station deduplication, multi-source conflict arbitration, field-level survivorship rules, and canonical station clustering.
+- **Step 2.8 — Persist deduplicated canonical stations & connectors**: Operational database persistence of canonical decisions into `public.stations`, `public.connectors`, and `public.station_source_link`.
 
 
