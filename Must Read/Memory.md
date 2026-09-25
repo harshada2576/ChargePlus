@@ -32,7 +32,13 @@ Every entry should include:
 
 ## Current project state
 
-### 17 Sep 2026 — Frontend → Backend transition
+**ACTIVE PHASE / STEP: Phase 2/6 — Step 2.1 COMPLETE (Ready for Step 2.2)**
+- **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF (All 29 active tables, RLS, 4 views, 2 functions, constraints, indexes live verified on Supabase).
+- **Phase 2 (Real Data Ingestion & Data Quality)**: Step 2.1 COMPLETE (Canonical Station/Connector Input Contract, Pydantic models, validation engine, 17/17 tests passing, documentation complete).
+- **Next Immediate Step**: Step 2.2 — Build Python source-adapter structure (Do NOT start until explicitly instructed).
+- **Production Database**: Intact and untouched in Step 2.1 (0 fake rows seeded; operational and warehouse schemas locked).
+
+### Historical Progress Log
 - Phase / Step: Phase 1/6 — Step 1.1
 - What we built/changed: ChargePlus frontend is complete and frozen as the presentation/product layer. Must-Read project governance files are being established.
 - Current state: UI structure exists; core station/user data plumbing still needs to move from prototype/mock storage to Supabase.
@@ -94,4 +100,13 @@ Every entry should include:
 - Conceptual verification: Hard three-layer boundary maintained (public OLTP, analytics canonical OLAP warehouse, ml metadata/control, Python ETL boundary); zero cross-layer FKs; no synthetic data; full security isolation; production ready for Phase 2 ingestion.
 - Blockers / waiting on: Phase 2 Real Data Ingestion (Step 2.1).
 - Next step: Phase 2 Step 2.1 — Define canonical station/connector input contract.
+
+### 25 Sep 2026 — Phase 2 Step 2.1 Canonical Station/Connector Input Contract
+- Phase / Step: Phase 2/6 — Step 2.1
+- What we built/changed: Designed and implemented the source-neutral canonical input contract for ChargePlus EV data ingestion: (1) Established the 6-layer architecture (Raw Source, Normalized Record, Canonical Station, Canonical Connector, Telemetry Observations, Analytical Warehouse); (2) Clarified Layer 6 canonical warehouse facts: exactly 4 canonical facts (`analytics.fact_station_observation`, `analytics.fact_user_report`, `analytics.fact_review`, `analytics.fact_station_daily`), explicitly excluding `fact_charging_session` which is not in our canonical Phase 1 warehouse; (3) Created strongly-typed Python models (`backend/ingestion/contracts.py`) for `RawSourceRecord`, `NormalizedStationRecord`, `NormalizedConnectorRecord`, and `NormalizedObservationRecord` with strict validation rules and contract versioning (`1.0.0`); (4) Created data quality validation engine (`backend/ingestion/validation.py`) with deterministic outcomes (`ACCEPT`, `ACCEPT_WITH_WARNINGS`, `QUARANTINE`, `REJECT`) and completeness scoring; (5) Refined coordinate validation: coordinates in `[-90, 90]` and `[-180, 180]` are valid, individual 0.0 on the Equator or Prime Meridian is valid, and ONLY `(0.0, 0.0)` together is rejected as Null Island; (6) Formalized missing-data semantics ("Missing means Missing" — no fake ₹0 prices, no fake 0 kW power, no fake 'available' statuses); (7) Formalized the 6 distinct status semantics (operational state, connector availability, observation state, user reports, predictions, data freshness); (8) Defined entity resolution / deduplication candidate features (geodetic distance, operator slug, token sort name matching, address/PIN, connector signatures); (9) Preserved raw source payloads and unmapped vendor fields via `extra_metadata`; (10) Built comprehensive unit test suite (`tests/test_canonical_contracts.py`) covering all 17 contract scenarios with 100% pass rate; (11) Authored complete specification document `docs/canonical_station_input_contract.md`; (12) Verified clean TypeScript typecheck (`tsc --noEmit`) and ESLint (`eslint src`).
+- Current state: STEP 2.1 COMPLETE & LOCKED — READY FOR STEP 2.2.
+- Conceptual verification: Fully source-neutral contract matching real-world EV charging topologies (single station to multiple connectors, aggregated capacity vs individual plugs, multi-operator support, Mumbai pilot bounds with India-wide expansion, strict separation of static identity from telemetry observations); zero production database mutations; zero fake data.
+- Blockers / waiting on: Step 2.2 (Build Python source-adapter structure).
+- Next step: Phase 2 Step 2.2 — Build Python source-adapter structure.
+
 
