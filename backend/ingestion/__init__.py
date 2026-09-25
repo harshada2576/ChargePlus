@@ -37,6 +37,20 @@ from backend.ingestion.runner import (
     IngestionRunner,
     IngestionSummary,
 )
+from backend.ingestion.resolution import (
+    AddressEvidence,
+    ConnectorEvidence,
+    CrossSourceEntityResolver,
+    EntityResolutionCandidate,
+    EntityResolutionConfig,
+    EvidenceSignal,
+    GeoProximityEvidence,
+    MatchState,
+    NameSimilarityEvidence,
+    OperatorEvidence,
+    haversine_distance_meters,
+    normalize_string_for_matching,
+)
 
 __all__ = [
     "CONTRACT_VERSION",
@@ -62,4 +76,17 @@ __all__ = [
     "StationPersistenceResult",
     "IngestionRunner",
     "IngestionSummary",
+    "MatchState",
+    "EvidenceSignal",
+    "GeoProximityEvidence",
+    "NameSimilarityEvidence",
+    "OperatorEvidence",
+    "ConnectorEvidence",
+    "AddressEvidence",
+    "EntityResolutionCandidate",
+    "EntityResolutionConfig",
+    "CrossSourceEntityResolver",
+    "haversine_distance_meters",
+    "normalize_string_for_matching",
 ]
+

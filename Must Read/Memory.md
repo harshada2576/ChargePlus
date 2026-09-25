@@ -32,13 +32,14 @@ Every entry should include:
 
 ## Current project state
 
-**ACTIVE PHASE / STEP: Phase 2/6 — Step 2.3 COMPLETE (Ready for Step 2.4)**
+**ACTIVE PHASE / STEP: Phase 2/6 — Step 2.4 COMPLETE (Ready for Step 2.5)**
 - **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF (All 29 active tables, RLS, 4 views, 2 functions, constraints, indexes live verified on Supabase).
 - **Phase 2 (Real Data Ingestion & Data Quality)**:
   - Step 2.1 COMPLETE (Canonical Station/Connector Input Contract, Pydantic models, validation engine, 17/17 tests passing).
   - Step 2.2 COMPLETE & LOCKED (Base adapter framework, OpenChargeMapAdapter, global data source research lock, 37/37 tests passing).
   - Step 2.3 COMPLETE & LOCKED (Operational persistence service, idempotent runner, live Supabase PostgreSQL verified, 52/52 tests passing).
-- **Next Immediate Step**: Step 2.4 — Cross-source entity resolution (candidate generation & evidence fusion) (Do NOT start until explicitly instructed).
+  - Step 2.4 COMPLETE & LOCKED (Cross-source entity resolution, multi-signal evidence fusion, 67/67 tests passing).
+- **Next Immediate Step**: Step 2.5 — Normalize fields (cross-source operator, connector, tariff & electrical vocabulary) (Do NOT start until explicitly instructed).
 - **Production Database**: Live compatibility verified against Supabase; zero schema modifications; legacy warehouse tables untouched.
 
 ### Historical Progress Log
@@ -168,11 +169,37 @@ Every entry should include:
      - Dry run verified with 0 database writes.
      - Live Supabase PostgreSQL database compatibility tested and verified (PostGIS trigger, idempotency, observation fact keys).
      - Documentation completed in `docs/step_2_3_first_live_source_persistence.md`.
-- Current state: STEP 2.3 COMPLETE & LOCKED — READY FOR STEP 2.4.
+- Current state: STEP 2.3 COMPLETE & LOCKED.
 - Conceptual verification: Operational state (`public.*`) separated from canonical warehouse facts (`analytics.*`); adapters remain strictly non-persistent; "Missing means missing" strictly honored; external IDs never become station UUIDs; no message brokers; no cross-source fuzzy entity matching (deferred to Step 2.4).
-- Blockers / waiting on: Step 2.4 (Deduplicate / entity-match stations).
+- Blockers / waiting on: Step 2.4.
 - Next step: Phase 2 Step 2.4 — Cross-source entity resolution (candidate generation & evidence fusion).
 
-
-
-
+### 25 Sep 2026 — Phase 2 Step 2.4 Cross-Source Entity Resolution (Candidate Generation & Evidence Fusion)
+- Phase / Step: Phase 2/6 — Step 2.4
+- What we built/changed:
+  1. Authoritative Evidence Generation Engine (`backend/ingestion/resolution.py`):
+     - Pure computational, deterministic, multi-signal evidence fusion layer.
+     - Geodetic candidate generation using Haversine great-circle distance on WGS 84 ($R=6,371,000$m). Configurable candidate radius default $\le 50.0$ meters.
+     - Multi-signal evaluation: Spatial proximity (0.30), Lexical name similarity with Mumbai acronym expansion and token overlap (0.30), Operator reconciliation (0.15), Electrical connector signature compatibility (0.15), and Locality/PIN overlap (0.10).
+     - Discrete match states: `MATCH`, `NON_MATCH`, `AMBIGUOUS`.
+     - Invariant: Proximity alone ($\le 50$m) does NOT prove identity. Weak or conflicting signals within 50m evaluate to `AMBIGUOUS`.
+     - Invariant: Missing data evaluates to `UNKNOWN` (neutral weight), never negative disagreement ("Missing != Disagreement").
+     - Invariant: Commercial takeover / rebranding handled safely (Rule A3 allows MATCH on identical physical site despite operator divergence).
+     - Invariant: External source identifiers preserved verbatim; zero generation of ChargePlus station UUIDs in resolution.
+     - Invariant: Non-destructive guarantee. Zero mutations to `public.stations`, `public.connectors`, `public.station_source_link`, or `analytics` facts.
+  2. Module Integration & Exports:
+     - Exported all core classes in `backend/ingestion/__init__.py`.
+  3. Comprehensive Unit Test Suite (`tests/test_entity_resolution.py`):
+     - 15 unit tests covering all 14 mandatory scenarios: strong agreement, clearly different stations, close conflicting coordinates (ambiguous), same name far apart, missing connector data handling, rebranding/takeover, 50m boundary precision, 0m coordinates with weak metadata, missing address/PIN, connector signature variants, determinism, non-destructive immutability, multiple candidates preservation, and source identity preservation.
+     - All 67 project automated tests pass with 100% success rate.
+  4. Quality Gates:
+     - `pytest` (67/67 passing).
+     - `npx tsc --noEmit` (0 errors).
+     - `npm run lint` (0 errors).
+     - `npm run build` (successful production build).
+  5. Documentation:
+     - Completed comprehensive reference in `docs/step_2_4_cross_source_entity_resolution.md`.
+- Current state: STEP 2.4 COMPLETE & LOCKED — READY FOR STEP 2.5.
+- Conceptual verification: Resolution engine is purely computational; evidence dossier is fully transparent with auditable reasons; ambiguity is preserved rather than discarded; source IDs remain source IDs; zero DB migrations; canonical source precedence and survivorship deferred to Step 2.7.
+- Blockers / waiting on: Step 2.5 (Normalize fields).
+- Next step: Phase 2 Step 2.5 — Normalize fields (cross-source operator, connector, tariff & electrical vocabulary).

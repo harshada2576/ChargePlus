@@ -81,19 +81,26 @@ ChargePlus/
 │       ├── contracts.py               # Pydantic models (RawSourceRecord, NormalizedStation, ProvenanceInfo)
 │       ├── validation.py              # DataQualityValidator (geofencing, electrical bounds, scoring)
 │       ├── base.py                    # BaseSourceAdapter, AdapterResult, BatchAdapterResult
-│       └── adapters/                  # Provider-specific implementations
-│           └── openchargemap.py       # OpenChargeMapAdapter (schema parsing, telemetry extraction)
+│       ├── adapters/                  # Provider-specific implementations
+│       │   └── openchargemap.py       # OpenChargeMapAdapter (schema parsing, telemetry extraction)
+│       ├── persistence.py             # IngestionPersistenceService (idempotency, DB sync, fact tracking)
+│       ├── runner.py                  # IngestionRunner CLI orchestrator
+│       └── resolution.py              # CrossSourceEntityResolver (geodetic candidate generation, evidence fusion)
 ├── supabase/migrations/               # AUTHORITATIVE database schema — Phase 1 Steps 1.3–1.8 SQL
-├── tests/                             # Comprehensive test suites
+├── tests/                             # Comprehensive test suites (67 automated tests passing)
 │   ├── test_canonical_contracts.py    # 17 unit tests for Step 2.1 canonical input contract
 │   ├── test_openchargemap_adapter.py  # 20 unit tests for Step 2.2 OCM adapter & error isolation
+│   ├── test_ingestion_persistence.py  # 15 unit tests for Step 2.3 persistence & idempotency
+│   ├── test_entity_resolution.py      # 15 unit tests for Step 2.4 cross-source entity resolution
 │   └── fixtures/                      # Offline representative test fixtures
 │       └── ocm_fixtures.py            # 18 labeled OCM fixture scenarios
 ├── Must Read/                         # Locked governance docs (Architecture, Design, Memory, Phases, PRD, Rules)
 └── docs/                              # Architecture specs, data dictionary, warehouse, and research
     ├── canonical_station_input_contract.md       # Step 2.1 Canonical contract specification
     ├── source_adapters_architecture.md           # Step 2.2 Source adapter framework specification
-    └── global_ev_charging_data_source_research.md # Authoritative source research & telemetry lock
+    ├── global_ev_charging_data_source_research.md # Authoritative source research & telemetry lock
+    ├── step_2_3_first_live_source_persistence.md # Step 2.3 Persistence & idempotency documentation
+    └── step_2_4_cross_source_entity_resolution.md # Step 2.4 Entity resolution & evidence fusion documentation
 ```
 
 ---
@@ -154,7 +161,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to explore t
 | `npm run start` | Starts the production server |
 | `npm run typecheck` | Runs TypeScript compiler checks without emitting code (`tsc --noEmit`) |
 | `npm run lint` | Runs ESLint analysis across the frontend codebase |
-| `python -m pytest tests/ -v` | Runs the full Python test suite (37 tests: canonical contracts + source adapters) |
+| `python -m pytest tests/ -v` | Runs the full Python test suite (67 tests: contracts, adapters, persistence, resolution) |
 
 ---
 
@@ -174,7 +181,10 @@ supabase db push
 - **Phase 2 (Real Data Ingestion):** IN PROGRESS
   - **Step 2.1 — Canonical Input Contract:** COMPLETE & LOCKED (`RawSourceRecord`, `NormalizedStationRecord`, `NormalizedConnectorRecord`, `NormalizedObservationRecord`, `ProvenanceInfo`, 17/17 tests passing).
   - **Step 2.2 — Source Adapters & OCM Ingestion:** COMPLETE & LOCKED (`BaseSourceAdapter`, `OpenChargeMapAdapter`, 18 test fixtures, 20 adapter tests passing, global source research & telemetry architecture locked).
-  - **Step 2.3 — Connect First Live Data Source:** NEXT (OpenChargeMap live API integration).
+  - **Step 2.3 — Connect First Live Data Source:** COMPLETE & LOCKED (`IngestionPersistenceService`, `IngestionRunner`, idempotency via `station_source_link`, fact observations, 15 tests passing, 52/52 cumulative).
+  - **Step 2.4 — Cross-Source Entity Resolution:** COMPLETE & LOCKED (`CrossSourceEntityResolver`, geodetic candidate generation $\le 50$m, multi-signal evidence fusion, 15 tests passing, 67/67 cumulative).
+  - **Step 2.5 — Normalize Fields:** NEXT (cross-source operator, connector, tariff & electrical vocabulary normalization).
+
 
 
 

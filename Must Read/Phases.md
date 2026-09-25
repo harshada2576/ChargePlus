@@ -52,8 +52,8 @@ We will also perform a conceptual check, not just a code check.
 2.1 Define canonical station/connector input contract — COMPLETE (CONTRACT DEFINED, VALIDATED, 17/17 TESTS PASSED)  
 2.2 Build Python source-adapter structure & Global Source Strategy — COMPLETE / LOCKED (BASE ADAPTER, OCM ADAPTER, GLOBAL SOURCE RESEARCH, 18 FIXTURES, 37/37 TESTS PASSED)  
 2.3 Connect first legitimate station data source — COMPLETE / LOCKED (PERSISTENCE SERVICE, IDEMPOTENT RUNNER, LIVE SUPABASE VERIFIED, 52/52 TESTS PASSED)  
-2.4 Cross-source entity resolution (candidate generation & evidence fusion) — NEXT  
-2.5 Normalize fields (cross-source operator, connector, tariff & electrical vocabulary)  
+2.4 Cross-source entity resolution (candidate generation & evidence fusion) — COMPLETE / LOCKED (PURE RESOLVER, MULTI-SIGNAL EVIDENCE FUSION, 67/67 TESTS PASSED)  
+2.5 Normalize fields (cross-source operator, connector, tariff & electrical vocabulary) — NEXT  
 2.6 Validate records (ingestion-wide data quality validation & anomaly quarantine)  
 2.7 Deduplicate/entity-match stations (canonical decision layer, source priority arbitration & survivorship)  
 2.8 Load canonical stations/connectors (transactional operational loading & mutation isolation)  
