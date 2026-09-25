@@ -241,17 +241,26 @@ We will also perform a conceptual check, not just a code check.
     - Full idempotency and determinism: $\text{normalize}(\text{normalize}(x)) \equiv \text{normalize}(x)$ with zero runtime timestamp drift
     - 30 unit tests in `tests/test_field_normalization.py`; all 97 tests passing in `tests/`
     - Complete documentation in `docs/step_2_5_field_normalization.md`
+  - 2.6 Validate records (ingestion-wide data quality validation & anomaly quarantine) — COMPLETE / LOCKED
+    - Multi-layered data quality evaluation framework (`backend/ingestion/validation.py`) with stable rule catalog IDs (`DQ-PROV-001..004`, `DQ-NAME-001..002`, `DQ-OP-001`, `DQ-GEO-001..005`, `DQ-ADDR-001..002`, `DQ-HOURS-001..003`, `DQ-CONN-001..004`, `DQ-ELEC-001..008`, `DQ-PRICE-001..004`, `DQ-OBS-001..003`)
+    - Contract outcomes strictly mapped to four severity levels: `ACCEPT` (no issues), `ACCEPT_WITH_WARNINGS` (INFO / WARNING), `QUARANTINE` (HIGH physical / geofence anomaly), `REJECT` (CRITICAL non-negotiable defect)
+    - Critical architectural invariants: No silent repair (bad data is never secretly corrected), missing means missing (never defaulted to 0 kW or ₹0), operational state decoupled from real-time availability and freshness
+    - In-memory anomaly quarantine representation (`QuarantineRecord`) preserving full Layer 1 provenance, all failed rule IDs, and human-readable reasons, isolated from canonical operational tables
+    - Deterministic batch validation engine (`BatchValidationReport`) with completeness ratios, issue distributions, and zero record loss
+    - Strict boundary enforcement: Zero merging, zero deduplication, zero canonical UUID assignment, zero source precedence decisions (deferred to Step 2.7)
+    - 40 comprehensive unit tests in `tests/test_data_quality_validation.py`; all 137 tests passing in `tests/`
+    - Complete documentation in `docs/step_2_6_data_quality_validation.md`
 
 ### Current Phase & Step:
 - Current Phase: Phase 2/6 (Real Data Ingestion & Data Quality)
 - Remaining Phases: 4 (Phases 3, 4, 5, 6)
-- Current Step: Step 2.5 COMPLETE / LOCKED
-- Remaining Steps in Phase 2: 6 (Steps 2.6 through 2.11)
+- Current Step: Step 2.6 COMPLETE / LOCKED
+- Remaining Steps in Phase 2: 5 (Steps 2.7 through 2.11)
 
 ### What we are doing now:
-- Step 2.5 completed, verified, audited, and locked. Ready to begin Step 2.6 upon instruction.
+- Step 2.6 completed, verified, tested, and locked. Ready to begin Step 2.7 upon instruction.
 
 ### What comes next:
-- **Step 2.6 — Validate records (ingestion-wide data quality validation & anomaly quarantine)**: Data quality rules, boundary verification, completeness scoring, and quarantine routing for non-compliant records.
+- **Step 2.7 — Canonical station decision layer (source precedence & survivorship)**: Canonical station deduplication, multi-source conflict arbitration, field-level survivorship rules, and canonical station clustering.
 
 

@@ -94,6 +94,7 @@ ChargePlus/
 │   ├── test_ingestion_persistence.py  # 15 unit tests for Step 2.3 persistence & idempotency
 │   ├── test_entity_resolution.py      # 15 unit tests for Step 2.4 cross-source entity resolution
 │   ├── test_field_normalization.py    # 30 unit tests for Step 2.5 cross-source field normalization
+│   ├── test_data_quality_validation.py # 40 unit tests for Step 2.6 data quality validation & quarantine
 │   └── fixtures/                      # Offline representative test fixtures
 │       └── ocm_fixtures.py            # 18 labeled OCM fixture scenarios
 ├── Must Read/                         # Locked governance docs (Architecture, Design, Memory, Phases, PRD, Rules)
@@ -103,7 +104,8 @@ ChargePlus/
     ├── global_ev_charging_data_source_research.md # Authoritative source research & telemetry lock
     ├── step_2_3_first_live_source_persistence.md # Step 2.3 Persistence & idempotency documentation
     ├── step_2_4_cross_source_entity_resolution.md # Step 2.4 Entity resolution & evidence fusion documentation
-    └── step_2_5_field_normalization.md           # Step 2.5 Field normalization & standard vocabulary documentation
+    ├── step_2_5_field_normalization.md           # Step 2.5 Field normalization & standard vocabulary documentation
+    └── step_2_6_data_quality_validation.md       # Step 2.6 Data quality validation & anomaly quarantine documentation
 ```
 
 ---
@@ -164,7 +166,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to explore t
 | `npm run start` | Starts the production server |
 | `npm run typecheck` | Runs TypeScript compiler checks without emitting code (`tsc --noEmit`) |
 | `npm run lint` | Runs ESLint analysis across the frontend codebase |
-| `python -m pytest tests/ -v` | Runs the full Python test suite (97 tests: contracts, adapters, persistence, resolution, normalization) |
+| `python -m pytest tests/ -v` | Runs the full Python test suite (137 tests: contracts, adapters, persistence, resolution, normalization, validation) |
 
 ---
 
@@ -187,7 +189,8 @@ supabase db push
   - **Step 2.3 — Connect First Live Data Source:** COMPLETE & LOCKED (`IngestionPersistenceService`, `IngestionRunner`, idempotency via `station_source_link`, fact observations, 15 tests passing, 52/52 cumulative).
   - **Step 2.4 — Cross-Source Entity Resolution:** COMPLETE & LOCKED (`CrossSourceEntityResolver`, geodetic candidate generation $\le 50$m, multi-signal evidence fusion, 15 tests passing, 67/67 cumulative).
   - **Step 2.5 — Normalize Fields:** COMPLETE & LOCKED (`backend/ingestion/normalization.py`, verified operator aliases, standard connector vocabulary, kW power conversion, pricing/hours structures, 30 tests passing, 97/97 cumulative).
-  - **Step 2.6 — Validate Records:** NEXT (ingestion-wide data quality validation & anomaly quarantine).
+  - **Step 2.6 — Validate Records:** COMPLETE & LOCKED (`backend/ingestion/validation.py`, multi-layered data quality validator, stable `DQ-*` rule catalog, in-memory quarantine ledger, deterministic batch reporting, 40 tests passing, 137/137 cumulative).
+  - **Step 2.7 — Canonical Station Decision Layer:** NEXT (canonical deduplication, source precedence, field-level survivorship rules, canonical clustering).
 
 
 

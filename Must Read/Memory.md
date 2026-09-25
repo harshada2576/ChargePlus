@@ -233,8 +233,43 @@ Every entry should include:
      - `npm run build` (successful production build).
   5. Documentation:
      - Authored comprehensive specification in `docs/step_2_5_field_normalization.md`.
-- Current state: STEP 2.5 COMPLETE & LOCKED — READY FOR STEP 2.6.
+- Current state: STEP 2.5 COMPLETE & LOCKED.
 - Conceptual verification: Normalization standardizes representations into comparable forms; it does NOT merge entities, does NOT assign station UUIDs, and does NOT decide source precedence (deferred to Step 2.7). Zero database migrations required.
-- Blockers / waiting on: Step 2.6 (Validate records).
-- Next step: Phase 2 Step 2.6 — Validate records (ingestion-wide data quality validation & anomaly quarantine).
+
+### 25 Sep 2026 — Phase 2 Step 2.6 Ingestion-Wide Data Quality Validation & Anomaly Quarantine
+- Phase / Step: Phase 2/6 — Step 2.6
+- What we built/changed:
+  1. Authoritative Data Quality Validation Framework (`backend/ingestion/validation.py`):
+     - Implemented `QualitySeverity` (`INFO`, `WARNING`, `HIGH`, `CRITICAL`) and `QualityRuleCategory` across 11 architectural layers.
+     - Implemented typed Pydantic models: `QualityFinding`, `QuarantineRecord`, `ValidationResult`, and `BatchValidationReport`.
+     - Built comprehensive rule catalog with stable IDs:
+       - Provenance: `DQ-PROV-001` (source_id), `DQ-PROV-002` (source_station_id), `DQ-PROV-003` (contract_version 1.x.x), `DQ-PROV-004` (64-char hex SHA-256 hash).
+       - Station Identity: `DQ-NAME-001` (name length >= 2), `DQ-NAME-002` (demo/test placeholder name), `DQ-OP-001` (unbranded operator completeness).
+       - Geolocation & Geofence: `DQ-GEO-001` (lat in [-90, 90]), `DQ-GEO-002` (lng in [-180, 180]), `DQ-GEO-003` (Null Island (0,0) rejected sentinel; individual 0.0 on Equator/Prime Meridian allowed), `DQ-GEO-004` (India geofence anomaly triggers QUARANTINE), `DQ-GEO-005` (MMR pilot box warning).
+       - Address & PIN: `DQ-ADDR-001` (coordinate-only precision warning), `DQ-ADDR-002` (Indian 6-digit PIN format ^[1-9][0-9]{5}$).
+       - Operating Hours: `DQ-HOURS-001` (24/7 hours consistency with opening/closing times), `DQ-HOURS-002` (24-hour clock format HH:MM), `DQ-HOURS-003` (24/7 flag vs closed schedule/status contradiction triggers QUARANTINE).
+       - Connectors & Electrical: `DQ-CONN-001` (0 connectors shell station), `DQ-CONN-002` (quantity >= 1), `DQ-CONN-003` (unmapped connector type), `DQ-CONN-004` (unusually high quantity > 50), `DQ-ELEC-001` (power <= 0 kW), `DQ-ELEC-002` (extreme power > 2000 kW triggers QUARANTINE), `DQ-ELEC-003` (suspicious commercial power outside [1, 500] kW), `DQ-ELEC-004` (voltage <= 0 V), `DQ-ELEC-005` (suspicious voltage > 1000 V), `DQ-ELEC-006` (amperage <= 0 A), `DQ-ELEC-007` (suspicious amperage > 1000 A), `DQ-ELEC-008` (missing power_kw recommendation).
+       - Pricing & Tariffs: `DQ-PRICE-001` (negative tariff rate or session fee), `DQ-PRICE-002` (FREE pricing with positive rate triggers QUARANTINE), `DQ-PRICE-003` (missing pricing details recommendation), `DQ-PRICE-004` (non-alphabetic currency code rejection / length warning).
+       - Operational Semantics & Telemetry: `DQ-OBS-001` (future telemetry > 5 min clock skew), `DQ-OBS-002` (stale telemetry > 24 hours old), `DQ-OBS-003` (available connectors > total connectors).
+     - In-memory anomaly quarantine ledger (`QuarantineRecord`) preserving full Layer 1 provenance, all failed rule IDs, and human-readable diagnostic messages, isolated from canonical operational tables.
+     - Deterministic batch validation engine (`BatchValidationReport`) with completeness ratios, issue distributions, and zero record loss.
+     - Strict architectural invariants: No silent repair (bad data is never secretly corrected), missing means missing (never defaulted to 0 kW or ₹0), operational state decoupled from real-time availability and freshness.
+     - Pure functional determinism: Zero network calls, zero random numbers, zero LLMs, zero record mutations.
+  2. Integration & Module Exports:
+     - Exported all new validation symbols (`QualitySeverity`, `QualityRuleCategory`, `QualityFinding`, `QuarantineRecord`, `BatchValidationReport`) in `backend/ingestion/__init__.py`.
+  3. Comprehensive Unit Test Suite (`tests/test_data_quality_validation.py`):
+     - 40 unit tests covering all 40 required scenarios: fully valid station, missing optional power, missing optional price, missing operator, missing connector quantity, lat/lng range, Equator/Prime Meridian, Null Island, negative electrical/pricing values, suspicious power warning vs extreme power quarantine, unknown connector standard, explicit FREE pricing + 0.0, contradictory free pricing quarantine, normal/overnight/invalid hours, missing hours, contradictory 24/7 schedule quarantine, missing provenance source IDs, operational state vs live availability decoupling, stale observation handling, batch report complete accounting, batch determinism, multi-defect preservation, quarantine provenance retention, quarantine operational isolation, and input immutability.
+     - Full automated test suite passes: 137/137 tests (17 contract + 20 adapter + 15 persistence + 15 resolution + 30 normalization + 40 quality validation).
+  4. Quality Gates:
+     - `pytest tests/` (137/137 passing).
+     - `npx tsc --noEmit` (0 errors).
+     - `npm run lint` (0 errors).
+     - `npm run build` (verified production build).
+  5. Documentation:
+     - Authored comprehensive specification in `docs/step_2_6_data_quality_validation.md`.
+- Current state: STEP 2.6 COMPLETE & LOCKED — READY FOR STEP 2.7.
+- Conceptual verification: Validator evaluates records against data-quality rules and physical plausibility; it does NOT merge entities, does NOT assign station UUIDs, and does NOT decide source precedence (deferred to Step 2.7). Zero database migrations required.
+- Blockers / waiting on: Step 2.7 (Canonical station decision layer).
+- Next step: Phase 2 Step 2.7 — Canonical station decision layer (source precedence & survivorship).
+
 

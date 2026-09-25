@@ -26,7 +26,15 @@ from backend.ingestion.contracts import (
     ProvenanceInfo,
     RawSourceRecord,
 )
-from backend.ingestion.validation import DataQualityValidator, ValidationResult
+from backend.ingestion.validation import (
+    BatchValidationReport,
+    DataQualityValidator,
+    QualityFinding,
+    QualityRuleCategory,
+    QualitySeverity,
+    QuarantineRecord,
+    ValidationResult,
+)
 
 from backend.ingestion.persistence import (
     IngestionPersistenceService,
@@ -101,6 +109,11 @@ __all__ = [
     "NormalizedStationRecord",
     "DataQualityValidator",
     "ValidationResult",
+    "QualitySeverity",
+    "QualityRuleCategory",
+    "QualityFinding",
+    "QuarantineRecord",
+    "BatchValidationReport",
     "BaseSourceAdapter",
     "AdapterResult",
     "BatchAdapterResult",
