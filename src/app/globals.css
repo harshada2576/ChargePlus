@@ -1,0 +1,199 @@
+@import "tailwindcss";
+
+@theme {
+  --color-coral-50: #FFF5F3;
+  --color-coral-100: #FFE6E1;
+  --color-coral-200: #FED1C8;
+  --color-coral-300: #FBC4AB;
+  --color-coral-400: #F8AD9D;
+  --color-coral-500: #F4978E;
+  --color-coral-600: #F08080;
+  --color-coral-700: #D86A6A;
+  --color-coral-800: #B05454;
+  --color-coral-900: #8A4040;
+
+  --color-apricot-50: #FFFBF6;
+  --color-apricot-100: #FFF3E2;
+  --color-apricot-200: #FFE7CC;
+  --color-apricot-300: #FFDAB9;
+
+  --color-ink-900: #1F1B1A;
+  --color-ink-800: #2D2725;
+  --color-ink-700: #4A413E;
+  --color-ink-600: #6B615E;
+  --color-ink-500: #8A807D;
+  --color-ink-400: #A89F9C;
+  --color-ink-300: #C7BFBD;
+  --color-ink-200: #E4DEDD;
+  --color-ink-100: #F1EEED;
+  --color-ink-50:  #F8F6F5;
+
+  --color-status-available: #2F9E6E;
+  --color-status-available-bg: #E5F5EC;
+  --color-status-busy: #D9822B;
+  --color-status-busy-bg: #FBEFD9;
+  --color-status-broken: #C8443A;
+  --color-status-broken-bg: #FBE3E1;
+  --color-status-unknown: #6B615E;
+  --color-status-unknown-bg: #EDE9E7;
+
+  --font-sans: "Inter", "Noto Sans", "Noto Sans Devanagari", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Inter", "Noto Sans Devanagari", system-ui, sans-serif;
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-2xl: 28px;
+  --radius-full: 9999px;
+
+  --shadow-card: 0 1px 2px rgba(31, 27, 26, 0.04), 0 4px 12px rgba(31, 27, 26, 0.04);
+  --shadow-card-hover: 0 2px 4px rgba(31, 27, 26, 0.06), 0 10px 24px rgba(31, 27, 26, 0.06);
+  --shadow-pop: 0 10px 30px rgba(31, 27, 26, 0.12), 0 2px 6px rgba(31, 27, 26, 0.06);
+  --shadow-sheet: 0 -16px 40px rgba(31, 27, 26, 0.16);
+
+  --spacing-touch: 44px;
+}
+
+html, body {
+  height: 100%;
+  background-color: var(--color-ink-50);
+  color: var(--color-ink-900);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  border-color: var(--color-ink-200);
+}
+
+button, [role="button"] {
+  cursor: pointer;
+}
+
+button:disabled, [role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+::selection {
+  background: var(--color-coral-200);
+  color: var(--color-ink-900);
+}
+
+/* Focus state — always visible, warm but clear */
+:focus-visible {
+  outline: 2px solid var(--color-coral-600);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Hide scrollbar but keep functionality (for horizontal chip rows) */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #ECE7E5 0%, #F5F1EF 50%, #ECE7E5 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* Subtle entrance */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.28s ease-out both;
+}
+
+@keyframes pop-in {
+  0%   { opacity: 0; transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.animate-pop-in {
+  animation: pop-in 0.18s ease-out both;
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.animate-sheet-up {
+  animation: sheet-up 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes sheet-down {
+  from { transform: translateY(0); }
+  to   { transform: translateY(100%); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out both;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Map dotted background for the abstract map placeholder */
+.map-dot-bg {
+  background-image: radial-gradient(circle, rgba(31,27,26,0.10) 1px, transparent 1px);
+  background-size: 18px 18px;
+  background-color: #F4EFEC;
+}
+
+.map-road {
+  stroke: rgba(31,27,26,0.18);
+  stroke-width: 6;
+  fill: none;
+  stroke-linecap: round;
+}
+
+.map-road-major {
+  stroke: rgba(31,27,26,0.30);
+  stroke-width: 10;
+  fill: none;
+  stroke-linecap: round;
+}
+
+.map-water {
+  fill: #D8E7E5;
+}
+
+.map-park {
+  fill: #E6EAD8;
+}
+
+/* Custom scroll for desktop list panel */
+.thin-scroll::-webkit-scrollbar { width: 8px; }
+.thin-scroll::-webkit-scrollbar-track { background: transparent; }
+.thin-scroll::-webkit-scrollbar-thumb { background: var(--color-ink-200); border-radius: 999px; }
+.thin-scroll::-webkit-scrollbar-thumb:hover { background: var(--color-ink-300); }
+
+/* MapLibre custom popup styling */
+.chargeplus-map-popup .maplibregl-popup-content {
+  padding: 0.25rem;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(31, 27, 26, 0.12), 0 2px 6px rgba(31, 27, 26, 0.06);
+  border: 1px solid #F1EEED;
+  background: #ffffff;
+}
+.chargeplus-map-popup .maplibregl-popup-tip {
+  border-top-color: #ffffff;
+}

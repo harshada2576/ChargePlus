@@ -9,11 +9,26 @@
 /build/
 
 # Environment files
-.env*.local
 .env
+.env*.local
+.env.development
+.env.test
+.env.production
+.env.staging
+!.env.example
 
 # TypeScript build info
 *.tsbuildinfo
+
+# Supabase local CLI
+supabase/.temp/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
 
 # Archives and reference files
 *.zip
