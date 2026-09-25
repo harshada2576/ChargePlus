@@ -451,6 +451,7 @@ class OpenChargeMapAdapter(BaseSourceAdapter):
         latitude: Optional[float] = None,
         longitude: Optional[float] = None,
         distance_km: Optional[float] = None,
+        bounding_box: Optional[tuple[float, float, float, float]] = None,
         max_results: int = 100,
         api_key: Optional[str] = None,
         timeout_sec: int = DEFAULT_TIMEOUT_SEC,
@@ -460,6 +461,7 @@ class OpenChargeMapAdapter(BaseSourceAdapter):
         Requires an OpenChargeMap API key via OPENCHARGEMAP_API_KEY environment variable
         or direct api_key argument.
         
+        Supports bounding box filtering (lat_min, lng_min, lat_max, lng_max) or point + distance.
         Isolates network transport and handles timeouts, rate limits, and authentication errors.
         """
         resolved_key = api_key or os.getenv("OPENCHARGEMAP_API_KEY")
@@ -481,7 +483,10 @@ class OpenChargeMapAdapter(BaseSourceAdapter):
             "countrycode": country_code,
         }
 
-        if latitude is not None and longitude is not None:
+        if bounding_box is not None:
+            lat_min, lng_min, lat_max, lng_max = bounding_box
+            params["boundingbox"] = f"({lat_min},{lng_min}),({lat_max},{lng_max})"
+        elif latitude is not None and longitude is not None:
             params["latitude"] = latitude
             params["longitude"] = longitude
             if distance_km is not None:

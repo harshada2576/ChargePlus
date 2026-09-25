@@ -51,15 +51,15 @@ We will also perform a conceptual check, not just a code check.
 ### Steps
 2.1 Define canonical station/connector input contract — COMPLETE (CONTRACT DEFINED, VALIDATED, 17/17 TESTS PASSED)  
 2.2 Build Python source-adapter structure & Global Source Strategy — COMPLETE / LOCKED (BASE ADAPTER, OCM ADAPTER, GLOBAL SOURCE RESEARCH, 18 FIXTURES, 37/37 TESTS PASSED)  
-2.3 Connect first legitimate station data source — NEXT  
-2.4 Preserve raw records  
-2.5 Normalize fields  
-2.6 Validate records  
-2.7 Deduplicate/entity-match stations  
-2.8 Load canonical stations/connectors  
-2.9 Record freshness/provenance  
-2.10 Schedule/repeat ingestion  
-2.11 Verify Mumbai coverage
+2.3 Connect first legitimate station data source — COMPLETE / LOCKED (PERSISTENCE SERVICE, IDEMPOTENT RUNNER, LIVE SUPABASE VERIFIED, 52/52 TESTS PASSED)  
+2.4 Cross-source entity resolution (candidate generation & evidence fusion) — NEXT  
+2.5 Normalize fields (cross-source operator, connector, tariff & electrical vocabulary)  
+2.6 Validate records (ingestion-wide data quality validation & anomaly quarantine)  
+2.7 Deduplicate/entity-match stations (canonical decision layer, source priority arbitration & survivorship)  
+2.8 Load canonical stations/connectors (transactional operational loading & mutation isolation)  
+2.9 Record freshness/provenance (freshness decay engine & observation provenance tracking)  
+2.10 Schedule/repeat ingestion (polling daemons, cron scheduling & retry/backoff policies)  
+2.11 Verify Mumbai coverage (spatial audit, missing-field rates & Phase 2 quality sign-off)
 
 ### Concept check
 - Are stations real?
@@ -211,17 +211,29 @@ We will also perform a conceptual check, not just a code check.
     - 20 unit tests in `tests/test_openchargemap_adapter.py`; all 37 tests passing in `tests/`
     - Comprehensive source research & architecture lock (`docs/global_ev_charging_data_source_research.md`): 5-tier source classification, Kafka excluded, real-time telemetry definitions, 2-tier deduplication, canonical UUID vs source ID separation
     - Zero Supabase writes confirmed live across all tables
+  - 2.3 Connect first legitimate station data source — COMPLETE / LOCKED
+    - Transactional persistence boundary (`IngestionPersistenceService` in `backend/ingestion/persistence.py`) separate from non-persistent adapter
+    - Safe idempotent mapping via `public.station_source_link` (SHA-256 payload hash, external OCM ID separated from ChargePlus UUID)
+    - Full database constraint adherence (`chk_stations_hours`, Indian PIN validation, connector capacity group aggregation to satisfy `uq_connectors_station_type_power`)
+    - PostGIS geometry trigger `trg_stations_geom` verified live generating `POINT(lng lat)`
+    - Dimensional conformed observation persistence to `public.station_observations` and `analytics.fact_station_observation` (only when automated telemetry exists)
+    - Orchestrator and CLI runner (`IngestionRunner` in `backend/ingestion/runner.py`) with `--dry-run`, `--limit`, `--use-fixtures`, and `--json`
+    - Geographic bounding box enforcement (Mumbai Metropolitan Region `18.70-19.50 N`, `72.70-73.30 E`)
+    - Record-level error isolation in batches; zero credentials exposed in logs/code
+    - Comprehensive test suite: 15 persistence/orchestration tests in `tests/test_ingestion_persistence.py`; all 52 tests passing in `tests/`
+    - Live Supabase PostgreSQL database integration verified with zero schema modifications
+    - Complete documentation in `docs/step_2_3_first_live_source_persistence.md`
 
 ### Current Phase & Step:
 - Current Phase: Phase 2/6 (Real Data Ingestion & Data Quality)
 - Remaining Phases: 4 (Phases 3, 4, 5, 6)
-- Current Step: Step 2.2 COMPLETE / LOCKED
-- Remaining Steps in Phase 2: 9 (Steps 2.3 through 2.11)
+- Current Step: Step 2.3 COMPLETE / LOCKED
+- Remaining Steps in Phase 2: 8 (Steps 2.4 through 2.11)
 
 ### What we are doing now:
-- Step 2.2 completed and architecturally locked. Ready to begin Step 2.3 upon instruction.
+- Step 2.3 completed, verified live, and locked. Roadmap reconciled to establish distinct, non-overlapping boundaries for Steps 2.4–2.11. Ready to begin Step 2.4 upon instruction.
 
 ### What comes next:
-- **Step 2.3 — Connect first legitimate station data source** (OpenChargeMap live API integration with bounding-box query, rate-limiting, and non-destructive fetch).
+- **Step 2.4 — Cross-source entity resolution (candidate generation & evidence fusion)**: Spatial proximity indexing (PostGIS ST_DWithin $\le 50$m), multi-signal evidence fusion (name token similarity, operator slug matching, address/PIN overlap, connector signatures), and candidate evidence classification (MATCH / NON_MATCH / AMBIGUOUS) without destructive merging.
 
 

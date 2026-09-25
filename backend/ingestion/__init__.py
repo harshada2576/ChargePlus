@@ -28,6 +28,16 @@ from backend.ingestion.contracts import (
 )
 from backend.ingestion.validation import DataQualityValidator, ValidationResult
 
+from backend.ingestion.persistence import (
+    IngestionPersistenceService,
+    PersistenceStatus,
+    StationPersistenceResult,
+)
+from backend.ingestion.runner import (
+    IngestionRunner,
+    IngestionSummary,
+)
+
 __all__ = [
     "CONTRACT_VERSION",
     "AvailabilityStatus",
@@ -47,4 +57,9 @@ __all__ = [
     "AdapterResult",
     "BatchAdapterResult",
     "OpenChargeMapAdapter",
+    "IngestionPersistenceService",
+    "PersistenceStatus",
+    "StationPersistenceResult",
+    "IngestionRunner",
+    "IngestionSummary",
 ]

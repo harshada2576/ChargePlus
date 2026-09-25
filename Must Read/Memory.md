@@ -32,11 +32,14 @@ Every entry should include:
 
 ## Current project state
 
-**ACTIVE PHASE / STEP: Phase 2/6 — Step 2.1 COMPLETE (Ready for Step 2.2)**
+**ACTIVE PHASE / STEP: Phase 2/6 — Step 2.3 COMPLETE (Ready for Step 2.4)**
 - **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF (All 29 active tables, RLS, 4 views, 2 functions, constraints, indexes live verified on Supabase).
-- **Phase 2 (Real Data Ingestion & Data Quality)**: Step 2.1 COMPLETE (Canonical Station/Connector Input Contract, Pydantic models, validation engine, 17/17 tests passing, documentation complete).
-- **Next Immediate Step**: Step 2.2 — Build Python source-adapter structure (Do NOT start until explicitly instructed).
-- **Production Database**: Intact and untouched in Step 2.1 (0 fake rows seeded; operational and warehouse schemas locked).
+- **Phase 2 (Real Data Ingestion & Data Quality)**:
+  - Step 2.1 COMPLETE (Canonical Station/Connector Input Contract, Pydantic models, validation engine, 17/17 tests passing).
+  - Step 2.2 COMPLETE & LOCKED (Base adapter framework, OpenChargeMapAdapter, global data source research lock, 37/37 tests passing).
+  - Step 2.3 COMPLETE & LOCKED (Operational persistence service, idempotent runner, live Supabase PostgreSQL verified, 52/52 tests passing).
+- **Next Immediate Step**: Step 2.4 — Cross-source entity resolution (candidate generation & evidence fusion) (Do NOT start until explicitly instructed).
+- **Production Database**: Live compatibility verified against Supabase; zero schema modifications; legacy warehouse tables untouched.
 
 ### Historical Progress Log
 - Phase / Step: Phase 1/6 — Step 1.1
@@ -132,6 +135,44 @@ Every entry should include:
 - Conceptual verification: Unidirectional boundary maintained (Source $\to$ Adapter $\to$ Step 2.1 Canonical Contract); no Supabase persistence; no cross-source entity deduplication; no synthetic business truth invented; record-level batch error isolation verified; Kafka excluded; real-time telemetry strictly separated from static equipment state; "Stale != Unavailable" invariant codified.
 - Blockers / waiting on: Step 2.3 (Connect first legitimate station data source).
 - Next step: Phase 2 Step 2.3 — Connect first legitimate station data source.
+
+### 25 Sep 2026 — Phase 2 Step 2.3 Connect First Legitimate Station Data Source
+- Phase / Step: Phase 2/6 — Step 2.3
+- What we built/changed: Designed and implemented the controlled operational and historical observation persistence boundary for OpenChargeMap data:
+  1. Transactional Persistence Service (`backend/ingestion/persistence.py`):
+     - `IngestionPersistenceService` separates persistence logic entirely from transformation adapters.
+     - Feeds registered in `public.data_sources` and mirrored to `analytics.dim_source`.
+     - Operators registered in `public.operators` and mirrored to `analytics.dim_operator`.
+     - Physical stations persisted to `public.stations` with PostGIS geometry trigger `trg_stations_geom` generating `POINT(lng lat)` automatically.
+     - Connectors synchronized to `public.connectors` by aggregating identical `(connector_type, power_kw, charging_standard)` capacity groups to satisfy `uq_connectors_station_type_power`.
+     - Strictly enforced `NOT NULL` and positive power without inventing power values; connectors lacking power are safely skipped with warnings.
+     - Enforced `chk_stations_hours` constraint (opening/closing times NULL when `is_24_hours = true`).
+     - Enforced Indian 6-digit PIN regex; non-compliant postal codes stored as NULL with warnings logged.
+  2. Idempotency & Provenance Linkage:
+     - Implemented `public.station_source_link` tracking `(source_id, source_station_id)`.
+     - SHA-256 payload hash comparison: identical re-ingestion returns `UNCHANGED` and refreshes `last_seen_at` with 0 duplicate stations or connectors.
+     - Changed source payload triggers in-place station attribute and connector `UPDATED`.
+     - External source ID (`192840`) is decoupled from ChargePlus station `uuid.uuid4()`.
+  3. Observation History & Analytics Fact Persistence:
+     - Real point-in-time telemetry produces operational observation in `public.station_observations`.
+     - Conformed observation mirrored to `analytics.fact_station_observation` resolving `station_key`, `operator_key`, `location_key`, `date_key` (YYYYMMDD UTC), and `time_key` (0..95 15-min interval UTC).
+     - Static operational status (`StatusTypeID: 50`) never creates fake availability observations.
+  4. Ingestion Orchestrator & CLI Runner (`backend/ingestion/runner.py`):
+     - CLI options: `--dry-run`, `--limit`, `--all-india`, `--use-fixtures`, `--json`.
+     - Geographic bounding box strictly defaults to Mumbai Metropolitan Region (`18.70-19.50 N`, `72.70-73.30 E`).
+     - Record-level error isolation: individual record failure does not abort the entire batch.
+     - Zero credentials exposed in logs or reports.
+  5. Test Suite & Verification:
+     - 15 comprehensive unit tests authored in `tests/test_ingestion_persistence.py`.
+     - All 52 automated tests in `tests/` pass with 100% success rate (17 contract + 20 adapter + 15 persistence).
+     - Dry run verified with 0 database writes.
+     - Live Supabase PostgreSQL database compatibility tested and verified (PostGIS trigger, idempotency, observation fact keys).
+     - Documentation completed in `docs/step_2_3_first_live_source_persistence.md`.
+- Current state: STEP 2.3 COMPLETE & LOCKED — READY FOR STEP 2.4.
+- Conceptual verification: Operational state (`public.*`) separated from canonical warehouse facts (`analytics.*`); adapters remain strictly non-persistent; "Missing means missing" strictly honored; external IDs never become station UUIDs; no message brokers; no cross-source fuzzy entity matching (deferred to Step 2.4).
+- Blockers / waiting on: Step 2.4 (Deduplicate / entity-match stations).
+- Next step: Phase 2 Step 2.4 — Cross-source entity resolution (candidate generation & evidence fusion).
+
 
 
 
