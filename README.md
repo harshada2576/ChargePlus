@@ -54,12 +54,13 @@ An isolated, role-gated dark console (`#0B1120`) decoupled from the driver shell
 
 | Layer | Technology |
 | :--- | :--- |
-| **Framework** | [Next.js](https://nextjs.org/) (App Router, Turbopack) |
+| **Frontend Framework** | [Next.js](https://nextjs.org/) (App Router, Turbopack) |
 | **Runtime / UI** | [React 19](https://react.dev/) & [TypeScript](https://www.typescriptlang.org/) |
 | **Styling** | [Tailwind CSS v4](https://tailwindcss.com/) with PostCSS |
 | **Geospatial & Maps** | [MapLibre GL](https://maplibre.org/) with OpenFreeMap vector tiles |
-| **Database & ORM** | [Drizzle ORM](https://orm.drizzle.team/) & [PostgreSQL](https://www.postgresql.org/) ([Supabase](https://supabase.com/)) |
-| **Linting & Quality** | ESLint 9 (Flat config) & Strict TypeScript checking |
+| **Database & Auth** | PostgreSQL / PostGIS on [Supabase](https://supabase.com/) (RLS, PostGIS, 3-layer architecture: OLTP, OLAP, ML) |
+| **Ingestion & Validation** | Python 3.12+, Pydantic v2, SHA-256 Provenance Hashing |
+| **Testing & Quality** | ESLint 9 (Flat config), Strict TypeScript (`tsc --noEmit`), Pytest (`pytest-asyncio`) |
 
 ---
 
@@ -70,18 +71,29 @@ ChargePlus/
 ├── .gitignore                         # Project ignore rules (builds, env, caches, archives)
 ├── README.md                          # Project documentation
 ├── STATION_DATA_CONTRACT_AUDIT.md     # Frontend data contract & database alignment audit
-├── drizzle.config.json                # Drizzle ORM config — optional dev layer, NOT schema source of truth
-├── eslint.config.mjs                  # Flat ESLint configuration with Next.js Core Web Vitals
+├── package.json                       # Frontend dependencies & build scripts
 ├── next.config.ts                     # Next.js configuration
-├── next-env.d.ts                      # Next.js TypeScript definitions
-├── package.json                       # Scripts and project dependencies
-├── postcss.config.mjs                 # PostCSS setup with Tailwind CSS v4 plugin
 ├── tsconfig.json                      # Strict TypeScript compiler options & path aliases
-├── walkthrough.md                     # Implementation walkthrough & verification evidence
 ├── src/                               # Next.js application source (app, components, data, db, lib)
-├── supabase/migrations/               # AUTHORITATIVE database schema — Phase 1 Steps 1.3–1.6 SQL
+├── backend/                           # Python Data Ingestion & Quality Layer
+│   └── ingestion/                     # Canonical input contract, validation & source adapters
+│       ├── constants.py               # CONTRACT_VERSION ("1.0.0"), bounding boxes, enums
+│       ├── contracts.py               # Pydantic models (RawSourceRecord, NormalizedStation, ProvenanceInfo)
+│       ├── validation.py              # DataQualityValidator (geofencing, electrical bounds, scoring)
+│       ├── base.py                    # BaseSourceAdapter, AdapterResult, BatchAdapterResult
+│       └── adapters/                  # Provider-specific implementations
+│           └── openchargemap.py       # OpenChargeMapAdapter (schema parsing, telemetry extraction)
+├── supabase/migrations/               # AUTHORITATIVE database schema — Phase 1 Steps 1.3–1.8 SQL
+├── tests/                             # Comprehensive test suites
+│   ├── test_canonical_contracts.py    # 17 unit tests for Step 2.1 canonical input contract
+│   ├── test_openchargemap_adapter.py  # 20 unit tests for Step 2.2 OCM adapter & error isolation
+│   └── fixtures/                      # Offline representative test fixtures
+│       └── ocm_fixtures.py            # 18 labeled OCM fixture scenarios
 ├── Must Read/                         # Locked governance docs (Architecture, Design, Memory, Phases, PRD, Rules)
-└── docs/                              # SRS, data dictionary, data warehouse, Step 1.6 audit & synthesis
+└── docs/                              # Architecture specs, data dictionary, warehouse, and research
+    ├── canonical_station_input_contract.md       # Step 2.1 Canonical contract specification
+    ├── source_adapters_architecture.md           # Step 2.2 Source adapter framework specification
+    └── global_ev_charging_data_source_research.md # Authoritative source research & telemetry lock
 ```
 
 ---
@@ -91,15 +103,21 @@ ChargePlus/
 ### Prerequisites
 
 - **Node.js**: `v20.x` or later
-- **npm**: `v10.x` or later (or `pnpm` / `yarn`)
-- **PostgreSQL**: Local instance or remote database (e.g. Supabase)
+- **npm**: `v10.x` or later
+- **Python**: `v3.12.x` or later with `pip`
+- **PostgreSQL / PostGIS**: Supabase project or compatible PostgreSQL 15+ instance
 
 ### 1. Clone & Install Dependencies
 
 ```bash
 git clone https://github.com/harshada2576/ChargePlus.git
 cd ChargePlus
+
+# Install frontend dependencies
 npm install
+
+# Install Python ingestion dependencies
+pip install pydantic pytest pytest-asyncio python-dotenv psycopg2-binary
 ```
 
 ### 2. Configure Environment Variables
@@ -112,9 +130,10 @@ cp .env.example .env.local
 
 Key environment classifications:
 - **Client (Public-Safe)**: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are safe for browser exposure and protected by Supabase Row-Level Security (RLS).
-- **Server-Only**: `DATABASE_URL` (direct PostgreSQL connection) and `SUPABASE_SERVICE_ROLE_KEY` (admin bypass) must NEVER have a `NEXT_PUBLIC_` prefix and must never be exposed to the browser.
+- **Server-Only (Database & Admin)**: `DATABASE_URL` (direct PostgreSQL pool) and `SUPABASE_SERVICE_ROLE_KEY` (admin bypass) must NEVER have a `NEXT_PUBLIC_` prefix and must never be exposed to the browser.
+- **Server-Only (Data Ingestion)**: `OPENCHARGEMAP_API_KEY` used exclusively by backend Python ingestion adapters.
 
-See [`docs/step_1_9_environment_secrets_audit.md`](docs/step_1_9_environment_secrets_audit.md) for full credentials classification and security architecture.
+See [`docs/step_1_9_environment_secrets_audit.md`](docs/step_1_9_environment_secrets_audit.md) and [`docs/source_adapters_architecture.md`](docs/source_adapters_architecture.md) for credentials classification.
 
 ### 3. Start Development Server
 
@@ -126,7 +145,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to explore t
 
 ---
 
-## 📜 Available Scripts
+## 📜 Available Scripts & Testing
 
 | Command | Description |
 | :--- | :--- |
@@ -134,22 +153,29 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to explore t
 | `npm run build` | Builds the production bundle using Turbopack |
 | `npm run start` | Starts the production server |
 | `npm run typecheck` | Runs TypeScript compiler checks without emitting code (`tsc --noEmit`) |
-| `npm run lint` | Runs ESLint analysis across the codebase |
+| `npm run lint` | Runs ESLint analysis across the frontend codebase |
+| `python -m pytest tests/ -v` | Runs the full Python test suite (37 tests: canonical contracts + source adapters) |
 
 ---
 
-## 🗄️ Database Management
+## 🗄️ Database Management & Project Roadmap
 
-The **authoritative schema is `supabase/migrations/*.sql`** (Phase 1 Steps 1.3/1.4/1.5/1.6/1.7/1.8 authored and executed the `public`, `analytics`, and `ml` schemas — 29 tables, 4 views, 2 functions — with Step 1.6 constraints/indexes, Step 1.7 RLS & security policies, Step 1.8 Views & Functions EXECUTED + VERIFIED on the linked Supabase project, Step 1.9 Environment & Secrets AUDITED + CONFIGURED, and Step 1.10 Final Verification LIVE AUDITED & SIGNED OFF). Apply them to a linked Supabase project:
+The **authoritative schema is `supabase/migrations/*.sql`** (Phase 1 Steps 1.3–1.8 established the 3-layer PostgreSQL database: `public` operational OLTP, `analytics` canonical OLAP warehouse, and `ml` metadata schemas).
+
+Apply migrations to a linked Supabase project:
 
 ```bash
 supabase link --project-ref <project_ref>
 supabase db push
 ```
 
-[Drizzle ORM](https://orm.drizzle.team/) is installed and configured (`drizzle.config.json`, `src/db/`) but `src/db/schema.ts` is currently empty — Drizzle is an optional dev layer and **not** the schema-management source of truth. Do not use `drizzle-kit push` to alter the database.
+### Roadmap Status
+- **Phase 1 (Foundation & Database):** 100% COMPLETE & LIVE VERIFIED (29 tables with RLS enabled, 29 public RLS policies, 4 views with `security_invoker = true`, 2 functions, 28 constraints, 45 explicit indexes, zero cross-layer FKs).
+- **Phase 2 (Real Data Ingestion):** IN PROGRESS
+  - **Step 2.1 — Canonical Input Contract:** COMPLETE & LOCKED (`RawSourceRecord`, `NormalizedStationRecord`, `NormalizedConnectorRecord`, `NormalizedObservationRecord`, `ProvenanceInfo`, 17/17 tests passing).
+  - **Step 2.2 — Source Adapters & OCM Ingestion:** COMPLETE & LOCKED (`BaseSourceAdapter`, `OpenChargeMapAdapter`, 18 test fixtures, 20 adapter tests passing, global source research & telemetry architecture locked).
+  - **Step 2.3 — Connect First Live Data Source:** NEXT (OpenChargeMap live API integration).
 
-**Phase 1 (Foundation & Database) is 100% COMPLETE and LIVE VERIFIED**: 29 active target tables with RLS enabled, 29 public RLS policies, 0 analytics/ml client policies, 4 views with `security_invoker = true`, 2 functions with safe search paths, 28 constraints, 45 explicit indexes, defense-in-depth table/column grants, 0 cross-layer FKs, 9 frozen legacy tables untouched, and safe public/server environment boundaries. The foundation is ready for Phase 2 Real Data Ingestion.
 
 
 

@@ -109,4 +109,29 @@ Every entry should include:
 - Blockers / waiting on: Step 2.2 (Build Python source-adapter structure).
 - Next step: Phase 2 Step 2.2 — Build Python source-adapter structure.
 
+### 25 Sep 2026 — Phase 2 Step 2.2 Build Source-Specific Adapters
+- Phase / Step: Phase 2/6 — Step 2.2
+- What we built/changed: Designed and implemented the first source adapter architecture and the production-grade `OpenChargeMapAdapter`:
+  1. Base Source Adapter Architecture (`backend/ingestion/base.py`): Defined `BaseSourceAdapter` abstract base class with clean lifecycle phases (`fetch_raw`, `parse_raw`, `normalize_station`, `validate_record`, `process_record`, `process_batch`), `AdapterResult` (single-record outcome with error/warning tracking), and `BatchAdapterResult` (batch execution with record-level error isolation where malformed records are quarantined/rejected without failing the entire batch).
+  2. First-Class Provenance Integration: Added `ProvenanceInfo` model and `RawSourceRecord.to_provenance()` method in `backend/ingestion/contracts.py`, ensuring deterministic SHA-256 fingerprinting of pristine source JSON payloads alongside timestamps and source IDs.
+  3. Real OpenChargeMap Ingestion Adapter (`backend/ingestion/adapters/openchargemap.py`):
+     - Verified actual OCM API schema (`AddressInfo`, `Connections`, `StatusType`, `UsageType`, `OperatorInfo`, `UsageCost`).
+     - Mapped OCM station identity (`ID`, `Title`), geocoordinates, full postal address, country (`IN`), operator, access rules, and contact info.
+     - Preserved unmapped vendor fields (`UUID`, `DataProviderID`, `NumberOfPoints`) in `extra_metadata`.
+     - Connector Normalization: Implemented confident type mapping (OCM 33 $\to$ CCS2, 32 $\to$ CCS1, 25/1036 $\to$ Type 2, 2 $\to$ CHAdeMO, 34/35 $\to$ GB/T) and ambiguous fallback to `OTHER` with explicit warnings. Supported both individual connector IDs and aggregated connector information (`quantity >= 1`, omitting fake IDs).
+     - Power Normalization: Extracted `PowerKW` to float kW; preserved missing power strictly as `None` (never default to 0 kW or guessed from connector type); safely caught malformed power values.
+     - Operational vs Availability Separation: OCM StatusType 50 ("Operational") mapped to `OperationalStatus.OPERATIONAL` on station, with connector status remaining `UNKNOWN` and `observation = None` (no fake observations manufactured). Real telemetry status (StatusType 10 "Available", 20 "Occupied") paired with `DateLastStatusUpdate` produces formal `NormalizedObservationRecord`.
+     - Transport & Security Isolation: Abstracted `fetch_raw()` with strict `OPENCHARGEMAP_API_KEY` environment variable enforcement and runtime exceptions if credentials are missing; offline tests run strictly against fixtures.
+  4. Test Fixtures & Unit Test Suite:
+     - Authored 18 comprehensive test fixture scenarios in `tests/fixtures/ocm_fixtures.py` (complete valid station, multiple connectors, aggregated connectors, missing optional fields, unknown connector, missing power, equator zero-latitude, prime meridian zero-longitude, Null Island rejection, non-India quarantine, malformed coordinates, malformed power, telemetry observation, static operational non-observation, extra fields preservation, duplicate payload hash determinism, malformed empty payload, missing station ID).
+     - Authored 20 unit tests in `tests/test_openchargemap_adapter.py` testing all fixture scenarios, batch error isolation, and credential security.
+     - Full test suite passed: 37/37 tests (17 canonical contract tests + 20 adapter tests).
+  5. Verified Zero Database Mutations: Confirmed 0 rows inserted into `public.stations`, `public.connectors`, `public.station_observations`, `analytics.*`, or `ml.*`.
+  6. Documentation & Secrets: Created `docs/source_adapters_architecture.md`, created `docs/global_ev_charging_data_source_research.md` (authoritative global EV data source research, 5-tier classification, telemetry models, Kafka exclusion decision, and duplicate prevention architecture), updated `.env.example` with `OPENCHARGEMAP_API_KEY`, verified `tsc --noEmit` and `npm run lint` clean (0 errors).
+- Current state: STEP 2.1 COMPLETE, STEP 2.2 COMPLETE & LOCKED, STEP 2.2A RESEARCH COMPLETE & LOCKED — READY FOR STEP 2.3.
+- Conceptual verification: Unidirectional boundary maintained (Source $\to$ Adapter $\to$ Step 2.1 Canonical Contract); no Supabase persistence; no cross-source entity deduplication; no synthetic business truth invented; record-level batch error isolation verified; Kafka excluded; real-time telemetry strictly separated from static equipment state; "Stale != Unavailable" invariant codified.
+- Blockers / waiting on: Step 2.3 (Connect first legitimate station data source).
+- Next step: Phase 2 Step 2.3 — Connect first legitimate station data source.
+
+
 

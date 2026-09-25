@@ -50,8 +50,8 @@ We will also perform a conceptual check, not just a code check.
 
 ### Steps
 2.1 Define canonical station/connector input contract — COMPLETE (CONTRACT DEFINED, VALIDATED, 17/17 TESTS PASSED)  
-2.2 Build Python source-adapter structure — NEXT  
-2.3 Connect first legitimate station data source  
+2.2 Build Python source-adapter structure & Global Source Strategy — COMPLETE / LOCKED (BASE ADAPTER, OCM ADAPTER, GLOBAL SOURCE RESEARCH, 18 FIXTURES, 37/37 TESTS PASSED)  
+2.3 Connect first legitimate station data source — NEXT  
 2.4 Preserve raw records  
 2.5 Normalize fields  
 2.6 Validate records  
@@ -189,7 +189,7 @@ We will also perform a conceptual check, not just a code check.
   - 1.9 Establish environment variables/secrets — COMPLETE (AUDITED + CONFIGURED)
   - 1.10 Verify database with a clean test flow — COMPLETE (AUDITED + LIVE VERIFIED + PHASE 1 SIGN-OFF)
 
-- **Phase 2 — Real Data Ingestion (Step 2.1) — COMPLETE**:
+- **Phase 2 — Real Data Ingestion (Steps 2.1 & 2.2) — IN PROGRESS**:
   - 2.1 Define canonical station/connector input contract — COMPLETE
     - Canonical 6-layer contract defined (`RawSourceRecord`, `NormalizedStationRecord`, `NormalizedConnectorRecord`, `NormalizedObservationRecord`)
     - Pydantic models with strict validation rules and contract versioning (`1.0.0`) in `backend/ingestion/`
@@ -200,10 +200,28 @@ We will also perform a conceptual check, not just a code check.
     - 17/17 automated unit tests passed in `tests/test_canonical_contracts.py`
     - Authoritative contract specification: `docs/canonical_station_input_contract.md`
     - Zero production database mutations; Phase 1 architecture fully preserved
+  - 2.2 Build Python source-adapter structure & Global Source Strategy — COMPLETE / LOCKED
+    - Base adapter framework (`BaseSourceAdapter`, `AdapterResult`, `BatchAdapterResult`) with record-level failure isolation in `backend/ingestion/base.py`
+    - Concrete OpenChargeMap adapter (`OpenChargeMapAdapter` in `backend/ingestion/adapters/openchargemap.py`) converting real OCM payloads to Step 2.1 canonical models
+    - First-class provenance integration (`ProvenanceInfo`, deterministic SHA-256 payload digests)
+    - Confident connector mapping vs ambiguous fallback (`OTHER` + warning); aggregated connectors handled without inventing fake IDs
+    - Power normalized to kW; missing power kept `None` (never defaulted to 0 kW or guessed)
+    - Strict separation of operational status from dynamic telemetry availability; no fake observations manufactured
+    - 18 comprehensive test fixture scenarios in `tests/fixtures/ocm_fixtures.py`
+    - 20 unit tests in `tests/test_openchargemap_adapter.py`; all 37 tests passing in `tests/`
+    - Comprehensive source research & architecture lock (`docs/global_ev_charging_data_source_research.md`): 5-tier source classification, Kafka excluded, real-time telemetry definitions, 2-tier deduplication, canonical UUID vs source ID separation
+    - Zero Supabase writes confirmed live across all tables
+
+### Current Phase & Step:
+- Current Phase: Phase 2/6 (Real Data Ingestion & Data Quality)
+- Remaining Phases: 4 (Phases 3, 4, 5, 6)
+- Current Step: Step 2.2 COMPLETE / LOCKED
+- Remaining Steps in Phase 2: 9 (Steps 2.3 through 2.11)
 
 ### What we are doing now:
-- Ready to begin Step 2.2 upon instruction.
+- Step 2.2 completed and architecturally locked. Ready to begin Step 2.3 upon instruction.
 
 ### What comes next:
-- **Step 2.2 — Build Python source-adapter structure** (Do NOT start until explicitly instructed).
+- **Step 2.3 — Connect first legitimate station data source** (OpenChargeMap live API integration with bounding-box query, rate-limiting, and non-destructive fetch).
+
 

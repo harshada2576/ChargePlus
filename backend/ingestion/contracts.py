@@ -82,6 +82,59 @@ class RawSourceRecord(BaseModel):
         serialized = json.dumps(self.raw_payload, sort_keys=True, default=str)
         return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
+    def to_provenance(self) -> ProvenanceInfo:
+        """Generates a ProvenanceInfo object from this raw source record."""
+        return ProvenanceInfo(
+            source_id=self.source_id,
+            source_station_id=self.source_station_id,
+            retrieval_timestamp=self.retrieval_timestamp,
+            source_timestamp=self.source_timestamp,
+            source_url=self.source_url,
+            raw_payload_hash=self.payload_hash,
+            contract_version=CONTRACT_VERSION,
+        )
+
+
+class ProvenanceInfo(BaseModel):
+    """Provenance tracking information for ingested entities."""
+    source_id: str = Field(
+        ...,
+        min_length=1,
+        max_length=120,
+        description="Unique identifier of data source"
+    )
+    source_station_id: str = Field(
+        ...,
+        min_length=1,
+        max_length=500,
+        description="Provider primary record key"
+    )
+    retrieval_timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="UTC timestamp when record was retrieved"
+    )
+    source_timestamp: Optional[datetime] = Field(
+        default=None,
+        description="Timestamp reported by external source if available"
+    )
+    source_url: Optional[str] = Field(
+        default=None,
+        description="URL or endpoint reference"
+    )
+    raw_payload_hash: str = Field(
+        ...,
+        min_length=64,
+        max_length=64,
+        description="SHA-256 hash of Layer 1 payload"
+    )
+    contract_version: str = Field(
+        default=CONTRACT_VERSION,
+        description="Contract version at time of ingestion"
+    )
+
+    class Config:
+        extra = "forbid"
+
 
 class NormalizedConnectorRecord(BaseModel):
     """Layer 2 — Normalized Connector Record.
