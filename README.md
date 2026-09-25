@@ -85,13 +85,15 @@ ChargePlus/
 │       │   └── openchargemap.py       # OpenChargeMapAdapter (schema parsing, telemetry extraction)
 │       ├── persistence.py             # IngestionPersistenceService (idempotency, DB sync, fact tracking)
 │       ├── runner.py                  # IngestionRunner CLI orchestrator
-│       └── resolution.py              # CrossSourceEntityResolver (geodetic candidate generation, evidence fusion)
+│       ├── resolution.py              # CrossSourceEntityResolver (geodetic candidate generation, evidence fusion)
+│       └── normalization.py           # Authoritative field normalization & standard vocabulary engine
 ├── supabase/migrations/               # AUTHORITATIVE database schema — Phase 1 Steps 1.3–1.8 SQL
-├── tests/                             # Comprehensive test suites (67 automated tests passing)
+├── tests/                             # Comprehensive test suites (97 automated tests passing)
 │   ├── test_canonical_contracts.py    # 17 unit tests for Step 2.1 canonical input contract
 │   ├── test_openchargemap_adapter.py  # 20 unit tests for Step 2.2 OCM adapter & error isolation
 │   ├── test_ingestion_persistence.py  # 15 unit tests for Step 2.3 persistence & idempotency
 │   ├── test_entity_resolution.py      # 15 unit tests for Step 2.4 cross-source entity resolution
+│   ├── test_field_normalization.py    # 30 unit tests for Step 2.5 cross-source field normalization
 │   └── fixtures/                      # Offline representative test fixtures
 │       └── ocm_fixtures.py            # 18 labeled OCM fixture scenarios
 ├── Must Read/                         # Locked governance docs (Architecture, Design, Memory, Phases, PRD, Rules)
@@ -100,7 +102,8 @@ ChargePlus/
     ├── source_adapters_architecture.md           # Step 2.2 Source adapter framework specification
     ├── global_ev_charging_data_source_research.md # Authoritative source research & telemetry lock
     ├── step_2_3_first_live_source_persistence.md # Step 2.3 Persistence & idempotency documentation
-    └── step_2_4_cross_source_entity_resolution.md # Step 2.4 Entity resolution & evidence fusion documentation
+    ├── step_2_4_cross_source_entity_resolution.md # Step 2.4 Entity resolution & evidence fusion documentation
+    └── step_2_5_field_normalization.md           # Step 2.5 Field normalization & standard vocabulary documentation
 ```
 
 ---
@@ -161,7 +164,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to explore t
 | `npm run start` | Starts the production server |
 | `npm run typecheck` | Runs TypeScript compiler checks without emitting code (`tsc --noEmit`) |
 | `npm run lint` | Runs ESLint analysis across the frontend codebase |
-| `python -m pytest tests/ -v` | Runs the full Python test suite (67 tests: contracts, adapters, persistence, resolution) |
+| `python -m pytest tests/ -v` | Runs the full Python test suite (97 tests: contracts, adapters, persistence, resolution, normalization) |
 
 ---
 
@@ -183,7 +186,8 @@ supabase db push
   - **Step 2.2 — Source Adapters & OCM Ingestion:** COMPLETE & LOCKED (`BaseSourceAdapter`, `OpenChargeMapAdapter`, 18 test fixtures, 20 adapter tests passing, global source research & telemetry architecture locked).
   - **Step 2.3 — Connect First Live Data Source:** COMPLETE & LOCKED (`IngestionPersistenceService`, `IngestionRunner`, idempotency via `station_source_link`, fact observations, 15 tests passing, 52/52 cumulative).
   - **Step 2.4 — Cross-Source Entity Resolution:** COMPLETE & LOCKED (`CrossSourceEntityResolver`, geodetic candidate generation $\le 50$m, multi-signal evidence fusion, 15 tests passing, 67/67 cumulative).
-  - **Step 2.5 — Normalize Fields:** NEXT (cross-source operator, connector, tariff & electrical vocabulary normalization).
+  - **Step 2.5 — Normalize Fields:** COMPLETE & LOCKED (`backend/ingestion/normalization.py`, verified operator aliases, standard connector vocabulary, kW power conversion, pricing/hours structures, 30 tests passing, 97/97 cumulative).
+  - **Step 2.6 — Validate Records:** NEXT (ingestion-wide data quality validation & anomaly quarantine).
 
 
 

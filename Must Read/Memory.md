@@ -32,15 +32,17 @@ Every entry should include:
 
 ## Current project state
 
-**ACTIVE PHASE / STEP: Phase 2/6 — Step 2.4 COMPLETE (Ready for Step 2.5)**
+**ACTIVE PHASE / STEP: Phase 2/6 — Step 2.5 COMPLETE (Ready for Step 2.6)**
 - **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF (All 29 active tables, RLS, 4 views, 2 functions, constraints, indexes live verified on Supabase).
 - **Phase 2 (Real Data Ingestion & Data Quality)**:
   - Step 2.1 COMPLETE (Canonical Station/Connector Input Contract, Pydantic models, validation engine, 17/17 tests passing).
   - Step 2.2 COMPLETE & LOCKED (Base adapter framework, OpenChargeMapAdapter, global data source research lock, 37/37 tests passing).
   - Step 2.3 COMPLETE & LOCKED (Operational persistence service, idempotent runner, live Supabase PostgreSQL verified, 52/52 tests passing).
   - Step 2.4 COMPLETE & LOCKED (Cross-source entity resolution, multi-signal evidence fusion, 67/67 tests passing).
-- **Next Immediate Step**: Step 2.5 — Normalize fields (cross-source operator, connector, tariff & electrical vocabulary) (Do NOT start until explicitly instructed).
+  - Step 2.5 COMPLETE & LOCKED (Cross-source field normalization & standard vocabulary, 97/97 tests passing).
+- **Next Immediate Step**: Step 2.6 — Validate records (ingestion-wide data quality validation & anomaly quarantine) (Do NOT start until explicitly instructed).
 - **Production Database**: Live compatibility verified against Supabase; zero schema modifications; legacy warehouse tables untouched.
+
 
 ### Historical Progress Log
 - Phase / Step: Phase 1/6 — Step 1.1
@@ -203,3 +205,36 @@ Every entry should include:
 - Conceptual verification: Resolution engine is purely computational; evidence dossier is fully transparent with auditable reasons; ambiguity is preserved rather than discarded; source IDs remain source IDs; zero DB migrations; canonical source precedence and survivorship deferred to Step 2.7.
 - Blockers / waiting on: Step 2.5 (Normalize fields).
 - Next step: Phase 2 Step 2.5 — Normalize fields (cross-source operator, connector, tariff & electrical vocabulary).
+
+### 25 Sep 2026 — Phase 2 Step 2.5 Cross-Source Field Normalization & Standard Vocabulary
+- Phase / Step: Phase 2/6 — Step 2.5
+- What we built/changed:
+  1. Authoritative Field Normalization Engine (`backend/ingestion/normalization.py`):
+     - Pure computational, deterministic normalization layer converting vendor representations into ChargePlus canonical vocabulary.
+     - Normalized status tracking via `NormalizationStatus`: `NORMALIZED`, `UNCHANGED`, `UNKNOWN`, `UNMAPPED`, `INVALID`.
+     - Invariant: "Missing means missing" strictly preserved (missing power -> None, missing price -> None, missing PIN -> None, missing hours -> None). Never default to 0 kW or ₹0.
+     - Operator normalization: Canonical registry of verified Indian EV networks strictly supported by project evidence (`Tata Power`, `Jio-bp pulse`, `Ather Energy`, `Fortum Charge & Drive`, `ChargeZone`, `Statiq`, `Magenta ChargeGrid`, `Bolt.Earth`, `Zeon Charging`, `Kazam`, `Lithion Power`, `Stilt Mobility`, `ChargePlus`). Exact vs alias vs unmapped matching. Unrecognized operators remain unmapped and are never guessed.
+     - Connector vocabulary: Standardized mapping to `StandardConnectorType` (`CCS2`, `CCS1`, `Type 2`, `Type 1`, `CHAdeMO`, `GB/T`, `Bharat AC001`, `Bharat DC001`, `Other`). Preserves source-specific raw connector text without loss.
+     - Electrical normalization: Converts Watts to kW ($W / 1000.0$) and preserves direct kW. Voltage (V) and amperage (A) remain strictly separate. Current type mapped to `CurrentType` (`AC`, `DC`, `UNKNOWN`). Non-positive power/voltage/amperage rejected as `INVALID`.
+     - Address & Geocoordinates: Unicode NFKD normalization, punctuation spacing cleanup, safe abbreviation expansion (`Rd` $\to$ `Road`, `Opp` $\to$ `Opposite`), and infrastructure acronym preservation (`BKC`, `MIDC`, `MCA`). WGS 84 float coordinates preserved without aggressive rounding; individual 0.0 allowed on Equator/Prime Meridian; (0,0) rejected as Null Island.
+     - Indian 6-Digit PIN: Strips spaces/hyphens (`400 051` $\to$ `400051`) and enforces `^[1-9][0-9]{5}$`. Malformed PINs evaluate to `INVALID` with raw preserved, never silently repaired.
+     - Pricing / Tariff: Distinguishes tariff basis (`per_kwh`, `per_session`, `per_hour`). Explicit free charging represented as genuine semantic state (`is_free = True`, `price_per_kwh = 0.0`, `pricing_type = FREE`). Missing pricing remains `UNKNOWN` and is never converted to ₹0.
+     - Operating hours: Standardized `NormalizedOperatingHours` supporting 24x7 (`is_24_hours = True` with opening/closing `None` adhering to `chk_stations_hours`), daily intervals, overnight intervals, multiple intervals, and closed days. Unstructured text preserved with `is_structured = False` and `status = UNMAPPED`. Missing hours remain `UNKNOWN`.
+     - Non-destructive guarantee: Input records remain completely immutable (`copy.deepcopy` verified). Layer 1 provenance survives intact. Deterministic and idempotent: $\text{normalize}(\text{normalize}(x)) \equiv \text{normalize}(x)$.
+  2. Integration & Module Exports:
+     - Exported all normalization models, enums, and functions in `backend/ingestion/__init__.py`.
+  3. Comprehensive Unit Test Suite (`tests/test_field_normalization.py`):
+     - 30 unit tests covering all 32 required scenarios.
+     - Full automated test suite passes: 97/97 tests (17 contract + 20 adapter + 15 persistence + 15 resolution + 30 normalization).
+  4. Quality Gates:
+     - `pytest tests/` (97/97 passing).
+     - `npx tsc --noEmit` (0 errors).
+     - `npm run lint` (0 errors).
+     - `npm run build` (successful production build).
+  5. Documentation:
+     - Authored comprehensive specification in `docs/step_2_5_field_normalization.md`.
+- Current state: STEP 2.5 COMPLETE & LOCKED — READY FOR STEP 2.6.
+- Conceptual verification: Normalization standardizes representations into comparable forms; it does NOT merge entities, does NOT assign station UUIDs, and does NOT decide source precedence (deferred to Step 2.7). Zero database migrations required.
+- Blockers / waiting on: Step 2.6 (Validate records).
+- Next step: Phase 2 Step 2.6 — Validate records (ingestion-wide data quality validation & anomaly quarantine).
+

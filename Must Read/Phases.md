@@ -53,8 +53,8 @@ We will also perform a conceptual check, not just a code check.
 2.2 Build Python source-adapter structure & Global Source Strategy — COMPLETE / LOCKED (BASE ADAPTER, OCM ADAPTER, GLOBAL SOURCE RESEARCH, 18 FIXTURES, 37/37 TESTS PASSED)  
 2.3 Connect first legitimate station data source — COMPLETE / LOCKED (PERSISTENCE SERVICE, IDEMPOTENT RUNNER, LIVE SUPABASE VERIFIED, 52/52 TESTS PASSED)  
 2.4 Cross-source entity resolution (candidate generation & evidence fusion) — COMPLETE / LOCKED (PURE RESOLVER, MULTI-SIGNAL EVIDENCE FUSION, 67/67 TESTS PASSED)  
-2.5 Normalize fields (cross-source operator, connector, tariff & electrical vocabulary) — NEXT  
-2.6 Validate records (ingestion-wide data quality validation & anomaly quarantine)  
+2.5 Normalize fields (cross-source operator, connector, tariff & electrical vocabulary) — COMPLETE / LOCKED (CANONICAL VOCABULARIES, SAFE ALIASES, UNIT CONVERSIONS, 97/97 TESTS PASSED)  
+2.6 Validate records (ingestion-wide data quality validation & anomaly quarantine) — NEXT  
 2.7 Deduplicate/entity-match stations (canonical decision layer, source priority arbitration & survivorship)  
 2.8 Load canonical stations/connectors (transactional operational loading & mutation isolation)  
 2.9 Record freshness/provenance (freshness decay engine & observation provenance tracking)  
@@ -223,17 +223,35 @@ We will also perform a conceptual check, not just a code check.
     - Comprehensive test suite: 15 persistence/orchestration tests in `tests/test_ingestion_persistence.py`; all 52 tests passing in `tests/`
     - Live Supabase PostgreSQL database integration verified with zero schema modifications
     - Complete documentation in `docs/step_2_3_first_live_source_persistence.md`
+  - 2.4 Cross-source entity resolution & candidate engine — COMPLETE / LOCKED
+    - Geodetic candidate generation using Haversine indexing within 500m radius (`CrossSourceEntityResolver` in `backend/ingestion/resolution.py`)
+    - Multi-signal evidence fusion: Geodetic proximity, lexical name similarity (token sort ratio), address & hierarchy match, operator agreement, connector signature compatibility
+    - 4 distinct match states: `MATCH` (confidence $\ge 0.85$), `PROBABLE_MATCH` ($0.65 \le c < 0.85$), `AMBIGUOUS` ($0.45 \le c < 0.65$), `NON_MATCH` ($c < 0.45$)
+    - Strict boundary: Evaluates candidate physical identity without merging stations or mutating records
+    - 15 unit tests in `tests/test_entity_resolution.py`; all 67 tests passing in `tests/`
+    - Complete documentation in `docs/step_2_4_cross_source_entity_resolution.md`
+  - 2.5 Cross-source field normalization & standard vocabulary — COMPLETE / LOCKED
+    - Pure computational normalization engine (`backend/ingestion/normalization.py`) with zero external network or LLM dependencies
+    - Canonical vocabularies: Verified operator registry with explicit alias mapping (`Tata Power`, `Jio-bp pulse`, `Ather Energy`, `Fortum Charge & Drive`, `ChargeZone`, `Statiq`, `Magenta ChargeGrid`, `Bolt.Earth`, `Zeon Charging`, `Kazam`, `Lithion Power`, `Stilt Mobility`, `ChargePlus`)
+    - Connector vocabulary standardized to `StandardConnectorType` (`CCS2`, `CCS1`, `Type 2`, `Type 1`, `CHAdeMO`, `GB/T`, `Bharat AC001`, `Bharat DC001`, `Other`)
+    - Electrical normalization: Direct kW preserved, Watts converted to kW ($W / 1000.0$), voltage and amperage kept strictly independent
+    - Geospatial & Address: Unicode NFKD, safe road abbreviation expansion, infrastructure acronym preservation (`BKC`, `MIDC`), Indian 6-digit PIN enforcement (`^[1-9][0-9]{5}$`)
+    - Pricing & Hours: Distinguishes tariff basis (`per_kwh`, `per_session`, `per_hour`), explicit free charging distinguished from missing pricing, 24x7 schedule formatted to satisfy DB check constraint `chk_stations_hours`
+    - Invariant: "Missing means missing" strictly preserved (never defaulted to 0 kW, ₹0, or guessed schedules)
+    - Full idempotency and determinism: $\text{normalize}(\text{normalize}(x)) \equiv \text{normalize}(x)$ with zero runtime timestamp drift
+    - 30 unit tests in `tests/test_field_normalization.py`; all 97 tests passing in `tests/`
+    - Complete documentation in `docs/step_2_5_field_normalization.md`
 
 ### Current Phase & Step:
 - Current Phase: Phase 2/6 (Real Data Ingestion & Data Quality)
 - Remaining Phases: 4 (Phases 3, 4, 5, 6)
-- Current Step: Step 2.3 COMPLETE / LOCKED
-- Remaining Steps in Phase 2: 8 (Steps 2.4 through 2.11)
+- Current Step: Step 2.5 COMPLETE / LOCKED
+- Remaining Steps in Phase 2: 6 (Steps 2.6 through 2.11)
 
 ### What we are doing now:
-- Step 2.3 completed, verified live, and locked. Roadmap reconciled to establish distinct, non-overlapping boundaries for Steps 2.4–2.11. Ready to begin Step 2.4 upon instruction.
+- Step 2.5 completed, verified, audited, and locked. Ready to begin Step 2.6 upon instruction.
 
 ### What comes next:
-- **Step 2.4 — Cross-source entity resolution (candidate generation & evidence fusion)**: Spatial proximity indexing (PostGIS ST_DWithin $\le 50$m), multi-signal evidence fusion (name token similarity, operator slug matching, address/PIN overlap, connector signatures), and candidate evidence classification (MATCH / NON_MATCH / AMBIGUOUS) without destructive merging.
+- **Step 2.6 — Validate records (ingestion-wide data quality validation & anomaly quarantine)**: Data quality rules, boundary verification, completeness scoring, and quarantine routing for non-compliant records.
 
 
