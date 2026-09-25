@@ -1,7 +1,7 @@
 # ChargePlus — Data Dictionary / Schema & Table Inventory
 
-**Phase:** 1/6 — Step 1.8/10 (EXECUTED + VERIFIED)  
-**Status:** verified against linked Supabase project (source of truth = `supabase/migrations/`).  
+**Phase:** 1/6 — Complete Foundation (Steps 1.1–1.10 EXECUTED + LIVE VERIFIED + SIGNED OFF)  
+**Status:** fully verified against linked Supabase project (source of truth = `supabase/migrations/`).  
 **Boundary lock (must never drift):**
 - `public` = operational OLTP (29 explicit RLS policies, defense-in-depth column grants, security_invoker views)
 - `analytics` = canonical data warehouse OLAP (RLS enabled, 0 client policies, Python ETL writes only; no frontend writes)
