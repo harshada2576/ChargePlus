@@ -32,21 +32,16 @@ Every entry should include:
 
 ## Current project state
 
-**ACTIVE PHASE / STEP: Phase 2/6 — Step 2.10 COMPLETE (Ready for Step 2.11)**
-- **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF (All 29 active tables, RLS, 4 views, 2 functions, constraints, indexes live verified on Supabase).
-- **Phase 2 (Real Data Ingestion & Data Quality)**:
-  - Step 2.1 COMPLETE (Canonical Station/Connector Input Contract, Pydantic models, validation engine, 17/17 tests passing).
-  - Step 2.2 COMPLETE & LOCKED (Base adapter framework, OpenChargeMapAdapter, global data source research lock, 37/37 tests passing).
-  - Step 2.3 COMPLETE & LOCKED (Operational persistence service, idempotent runner, live Supabase PostgreSQL verified, 52/52 tests passing).
-  - Step 2.4 COMPLETE & LOCKED (Cross-source entity resolution, multi-signal evidence fusion, 67/67 tests passing).
-  - Step 2.5 COMPLETE & LOCKED (Cross-source field normalization & standard vocabulary, 97/97 tests passing).
-  - Step 2.6 COMPLETE & LOCKED (Ingestion-wide data quality validation & anomaly quarantine, 137/137 tests passing).
-  - Step 2.7 COMPLETE & LOCKED (Canonical deduplication decision layer & source merging, 176/176 tests passing).
-  - Step 2.8 COMPLETE & LOCKED (Transactional operational loading, mutation isolation, connector survivorship persistence, SCD2 dim_station history, 43 tests passing, 219/219 cumulative).
-  - Step 2.9 COMPLETE & LOCKED (Pure deterministic freshness decay engine, 4 distinct timestamps, STALE != UNAVAILABLE, pluggable decay, 33 tests passing, 252/252 cumulative).
-  - Step 2.10 COMPLETE & LOCKED (Scheduled ingestion workflows, polling daemons, retry/backoff policies, PostgreSQL session advisory locks, public.ingestion_runs audit log, 32 tests passing, 284/284 cumulative).
-- **Next Immediate Step**: Step 2.11 — Audit coverage (Mumbai coverage audit, missing-field metrics, final Phase 2 sign-off) (Do NOT start until explicitly instructed).
-- **Production Database**: Live compatibility verified against Supabase; migration 20260926000001_step_2_10_ingestion_runs.sql executed; zero test pollution (2 stations, 2 connectors, 1 observation, 0 leaked ingestion runs).
+**PHASE 2 COMPLETE — READY FOR PHASE 3**
+
+- **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF.
+- **Phase 2 (Real Data Ingestion & Data Quality, Steps 2.1–2.11)**: COMPLETE & SIGNED OFF.
+  - 348/348 tests passing across 10 test suites.
+  - Live audit confirmed: 2 canonical stations in MMR; all pipeline layers verified.
+  - Report: `docs/step_2_11_mumbai_coverage_and_data_quality_audit.md`.
+- **Next Phase**: Phase 3 — Connect the Locked Frontend.
+- **Next Step**: Step 3.1 — Replace hardcoded station dataset with real Supabase data.
+- **Production Database**: Live; `public.ingestion_runs` migration executed; 2 stations, 2 connectors, 1 observation, 0 test pollution.
 
 
 ### Historical Progress Log
@@ -445,10 +440,36 @@ Every entry should include:
      - Live database inspected: 0 test pollution (2 stations, 2 connectors, 1 observation, 0 leaked ingestion runs).
   8. Documentation:
      - Authored comprehensive specification in `docs/step_2_10_scheduled_ingestion_and_retry_policies.md`.
-- Current state: STEP 2.10 COMPLETE & LOCKED — READY FOR STEP 2.11.
+- Current state: STEP 2.10 COMPLETE & LOCKED.
 - Conceptual verification: Single pipeline; explicit transient vs permanent retry classification; bounded backoff with jitter; PostgreSQL advisory locks prevent concurrency races; observation-level idempotency prevents duplicate history; measured facts in `public.ingestion_runs`; zero fake telemetry; zero secrets in logs; clean database state.
-- Blockers / waiting on: Step 2.11 (Audit coverage: Mumbai stations, missing-field rates, Phase 2 sign-off).
-- Next step: Phase 2 Step 2.11 — Audit coverage: Verify Mumbai stations against requirements, review missing-field rates, and complete final Phase 2 sign-off.
+- Blockers / waiting on: None.
+- Next step: Step 2.11.
 
-
+### 26 Sep 2026 — Phase 2 Step 2.11 — Mumbai Pilot Coverage & Data Quality Audit (PHASE 2 SIGN-OFF)
+- Phase / Step: Phase 2/6 — Step 2.11 — COMPLETE & LOCKED
+- What we built/changed:
+  1. Authoritative read-only audit engine (`backend/ingestion/audit.py`, ~1100 lines): `MumbaiCoverageAuditor`, `AuditConfig`, 11 dataclasses, `format_report()` markdown renderer, and `main()` CLI.
+  2. Live database audit executed at `as_of=2026-09-26T06:30:00Z` against real Supabase PostgreSQL instance.
+  3. Comprehensive test suite (`tests/test_mumbai_coverage_audit.py`, 64 tests) covering all 22 testing requirements in spec including: geographic classification, freshness, stale-≠-unavailable, static-vs-telemetry isolation, determinism, as_of behaviour, empty/partial datasets, ML readiness, no-mutation invariant.
+  4. Live audit report written to `docs/step_2_11_mumbai_coverage_and_data_quality_audit.md`.
+  5. Updated `Must Read/Phases.md` and `Must Read/Memory.md` to close Phase 2.
+- Key audit findings:
+  - 2 canonical stations, both in MMR bounding box (100% in-pilot).
+  - 2/48 grid cells occupied — 46 empty cells do NOT indicate zero real chargers (source coverage limitation).
+  - 1 genuine STALE observation (March 2024, availability=available) — preserved as historical evidence; NOT rewritten as unavailable.
+  - All connectors: CCS2, 60 kW, quantity 2 — zero connector diversity in current dataset.
+  - Pricing: 0/2 stations — all price_per_kwh null; displayed as UNKNOWN not ₹0.
+  - OpenChargeMap static StatusTypeID 50 correctly NOT counted as live telemetry.
+  - ML maturity: COLD — 0 stations with repeated snapshots; queue prediction unsupportable.
+  - No fake data, no mutations, no credential exposure.
+- Current state: STEP 2.11 COMPLETE & LOCKED — PHASE 2 COMPLETE — READY FOR PHASE 3.
+- Conceptual verification:
+  - STALE ≠ UNAVAILABLE: Confirmed in test and live audit.
+  - Missing pricing ≠ Free: Confirmed — no pricing data treated as unknown.
+  - Missing connector attribute ≠ zero connectors: Confirmed.
+  - Static OCM status ≠ live telemetry: Confirmed — tested separately.
+  - No fabricated data: Confirmed.
+  - No database mutations from audit: Confirmed — read-only query set.
+- Blockers / waiting on: None — Phase 2 fully closed.
+- Next step: Phase 3, Step 3.1 — Replace hardcoded station dataset with real Supabase API.
 
