@@ -41,6 +41,13 @@ from backend.ingestion.persistence import (
     IngestionPersistenceService,
     PersistenceStatus,
 )
+from backend.ingestion.scheduling import (
+    IngestionRun,
+    PollingDaemon,
+    RetryPolicy,
+    ScheduleConfig,
+    ScheduledIngestionOrchestrator,
+)
 
 # Configure structured logging without dumping sensitive tokens
 logging.basicConfig(
@@ -305,11 +312,29 @@ class IngestionRunner:
         summary.duration_seconds = time.time() - start_time
         return summary
 
+    def run_scheduled(
+        self,
+        config: ScheduleConfig,
+        fixtures_data: Optional[list[dict[str, Any]]] = None,
+    ) -> IngestionRun:
+        """Executes the pipeline via ScheduledIngestionOrchestrator with retries, locks, and run accounting."""
+        orchestrator = ScheduledIngestionOrchestrator(
+            runner=self,
+            persistence_service=self.persistence_service,
+        )
+        return orchestrator.execute_scheduled_run(config, fixtures_data=fixtures_data)
+
 
 def main() -> None:
     """Command-line entrypoint for executing station ingestion."""
     parser = argparse.ArgumentParser(
-        description="ChargePlus EV Station Data Ingestion Orchestrator (Phase 2 Step 2.3)"
+        description="ChargePlus EV Station Data Ingestion Orchestrator & Polling Daemon (Phase 2 Step 2.10)"
+    )
+    parser.add_argument(
+        "--source",
+        type=str,
+        default="open_charge_map",
+        help="Source identifier to ingest (default: open_charge_map)",
     )
     parser.add_argument(
         "--dry-run",
@@ -328,6 +353,12 @@ def main() -> None:
         help="Expand query scope from Mumbai MMR to nationwide India",
     )
     parser.add_argument(
+        "--scope",
+        type=str,
+        default="mumbai",
+        help="Custom scope label for run accounting and locking (default: mumbai)",
+    )
+    parser.add_argument(
         "--use-fixtures",
         action="store_true",
         help="Run against offline representative test fixtures instead of live API",
@@ -336,6 +367,34 @@ def main() -> None:
         "--json",
         action="store_true",
         help="Output summary metrics as machine-readable JSON",
+    )
+    parser.add_argument(
+        "--daemon",
+        action="store_true",
+        help="Run as an ongoing background polling daemon",
+    )
+    parser.add_argument(
+        "--interval",
+        type=int,
+        default=300,
+        help="Polling interval in seconds for daemon mode (default: 300)",
+    )
+    parser.add_argument(
+        "--run-once",
+        action="store_true",
+        help="Execute a single scheduled run through the orchestrator and exit",
+    )
+    parser.add_argument(
+        "--max-attempts",
+        type=int,
+        default=3,
+        help="Maximum retry attempts for transient errors (default: 3)",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=30.0,
+        help="API request timeout in seconds (default: 30.0)",
     )
 
     args = parser.parse_args()
@@ -362,21 +421,57 @@ def main() -> None:
         ]
 
     runner = IngestionRunner()
-    try:
-        summary = runner.run(
-            dry_run=args.dry_run,
-            limit=args.limit,
-            mumbai_only=not args.all_india,
-            fixtures_data=fixtures_data,
-        )
 
-        if args.json:
-            print(json.dumps(summary.to_dict(), indent=2))
+    # Determine scope description
+    scope_name = "india" if args.all_india else args.scope
+
+    # Build retry policy
+    retry_policy = RetryPolicy(
+        max_attempts=args.max_attempts,
+        initial_delay_seconds=1.0,
+        max_delay_seconds=args.timeout,
+    )
+
+    # Build schedule config
+    schedule_config = ScheduleConfig(
+        source_id=args.source,
+        enabled=True,
+        interval_seconds=args.interval,
+        limit=args.limit,
+        scope=scope_name,
+        timeout_seconds=args.timeout,
+        retry_policy=retry_policy,
+        dry_run=args.dry_run,
+    )
+
+    try:
+        if args.daemon:
+            orchestrator = ScheduledIngestionOrchestrator(runner=runner)
+            daemon = PollingDaemon(
+                orchestrator=orchestrator,
+                schedules=[schedule_config],
+            )
+            daemon.start(run_once=False)
+        elif args.run_once:
+            run = runner.run_scheduled(config=schedule_config, fixtures_data=fixtures_data)
+            if args.json:
+                print(json.dumps(run.to_dict(), indent=2))
+            else:
+                print(f"Run ID: {run.run_id} | State: {run.state.value} | Fetched: {run.records_fetched} | Persisted: {run.stations_persisted}")
         else:
-            summary.print_report()
+            summary = runner.run(
+                dry_run=args.dry_run,
+                limit=args.limit,
+                mumbai_only=not args.all_india,
+                fixtures_data=fixtures_data,
+            )
+            if args.json:
+                print(json.dumps(summary.to_dict(), indent=2))
+            else:
+                summary.print_report()
 
     except Exception as e:
-        logger.error("Ingestion failed: %s", e)
+        logger.error("Ingestion failed: %s", _scrub_secrets(str(e)))
         sys.exit(1)
 
 

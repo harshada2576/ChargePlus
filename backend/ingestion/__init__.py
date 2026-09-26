@@ -122,6 +122,17 @@ from backend.ingestion.freshness import (
     InformationType,
     StationFreshnessSummary,
 )
+from backend.ingestion.scheduling import (
+    ConcurrentRunError,
+    FailureClassification,
+    IngestionConcurrencyLock,
+    IngestionRun,
+    IngestionRunState,
+    PollingDaemon,
+    RetryPolicy,
+    ScheduleConfig,
+    ScheduledIngestionOrchestrator,
+)
 
 __all__ = [
     "CONTRACT_VERSION",
@@ -221,6 +232,15 @@ __all__ = [
     "OCM_STATIC_METADATA_POLICY",
     "FreshnessPolicyRegistry",
     "FreshnessEngine",
+    "IngestionRunState",
+    "FailureClassification",
+    "RetryPolicy",
+    "ScheduleConfig",
+    "IngestionRun",
+    "IngestionConcurrencyLock",
+    "ConcurrentRunError",
+    "ScheduledIngestionOrchestrator",
+    "PollingDaemon",
 ]
 
 

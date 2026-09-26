@@ -18,6 +18,7 @@ ARCHITECTURAL PRINCIPLES:
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
+import json
 import logging
 import re
 from typing import Any, Optional, Union
@@ -735,6 +736,19 @@ class IngestionPersistenceService:
         recv_time = max(obs_time, retrieved_utc)  # Enforce chk_observations_causal_time (received_at >= observed_at)
 
         with self.conn.cursor() as cur:
+            # 1. Idempotency check: Skip duplicate insertion of identical observation
+            if raw_payload_hash:
+                cur.execute(
+                    """
+                    SELECT id FROM public.station_observations
+                    WHERE station_id = %s AND observed_at = %s AND source_payload_hash = %s
+                    LIMIT 1;
+                    """,
+                    (str(station_id), obs_time, raw_payload_hash),
+                )
+                if cur.fetchone():
+                    return None
+
             cur.execute(
                 """
                 INSERT INTO public.station_observations (
@@ -2075,3 +2089,108 @@ class IngestionPersistenceService:
             connectors_persisted=conn_count,
             observations_persisted=obs_count,
         )
+
+    def persist_ingestion_run(self, run: Any, dry_run: bool = False) -> Optional[str]:
+        """Persists or updates an IngestionRun audit record in public.ingestion_runs.
+        
+        Args:
+            run: IngestionRun instance.
+            dry_run: If True, skips database writes and returns run.run_id.
+            
+        Returns:
+            The run UUID string if recorded, or None if skipped/failed.
+        """
+        if dry_run or self.conn is None:
+            return getattr(run, "run_id", None)
+
+        cur = self.conn.cursor()
+        try:
+            # 1. Resolve source_id UUID from public.data_sources if possible
+            source_uuid = None
+            source_name = getattr(run, "source_name", getattr(run, "source_id", "unknown"))
+            try:
+                cur.execute("SELECT id FROM public.data_sources WHERE name = %s LIMIT 1;", (source_name,))
+                row = cur.fetchone()
+                if row:
+                    source_uuid = row[0]
+            except Exception:
+                pass
+
+            # 2. Sanitize error summary
+            error_summary = _scrub_secrets(getattr(run, "error_summary", None))
+
+            # 3. Upsert into public.ingestion_runs
+            metadata_json = json.dumps(getattr(run, "metadata", {}))
+
+            insert_sql = """
+                INSERT INTO public.ingestion_runs (
+                    id, source_id, source_name, scope, state, started_at, completed_at,
+                    duration_seconds, attempt_count, records_fetched, records_parsed,
+                    records_accepted, records_accepted_with_warnings, records_quarantined,
+                    records_rejected, stations_persisted, stations_updated, stations_unchanged,
+                    connectors_persisted, observations_persisted, error_summary, metadata
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s,
+                    %s, %s, %s,
+                    %s, %s, %s, %s,
+                    %s, %s, %s, %s
+                )
+                ON CONFLICT (id) DO UPDATE SET
+                    state = EXCLUDED.state,
+                    completed_at = EXCLUDED.completed_at,
+                    duration_seconds = EXCLUDED.duration_seconds,
+                    attempt_count = EXCLUDED.attempt_count,
+                    records_fetched = EXCLUDED.records_fetched,
+                    records_parsed = EXCLUDED.records_parsed,
+                    records_accepted = EXCLUDED.records_accepted,
+                    records_accepted_with_warnings = EXCLUDED.records_accepted_with_warnings,
+                    records_quarantined = EXCLUDED.records_quarantined,
+                    records_rejected = EXCLUDED.records_rejected,
+                    stations_persisted = EXCLUDED.stations_persisted,
+                    stations_updated = EXCLUDED.stations_updated,
+                    stations_unchanged = EXCLUDED.stations_unchanged,
+                    connectors_persisted = EXCLUDED.connectors_persisted,
+                    observations_persisted = EXCLUDED.observations_persisted,
+                    error_summary = EXCLUDED.error_summary,
+                    metadata = EXCLUDED.metadata;
+            """
+            cur.execute(
+                insert_sql,
+                (
+                    run.run_id,
+                    source_uuid,
+                    source_name,
+                    getattr(run, "scope", "default"),
+                    getattr(run.state, "value", str(run.state)),
+                    getattr(run, "started_at", datetime.now(timezone.utc)),
+                    getattr(run, "completed_at", None),
+                    getattr(run, "duration_seconds", None),
+                    getattr(run, "attempt_count", 1),
+                    getattr(run, "records_fetched", 0),
+                    getattr(run, "records_parsed", 0),
+                    getattr(run, "records_accepted", 0),
+                    getattr(run, "records_accepted_with_warnings", 0),
+                    getattr(run, "records_quarantined", 0),
+                    getattr(run, "records_rejected", 0),
+                    getattr(run, "stations_persisted", 0),
+                    getattr(run, "stations_updated", 0),
+                    getattr(run, "stations_unchanged", 0),
+                    getattr(run, "connectors_persisted", 0),
+                    getattr(run, "observations_persisted", 0),
+                    error_summary,
+                    metadata_json,
+                ),
+            )
+            self.conn.commit()
+            return str(run.run_id)
+        except Exception as ex:
+            if self.conn:
+                try:
+                    self.conn.rollback()
+                except Exception:
+                    pass
+            logger.error("Failed to persist ingestion run: %s", _scrub_secrets(str(ex)))
+            return None
+        finally:
+            cur.close()
