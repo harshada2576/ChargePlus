@@ -89,7 +89,7 @@ ChargePlus/
 │       ├── normalization.py           # Authoritative field normalization & standard vocabulary engine
 │       └── deduplication.py           # Canonical deduplication decision layer & field survivorship policy
 ├── supabase/migrations/               # AUTHORITATIVE database schema — Phase 1 Steps 1.3–1.8 SQL
-├── tests/                             # Comprehensive test suites (176 automated tests passing)
+├── tests/                             # Comprehensive test suites (219 automated tests passing)
 │   ├── test_canonical_contracts.py    # 17 unit tests for Step 2.1 canonical input contract
 │   ├── test_openchargemap_adapter.py  # 20 unit tests for Step 2.2 OCM adapter & error isolation
 │   ├── test_ingestion_persistence.py  # 15 unit tests for Step 2.3 persistence & idempotency
@@ -97,6 +97,7 @@ ChargePlus/
 │   ├── test_field_normalization.py    # 30 unit tests for Step 2.5 cross-source field normalization
 │   ├── test_data_quality_validation.py # 40 unit tests for Step 2.6 data quality validation & quarantine
 │   ├── test_canonical_deduplication.py # 39 unit tests for Step 2.7 canonical decision layer & merging
+│   ├── test_canonical_operational_loading.py # 43 unit tests for Step 2.8 canonical loading & mutation isolation
 │   └── fixtures/                      # Offline representative test fixtures
 │       └── ocm_fixtures.py            # 18 labeled OCM fixture scenarios
 ├── Must Read/                         # Locked governance docs (Architecture, Design, Memory, Phases, PRD, Rules)
@@ -107,8 +108,9 @@ ChargePlus/
     ├── step_2_3_first_live_source_persistence.md # Step 2.3 Persistence & idempotency documentation
     ├── step_2_4_cross_source_entity_resolution.md # Step 2.4 Entity resolution & evidence fusion documentation
     ├── step_2_5_field_normalization.md           # Step 2.5 Field normalization & standard vocabulary documentation
-│   ├── step_2_6_data_quality_validation.md       # Step 2.6 Data quality validation & anomaly quarantine documentation
-│   └── step_2_7_canonical_deduplication_and_source_merging.md # Step 2.7 Canonical deduplication & survivorship
+    ├── step_2_6_data_quality_validation.md       # Step 2.6 Data quality validation & anomaly quarantine documentation
+    ├── step_2_7_canonical_deduplication_and_source_merging.md # Step 2.7 Canonical deduplication & survivorship
+    └── step_2_8_canonical_operational_loading_and_mutation_isolation.md # Step 2.8 Canonical operational loading & mutation isolation
 ```
 
 ---
@@ -169,7 +171,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to explore t
 | `npm run start` | Starts the production server |
 | `npm run typecheck` | Runs TypeScript compiler checks without emitting code (`tsc --noEmit`) |
 | `npm run lint` | Runs ESLint analysis across the frontend codebase |
-| `python -m pytest tests/ -v` | Runs the full Python test suite (176 tests: contracts, adapters, persistence, resolution, normalization, validation, deduplication) |
+| `python -m pytest tests/ -v` | Runs the full Python test suite (219 tests: contracts, adapters, persistence, resolution, normalization, validation, deduplication, operational loading) |
 
 ---
 
@@ -194,7 +196,8 @@ supabase db push
   - **Step 2.5 — Normalize Fields:** COMPLETE & LOCKED (`backend/ingestion/normalization.py`, verified operator aliases, standard connector vocabulary, kW power conversion, pricing/hours structures, 30 tests passing, 97/97 cumulative).
   - **Step 2.6 — Validate Records:** COMPLETE & LOCKED (`backend/ingestion/validation.py`, multi-layered data quality validator, stable `DQ-*` rule catalog, in-memory quarantine ledger, deterministic batch reporting, 40 tests passing, 137/137 cumulative).
   - **Step 2.7 — Canonical Station Decision Layer:** COMPLETE & LOCKED (`backend/ingestion/deduplication.py`, `CanonicalDeduplicationEngine`, `FieldSurvivorshipPolicy`, 4 decision states, 2-level connector survivorship, deterministic cluster hashing, 39 tests passing, 176/176 cumulative).
-  - **Step 2.8 — Persist Deduplicated Canonical Stations & Connectors:** NEXT (transactional operational database loading & mutation isolation for `public.stations`, `public.connectors`, `public.station_source_link`).
+  - **Step 2.8 — Persist Deduplicated Canonical Stations & Connectors:** COMPLETE & LOCKED (`backend/ingestion/persistence.py`, `persist_canonical_decision`, transactional operational loading, atomic mutation isolation, SCD2 dimension history in `analytics.dim_station`, authoritative survivorship persistence without override, 43 tests passing, 219/219 cumulative).
+  - **Step 2.9 — Record Freshness/Provenance:** NEXT (observation freshness decay engine, staleness curves, and provenance tracking).
 
 
 
