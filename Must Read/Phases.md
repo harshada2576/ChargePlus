@@ -56,8 +56,8 @@ We will also perform a conceptual check, not just a code check.
 2.5 Normalize fields (cross-source operator, connector, tariff & electrical vocabulary) — COMPLETE / LOCKED (CANONICAL VOCABULARIES, SAFE ALIASES, UNIT CONVERSIONS, 97/97 TESTS PASSED)  
 2.6 Validate records (ingestion-wide data quality validation & anomaly quarantine) — COMPLETE / LOCKED (MULTI-LAYERED VALIDATOR, STABLE DQ RULES, ANOMALY QUARANTINE, 137/137 TESTS PASSED)  
 2.7 Deduplicate/entity-match stations (canonical decision layer, source priority arbitration & survivorship) — COMPLETE / LOCKED (CANONICAL DECISION LAYER, DEDUPLICATION, REFINED CONNECTOR SURVIVORSHIP, 176/176 TESTS PASSED)  
-2.8 Load canonical stations/connectors (transactional operational loading & mutation isolation) — NEXT  
-2.9 Record freshness/provenance (freshness decay engine & observation provenance tracking)  
+2.8 Load canonical stations/connectors (transactional operational loading & mutation isolation) — COMPLETE / LOCKED (TRANSACTIONAL OPERATIONAL LOADING & MUTATION ISOLATION, 43 TESTS, 219/219 CUMULATIVE)  
+2.9 Record freshness/provenance (freshness decay engine & observation provenance tracking) — NEXT  
 2.10 Schedule/repeat ingestion (polling daemons, cron scheduling & retry/backoff policies)  
 2.11 Verify Mumbai coverage (spatial audit, missing-field rates & Phase 2 quality sign-off)
 
@@ -173,8 +173,8 @@ We will also perform a conceptual check, not just a code check.
 
 - **Current Phase**: Phase 2/6 — Real Data Ingestion & Data Quality
 - **Remaining Phases**: 4 (Phase 3: Connect Locked Frontend, Phase 4: Warehouse, Analytics & Data Quality, Phase 5: Data Mining, Forecasting & Recommendations, Phase 6: Production & Public Beta)
-- **Current Step**: Step 2.1 COMPLETE — Ready for Step 2.2
-- **Remaining Steps in Phase 2**: 10 (Steps 2.2 through 2.11)
+- **Current Step**: Step 2.8 COMPLETE / LOCKED — Ready for Step 2.9
+- **Remaining Steps in Phase 2**: 3 (Steps 2.9 through 2.11)
 
 ### What is complete:
 - **Phase 1 — Foundation & Real Database (Steps 1.1–1.10) — COMPLETE & SIGNED OFF**:
@@ -266,17 +266,27 @@ We will also perform a conceptual check, not just a code check.
     - Deterministic & idempotent: Deterministic cluster hashing, order-independent evaluation, zero `datetime.now()` execution drift
     - 39 comprehensive unit tests in `tests/test_canonical_deduplication.py`; all 176 tests passing in `tests/`
     - Complete documentation in `docs/step_2_7_canonical_deduplication_and_source_merging.md`
+  - 2.8 Load canonical stations/connectors (transactional operational loading & mutation isolation) — COMPLETE / LOCKED
+    - Transactional persistence boundary (`backend/ingestion/persistence.py`) with `persist_canonical_decision` and `persist_canonical_batch`
+    - Atomic transaction control: isolated database transaction per decision with `commit()` on success, `rollback()` on failure, and sensitive credential scrubbing
+    - Authoritative survivorship persistence: "Step 2.7 decides. Step 2.8 persists." Preserves explicit Step 2.7 quantity decisions without independently applying `max(existing, incoming)`
+    - Non-destructive connector reconciliation: Capacity groups matched by `(station_id, connector_type, power_kw, charging_standard)`; omission in newer payloads never deletes existing equipment
+    - Station attribute reconciliation: "Missing != Conflict" via SQL `COALESCE` preserving established canonical attributes; `chk_stations_hours` constraint strictly honored
+    - Provenance link enforcement: `public.station_source_link` enforces `uq_station_source_link_source_record` and prevents unsafe station reassignments
+    - Conformed warehouse dimension history: `analytics.dim_station` SCD Type 2 tracking, closing old active versions and opening new versions with incremented version numbers
+    - 43 comprehensive unit tests in `tests/test_canonical_operational_loading.py`; all 219 tests passing in `tests/`
+    - Complete documentation in `docs/step_2_8_canonical_operational_loading_and_mutation_isolation.md`
 
 ### Current Phase & Step:
 - Current Phase: Phase 2/6 (Real Data Ingestion & Data Quality)
 - Remaining Phases: 4 (Phases 3, 4, 5, 6)
-- Current Step: Step 2.7 COMPLETE / LOCKED
-- Remaining Steps in Phase 2: 4 (Steps 2.8 through 2.11)
+- Current Step: Step 2.8 COMPLETE / LOCKED
+- Remaining Steps in Phase 2: 3 (Steps 2.9 through 2.11)
 
 ### What we are doing now:
-- Step 2.7 completed, verified, tested, and locked. Ready to begin Step 2.8 upon instruction.
+- Step 2.8 completed, verified, audited, tested, and locked. Ready to begin Step 2.9 upon instruction.
 
 ### What comes next:
-- **Step 2.8 — Persist deduplicated canonical stations & connectors**: Operational database persistence of canonical decisions into `public.stations`, `public.connectors`, and `public.station_source_link`.
+- **Step 2.9 — Record freshness/provenance**: Observation freshness decay engine, staleness curves, and provenance tracking.
 
 
