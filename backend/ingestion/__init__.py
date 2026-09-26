@@ -37,6 +37,9 @@ from backend.ingestion.validation import (
 )
 
 from backend.ingestion.persistence import (
+    BatchCanonicalPersistenceReport,
+    CanonicalPersistenceResult,
+    CanonicalPersistenceStatus,
     IngestionPersistenceService,
     PersistenceStatus,
     StationPersistenceResult,
@@ -130,6 +133,9 @@ __all__ = [
     "IngestionPersistenceService",
     "PersistenceStatus",
     "StationPersistenceResult",
+    "CanonicalPersistenceStatus",
+    "CanonicalPersistenceResult",
+    "BatchCanonicalPersistenceReport",
     "IngestionRunner",
     "IngestionSummary",
     "MatchState",
