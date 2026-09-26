@@ -105,6 +105,23 @@ from backend.ingestion.deduplication import (
     FieldSurvivorshipPolicy,
     SurvivorshipStrategy,
 )
+from backend.ingestion.freshness import (
+    DEFAULT_LIVE_TELEMETRY_POLICY,
+    DEFAULT_OPERATIONAL_STATUS_POLICY,
+    DEFAULT_PRICING_POLICY,
+    DEFAULT_STATIC_METADATA_POLICY,
+    OCM_LIVE_TELEMETRY_POLICY,
+    OCM_STATIC_METADATA_POLICY,
+    DecayCurve,
+    FreshnessBasis,
+    FreshnessEngine,
+    FreshnessEvaluationResult,
+    FreshnessPolicy,
+    FreshnessPolicyRegistry,
+    FreshnessState,
+    InformationType,
+    StationFreshnessSummary,
+)
 
 __all__ = [
     "CONTRACT_VERSION",
@@ -189,6 +206,22 @@ __all__ = [
     "CanonicalResolutionDecision",
     "FieldSurvivorshipPolicy",
     "CanonicalDeduplicationEngine",
+    "FreshnessState",
+    "FreshnessBasis",
+    "InformationType",
+    "DecayCurve",
+    "FreshnessPolicy",
+    "FreshnessEvaluationResult",
+    "StationFreshnessSummary",
+    "DEFAULT_LIVE_TELEMETRY_POLICY",
+    "DEFAULT_OPERATIONAL_STATUS_POLICY",
+    "DEFAULT_STATIC_METADATA_POLICY",
+    "DEFAULT_PRICING_POLICY",
+    "OCM_LIVE_TELEMETRY_POLICY",
+    "OCM_STATIC_METADATA_POLICY",
+    "FreshnessPolicyRegistry",
+    "FreshnessEngine",
 ]
+
 
 

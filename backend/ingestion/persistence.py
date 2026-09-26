@@ -728,8 +728,11 @@ class IngestionPersistenceService:
             avail_conn = min(max(0, avail_conn), tot_conn)
 
         obs_time = obs.observed_at if obs.observed_at.tzinfo else obs.observed_at.replace(tzinfo=timezone.utc)
-        now_utc = datetime.now(timezone.utc)
-        recv_time = max(obs_time, now_utc)  # Enforce chk_observations_causal_time (received_at >= observed_at)
+        if obs.retrieved_at:
+            retrieved_utc = obs.retrieved_at if obs.retrieved_at.tzinfo else obs.retrieved_at.replace(tzinfo=timezone.utc)
+        else:
+            retrieved_utc = datetime.now(timezone.utc)
+        recv_time = max(obs_time, retrieved_utc)  # Enforce chk_observations_causal_time (received_at >= observed_at)
 
         with self.conn.cursor() as cur:
             cur.execute(
