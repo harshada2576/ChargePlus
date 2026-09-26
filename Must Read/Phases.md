@@ -57,8 +57,8 @@ We will also perform a conceptual check, not just a code check.
 2.6 Validate records (ingestion-wide data quality validation & anomaly quarantine) — COMPLETE / LOCKED (MULTI-LAYERED VALIDATOR, STABLE DQ RULES, ANOMALY QUARANTINE, 137/137 TESTS PASSED)  
 2.7 Deduplicate/entity-match stations (canonical decision layer, source priority arbitration & survivorship) — COMPLETE / LOCKED (CANONICAL DECISION LAYER, DEDUPLICATION, REFINED CONNECTOR SURVIVORSHIP, 176/176 TESTS PASSED)  
 2.8 Load canonical stations/connectors (transactional operational loading & mutation isolation) — COMPLETE / LOCKED (TRANSACTIONAL OPERATIONAL LOADING & MUTATION ISOLATION, 43 TESTS, 219/219 CUMULATIVE)  
-2.9 Record freshness/provenance (freshness decay engine & observation provenance tracking) — NEXT  
-2.10 Schedule/repeat ingestion (polling daemons, cron scheduling & retry/backoff policies)  
+2.9 Record freshness/provenance (freshness decay engine & observation provenance tracking) — COMPLETE / LOCKED (PURE DETERMINISTIC ENGINE, 4 TIMESTAMPS, STALE != UNAVAILABLE, PLUGGABLE DECAY, 33 TESTS, 252/252 CUMULATIVE)  
+2.10 Schedule/repeat ingestion (polling daemons, cron scheduling & retry/backoff policies) — NEXT  
 2.11 Verify Mumbai coverage (spatial audit, missing-field rates & Phase 2 quality sign-off)
 
 ### Concept check
@@ -173,8 +173,8 @@ We will also perform a conceptual check, not just a code check.
 
 - **Current Phase**: Phase 2/6 — Real Data Ingestion & Data Quality
 - **Remaining Phases**: 4 (Phase 3: Connect Locked Frontend, Phase 4: Warehouse, Analytics & Data Quality, Phase 5: Data Mining, Forecasting & Recommendations, Phase 6: Production & Public Beta)
-- **Current Step**: Step 2.8 COMPLETE / LOCKED — Ready for Step 2.9
-- **Remaining Steps in Phase 2**: 3 (Steps 2.9 through 2.11)
+- **Current Step**: Step 2.9 COMPLETE / LOCKED — Ready for Step 2.10
+- **Remaining Steps in Phase 2**: 2 (Steps 2.10 and 2.11)
 
 ### What is complete:
 - **Phase 1 — Foundation & Real Database (Steps 1.1–1.10) — COMPLETE & SIGNED OFF**:
@@ -276,17 +276,28 @@ We will also perform a conceptual check, not just a code check.
     - Conformed warehouse dimension history: `analytics.dim_station` SCD Type 2 tracking, closing old active versions and opening new versions with incremented version numbers
     - 43 comprehensive unit tests in `tests/test_canonical_operational_loading.py`; all 219 tests passing in `tests/`
     - Complete documentation in `docs/step_2_8_canonical_operational_loading_and_mutation_isolation.md`
+  - 2.9 Record freshness/provenance (freshness engine, observation provenance & staleness decay) — COMPLETE / LOCKED
+    - Pure Python deterministic freshness engine (`backend/ingestion/freshness.py`) with zero hidden `datetime.now()` calls; mandatory `as_of` reference time
+    - Strict separation of four lifecycle timestamps: Observation time (`observed_at`), Source updated time (`source_updated_at`), Retrieval time (`retrieved_at`), and Ingestion time (`created_at`)
+    - Core architectural invariants: `STALE != UNAVAILABLE` (old observations remain historical evidence and are never converted to unavailable/broken), `UNKNOWN FRESHNESS != UNAVAILABLE`, `MISSING TIMESTAMP != CURRENT` (never fabricated or defaulted to now)
+    - Metadata freshness strictly separated from operational observation freshness (`StationFreshnessSummary`)
+    - Configurable policy abstraction (`FreshnessPolicy`) with stable IDs (`chargeplus_live_telemetry_v1`, `chargeplus_operational_status_v1`, `chargeplus_static_metadata_v1`, `chargeplus_pricing_v1`, `ocm_live_observation_v1`, `ocm_static_metadata_v1`)
+    - Pluggable staleness decay curves (`LINEAR`, `EXPONENTIAL`, `STEP`, `NONE`) with raw `age_seconds` always preserved transparently as primary evidence
+    - Provenance end-to-end preservation (`source_id`, `source_station_id`, `retrieved_at`, `source_updated_at`, `raw_payload_hash`, `contract_version`, `source_url`) surviving into `public.station_observations`, `public.station_source_link`, and `analytics.fact_station_observation`
+    - Operational persistence enhancement: `persist_observation` preserves authentic `retrieved_at` timestamp while enforcing PostgreSQL causal constraints (`received_at >= observed_at`)
+    - 33 comprehensive unit and integration tests in `tests/test_freshness_provenance.py`; all 252 tests passing in `tests/`
+    - Complete documentation in `docs/step_2_9_freshness_provenance_and_staleness_decay.md`
 
 ### Current Phase & Step:
 - Current Phase: Phase 2/6 (Real Data Ingestion & Data Quality)
 - Remaining Phases: 4 (Phases 3, 4, 5, 6)
-- Current Step: Step 2.8 COMPLETE / LOCKED
-- Remaining Steps in Phase 2: 3 (Steps 2.9 through 2.11)
+- Current Step: Step 2.9 COMPLETE / LOCKED
+- Remaining Steps in Phase 2: 2 (Steps 2.10 and 2.11)
 
 ### What we are doing now:
-- Step 2.8 completed, verified, audited, tested, and locked. Ready to begin Step 2.9 upon instruction.
+- Step 2.9 completed, verified, audited, tested, and locked. Ready to begin Step 2.10 upon instruction.
 
 ### What comes next:
-- **Step 2.9 — Record freshness/provenance**: Observation freshness decay engine, staleness curves, and provenance tracking.
+- **Step 2.10 — Schedule/repeat ingestion**: Polling daemons, cron scheduling, and retry/backoff policies.
 
 

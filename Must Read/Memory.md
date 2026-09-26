@@ -32,7 +32,7 @@ Every entry should include:
 
 ## Current project state
 
-**ACTIVE PHASE / STEP: Phase 2/6 — Step 2.8 COMPLETE (Ready for Step 2.9)**
+**ACTIVE PHASE / STEP: Phase 2/6 — Step 2.9 COMPLETE (Ready for Step 2.10)**
 - **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF (All 29 active tables, RLS, 4 views, 2 functions, constraints, indexes live verified on Supabase).
 - **Phase 2 (Real Data Ingestion & Data Quality)**:
   - Step 2.1 COMPLETE (Canonical Station/Connector Input Contract, Pydantic models, validation engine, 17/17 tests passing).
@@ -43,7 +43,8 @@ Every entry should include:
   - Step 2.6 COMPLETE & LOCKED (Ingestion-wide data quality validation & anomaly quarantine, 137/137 tests passing).
   - Step 2.7 COMPLETE & LOCKED (Canonical deduplication decision layer & source merging, 176/176 tests passing).
   - Step 2.8 COMPLETE & LOCKED (Transactional operational loading, mutation isolation, connector survivorship persistence, SCD2 dim_station history, 43 tests passing, 219/219 cumulative).
-- **Next Immediate Step**: Step 2.9 — Record freshness/provenance & observation freshness decay (Do NOT start until explicitly instructed).
+  - Step 2.9 COMPLETE & LOCKED (Pure deterministic freshness decay engine, 4 distinct timestamps, STALE != UNAVAILABLE, pluggable decay, 33 tests passing, 252/252 cumulative).
+- **Next Immediate Step**: Step 2.10 — Schedule/repeat ingestion (polling daemons, cron scheduling & retry/backoff policies) (Do NOT start until explicitly instructed).
 - **Production Database**: Live compatibility verified against Supabase; zero schema modifications; legacy warehouse tables untouched.
 
 
@@ -348,9 +349,66 @@ Every entry should include:
      - `npm run build` (verified Next.js Turbopack build succeeded across all 26 routes).
   10. Documentation:
      - Authored comprehensive specification in `docs/step_2_8_canonical_operational_loading_and_mutation_isolation.md`.
-- Current state: STEP 2.8 COMPLETE & LOCKED — READY FOR STEP 2.9.
+- Current state: STEP 2.8 COMPLETE & LOCKED.
 - Conceptual verification: Strict layered separation ("2.7 Decides. 2.8 Persists"), missing != conflict, omission != deletion, full transaction rollback on failure, zero test pollution in live database.
-- Blockers / waiting on: Step 2.9 (Record freshness/provenance).
+- Blockers / waiting on: Step 2.9.
 - Next step: Phase 2 Step 2.9 — Record freshness/provenance & observation freshness decay.
+
+### 26 Sep 2026 — Phase 2 Step 2.9 Record Freshness, Observation Provenance & Staleness Decay
+- Phase / Step: Phase 2/6 — Step 2.9
+- What we built/changed:
+  1. Authoritative Pure Python Freshness Engine (`backend/ingestion/freshness.py`):
+     - Implemented `FreshnessState` (`FRESH`, `AGING`, `STALE`, `UNKNOWN`).
+     - Implemented `FreshnessBasis` (`OBSERVATION_TIME`, `SOURCE_UPDATED_AT`, `RETRIEVED_AT`, `UNKNOWN`).
+     - Implemented `InformationType` (`LIVE_TELEMETRY`, `OPERATIONAL_STATUS`, `STATIC_METADATA`, `PRICING`, `HOURS`).
+     - Implemented `DecayCurve` (`NONE`, `LINEAR`, `EXPONENTIAL`, `STEP`).
+     - Defined typed models: `FreshnessPolicy`, `FreshnessEvaluationResult`, and `StationFreshnessSummary`.
+     - Built purely functional, deterministic `FreshnessEngine`:
+       - Zero hidden `datetime.now()` calls; mandatory explicit `as_of` reference time across all evaluations.
+       - Clock skew tolerance (up to 5.0 seconds in the future clamped to zero age with warning; material future timestamps flagged as unvalidated).
+       - Invariant enforcement: `STALE != UNAVAILABLE` (old observations are historical evidence and are never coerced to broken/unavailable).
+       - Invariant enforcement: `UNKNOWN != UNAVAILABLE` (missing freshness basis retains historical status).
+       - Invariant enforcement: `MISSING TIMESTAMP != CURRENT` (missing dates evaluate to `UNKNOWN` with `None` age; never defaulted to current time).
+       - Strict separation of station metadata freshness from live connector observation freshness via `StationFreshnessSummary`.
+  2. Policy Abstraction & Registry:
+     - Implemented `FreshnessPolicyRegistry` with pre-registered operational SLA policies:
+       - `chargeplus_live_telemetry_v1` (5m fresh, 15m stale, LINEAR decay).
+       - `chargeplus_operational_status_v1` (1h fresh, 24h stale, LINEAR decay).
+       - `chargeplus_static_metadata_v1` (7d fresh, 30d stale, retrieval fallback permitted, NO synthetic score).
+       - `chargeplus_pricing_v1` (24h fresh, 7d stale, NO synthetic score).
+       - Source-specific presets: `ocm_live_observation_v1`, `ocm_static_metadata_v1`.
+     - Clearly documented that thresholds and decay curves are ChargePlus operational policies, not universal external domain facts.
+     - Preserved raw `age_seconds` transparently across all evaluations regardless of whether a decay score is generated.
+  3. Operational Persistence Integration (`backend/ingestion/persistence.py`):
+     - Updated `persist_observation` to preserve the authentic `obs.retrieved_at` timestamp as `received_at` in `public.station_observations` and warehouse fact tables.
+     - Preserved causal time invariant (`received_at >= observed_at`) to satisfy PostgreSQL check constraint `chk_observations_causal_time`.
+  4. Integration & Module Exports:
+     - Exported all Step 2.9 models, enums, policies, and engine methods in `backend/ingestion/__init__.py`.
+  5. Comprehensive Unit Test Suite (`tests/test_freshness_provenance.py`):
+     - 33 automated unit and integration tests covering all requirements A through Z:
+       - Determinism and explicit `as_of` reference times (tests 1, 16).
+       - Timezone handling: aware UTC and naive local normalized cleanly (test 2).
+       - Exact boundary transitions for fresh, aging, and stale thresholds (tests 3, 4, 5).
+       - Missing timestamp semantics and retrieval fallbacks (tests 6, 7, 8, 9, 31).
+       - `STALE != UNAVAILABLE` and status immutability invariants (tests 10, 11, 12, 17).
+       - Timestamp semantic separation and source-specific policies (tests 13, 14, 15, 29, 30).
+       - Future timestamp defensive behavior and clock skew handling (tests 18, 28).
+       - Provenance preservation through normalization and persistence (tests 19, 20, 21, 22).
+       - Pluggable decay curve evaluations (tests 23, 24, 25, 26).
+       - Metadata vs live telemetry freshness separation (test 27).
+       - Persistence causal ordering and live PostgreSQL transaction with clean rollback (tests 32, 33).
+     - Full automated test suite passes: 252/252 tests (17 contract + 20 adapter + 15 persistence + 15 resolution + 30 normalization + 40 quality validation + 39 deduplication + 43 operational loading + 33 freshness & provenance).
+  6. Quality Gates:
+     - `pytest tests/` (252/252 passing).
+     - `npx tsc --noEmit` (0 errors).
+     - `npm run lint` (0 errors).
+     - `npm run build` (verified Next.js Turbopack build succeeded across all 26 routes).
+     - Live database inspected: 0 test pollution (exactly 2 stations, 1 observation, 2 data sources, 3 operators).
+  7. Documentation:
+     - Authored comprehensive specification in `docs/step_2_9_freshness_provenance_and_staleness_decay.md`.
+- Current state: STEP 2.9 COMPLETE & LOCKED — READY FOR STEP 2.10.
+- Conceptual verification: Deterministic evaluation; `STALE != UNAVAILABLE`; `UNKNOWN != UNAVAILABLE`; `MISSING != CURRENT`; 4 lifecycle timestamps tracked separately; raw age preserved; pluggable decay; provenance intact; zero database migrations; zero test pollution.
+- Blockers / waiting on: Step 2.10 (Schedule/repeat ingestion).
+- Next step: Phase 2 Step 2.10 — Schedule/repeat ingestion: Polling daemons, cron scheduling, and retry/backoff policies.
 
 
