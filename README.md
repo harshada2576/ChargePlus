@@ -88,9 +88,10 @@ ChargePlus/
 │       ├── resolution.py              # CrossSourceEntityResolver (geodetic candidate generation, evidence fusion)
 │       ├── normalization.py           # Authoritative field normalization & standard vocabulary engine
 │       ├── deduplication.py           # Canonical deduplication decision layer & field survivorship policy
-│       └── freshness.py               # Pure deterministic freshness decay engine & policy abstraction
-├── supabase/migrations/               # AUTHORITATIVE database schema — Phase 1 Steps 1.3–1.8 SQL
-├── tests/                             # Comprehensive test suites (252 automated tests passing)
+│       ├── freshness.py               # Pure deterministic freshness decay engine & policy abstraction
+│       └── scheduling.py              # Ingestion run state machine, retry policies, backoff & PostgreSQL advisory lock
+├── supabase/migrations/               # AUTHORITATIVE database schema — Phase 1 & 2 SQL migrations
+├── tests/                             # Comprehensive test suites (284 automated tests passing)
 │   ├── test_canonical_contracts.py    # 17 unit tests for Step 2.1 canonical input contract
 │   ├── test_openchargemap_adapter.py  # 20 unit tests for Step 2.2 OCM adapter & error isolation
 │   ├── test_ingestion_persistence.py  # 15 unit tests for Step 2.3 persistence & idempotency
@@ -100,6 +101,7 @@ ChargePlus/
 │   ├── test_canonical_deduplication.py # 39 unit tests for Step 2.7 canonical decision layer & merging
 │   ├── test_canonical_operational_loading.py # 43 unit tests for Step 2.8 canonical loading & mutation isolation
 │   ├── test_freshness_provenance.py   # 33 unit tests for Step 2.9 freshness, provenance & decay
+│   ├── test_scheduled_ingestion.py    # 32 unit tests for Step 2.10 scheduling, retry, backoff & concurrency lock
 │   └── fixtures/                      # Offline representative test fixtures
 │       └── ocm_fixtures.py            # 18 labeled OCM fixture scenarios
 ├── Must Read/                         # Locked governance docs (Architecture, Design, Memory, Phases, PRD, Rules)
@@ -113,7 +115,8 @@ ChargePlus/
     ├── step_2_6_data_quality_validation.md       # Step 2.6 Data quality validation & anomaly quarantine documentation
     ├── step_2_7_canonical_deduplication_and_source_merging.md # Step 2.7 Canonical deduplication & survivorship
     ├── step_2_8_canonical_operational_loading_and_mutation_isolation.md # Step 2.8 Canonical operational loading & mutation isolation
-    └── step_2_9_freshness_provenance_and_staleness_decay.md # Step 2.9 Freshness engine, provenance & staleness decay
+    ├── step_2_9_freshness_provenance_and_staleness_decay.md # Step 2.9 Freshness engine, provenance & staleness decay
+    └── step_2_10_scheduled_ingestion_and_retry_policies.md # Step 2.10 Scheduled ingestion, retry policies & concurrency lock
 ```
 
 ---
@@ -174,13 +177,13 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to explore t
 | `npm run start` | Starts the production server |
 | `npm run typecheck` | Runs TypeScript compiler checks without emitting code (`tsc --noEmit`) |
 | `npm run lint` | Runs ESLint analysis across the frontend codebase |
-| `python -m pytest tests/ -v` | Runs the full Python test suite (252 tests: contracts, adapters, persistence, resolution, normalization, validation, deduplication, operational loading, freshness & provenance) |
+| `python -m pytest tests/ -v` | Runs the full Python test suite (284 tests: contracts, adapters, persistence, resolution, normalization, validation, deduplication, operational loading, freshness & provenance, scheduled ingestion & retry policies) |
 
 ---
 
 ## 🗄️ Database Management & Project Roadmap
 
-The **authoritative schema is `supabase/migrations/*.sql`** (Phase 1 Steps 1.3–1.8 established the 3-layer PostgreSQL database: `public` operational OLTP, `analytics` canonical OLAP warehouse, and `ml` metadata schemas).
+The **authoritative schema is `supabase/migrations/*.sql`** (Phase 1 Steps 1.3–1.8 established the 3-layer PostgreSQL database: `public` operational OLTP, `analytics` canonical OLAP warehouse, and `ml` metadata schemas; Phase 2 Step 2.10 established `public.ingestion_runs` audit log).
 
 Apply migrations to a linked Supabase project:
 
@@ -201,7 +204,8 @@ supabase db push
   - **Step 2.7 — Canonical Station Decision Layer:** COMPLETE & LOCKED (`backend/ingestion/deduplication.py`, `CanonicalDeduplicationEngine`, `FieldSurvivorshipPolicy`, 4 decision states, 2-level connector survivorship, deterministic cluster hashing, 39 tests passing, 176/176 cumulative).
   - **Step 2.8 — Persist Deduplicated Canonical Stations & Connectors:** COMPLETE & LOCKED (`backend/ingestion/persistence.py`, `persist_canonical_decision`, transactional operational loading, atomic mutation isolation, SCD2 dimension history in `analytics.dim_station`, authoritative survivorship persistence without override, 43 tests passing, 219/219 cumulative).
   - **Step 2.9 — Record Freshness/Provenance:** COMPLETE & LOCKED (`backend/ingestion/freshness.py`, pure deterministic freshness decay engine, zero `datetime.now()` calls, 4 distinct timestamps, `STALE != UNAVAILABLE`, pluggable decay curves `LINEAR`/`EXPONENTIAL`/`STEP`/`NONE`, 33 tests passing, 252/252 cumulative).
-  - **Step 2.10 — Schedule/Repeat Ingestion:** NEXT (polling daemons, cron scheduling & retry/backoff policies).
+  - **Step 2.10 — Schedule/Repeat Ingestion:** COMPLETE & LOCKED (`backend/ingestion/scheduling.py`, `ScheduledIngestionOrchestrator`, `PollingDaemon`, bounded exponential backoff & jitter, explicit transient vs permanent retry classification, PostgreSQL advisory locks, GitHub Actions cron workflow, `public.ingestion_runs` audit logging, 32 tests passing, 284/284 cumulative).
+  - **Step 2.11 — Mumbai Coverage Audit & Telemetry Validation:** NEXT (spatial coverage gap analysis, missing-field metrics, final Phase 2 operational sign-off).
 
 
 

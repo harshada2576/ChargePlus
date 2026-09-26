@@ -287,17 +287,31 @@ We will also perform a conceptual check, not just a code check.
     - Operational persistence enhancement: `persist_observation` preserves authentic `retrieved_at` timestamp while enforcing PostgreSQL causal constraints (`received_at >= observed_at`)
     - 33 comprehensive unit and integration tests in `tests/test_freshness_provenance.py`; all 252 tests passing in `tests/`
     - Complete documentation in `docs/step_2_9_freshness_provenance_and_staleness_decay.md`
+  - 2.10 Schedule/repeat ingestion (orchestration, polling daemons, cron workflows & retry policies) — COMPLETE / LOCKED
+    - One canonical ingestion pipeline: scheduler controls WHEN and HOW OFTEN, never WHAT. Integrates directly with existing adapter, validation, resolution, deduplication, persistence, and freshness layers without duplication.
+    - Authoritative scheduling module: `backend/ingestion/scheduling.py` with `ScheduledIngestionOrchestrator`, `PollingDaemon`, and `IngestionConcurrencyLock`.
+    - Explicit run state machine: `STARTED`, `RUNNING`, `SUCCEEDED`, `PARTIAL`, `FAILED`, `CANCELLED`.
+    - Explicit failure classification: `TRANSIENT` (retried with bounded exponential backoff & jitter) vs `PERMANENT` (fails fast, zero retries for auth, config, or deterministic errors).
+    - Upstream rate limit & backoff: HTTP 429 support with `Retry-After` header extraction (integer and HTTP date), bounded exponential backoff with configurable jitter ($\pm 20\%$).
+    - Concurrency protection: PostgreSQL session advisory locks (`pg_try_advisory_lock` with deterministic 64-bit integer hash of `source_id:scope`) preventing overlapping ingestion runs; clean in-memory fallback.
+    - Idempotency & crash safety: Observation-level idempotency (`(station_id, observed_at, source_payload_hash)` check), Step 2.8 transactional isolation, and link stability ensure zero duplicate stations, links, or observations on reruns or crash recoveries.
+    - Granular run accounting & audit: `public.ingestion_runs` table created via migration `20260926000001_step_2_10_ingestion_runs.sql` recording exact measured counts (records fetched, parsed, accepted, warned, quarantined, rejected, persisted, unchanged, observations persisted, errors).
+    - Platform-native scheduling: GitHub Actions workflow (`.github/workflows/scheduled_ingestion.yml`) for short-lived cron execution and CLI triggers (`--run-once`, `--daemon`, `--interval`, `--source`).
+    - Security & logging hygiene: Structured operational logs with credential and token redaction (`_scrub_secrets`).
+    - 32 comprehensive unit and integration tests in `tests/test_scheduled_ingestion.py`; all 284 tests passing across the 9 test suites in `tests/`.
+    - Complete documentation in `docs/step_2_10_scheduled_ingestion_and_retry_policies.md`.
 
 ### Current Phase & Step:
 - Current Phase: Phase 2/6 (Real Data Ingestion & Data Quality)
 - Remaining Phases: 4 (Phases 3, 4, 5, 6)
-- Current Step: Step 2.9 COMPLETE / LOCKED
-- Remaining Steps in Phase 2: 2 (Steps 2.10 and 2.11)
+- Current Step: Step 2.10 COMPLETE / LOCKED
+- Remaining Steps in Phase 2: 1 (Step 2.11)
 
 ### What we are doing now:
-- Step 2.9 completed, verified, audited, tested, and locked. Ready to begin Step 2.10 upon instruction.
+- Step 2.10 completed, verified, audited, tested, and locked. Ready to begin Step 2.11 upon instruction.
 
 ### What comes next:
-- **Step 2.10 — Schedule/repeat ingestion**: Polling daemons, cron scheduling, and retry/backoff policies.
+- **Step 2.11 — Audit coverage**: Verify Mumbai stations against requirements, review missing-field rates, and complete final Phase 2 sign-off.
+
 
 

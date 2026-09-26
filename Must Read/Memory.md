@@ -32,7 +32,7 @@ Every entry should include:
 
 ## Current project state
 
-**ACTIVE PHASE / STEP: Phase 2/6 — Step 2.9 COMPLETE (Ready for Step 2.10)**
+**ACTIVE PHASE / STEP: Phase 2/6 — Step 2.10 COMPLETE (Ready for Step 2.11)**
 - **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF (All 29 active tables, RLS, 4 views, 2 functions, constraints, indexes live verified on Supabase).
 - **Phase 2 (Real Data Ingestion & Data Quality)**:
   - Step 2.1 COMPLETE (Canonical Station/Connector Input Contract, Pydantic models, validation engine, 17/17 tests passing).
@@ -44,8 +44,9 @@ Every entry should include:
   - Step 2.7 COMPLETE & LOCKED (Canonical deduplication decision layer & source merging, 176/176 tests passing).
   - Step 2.8 COMPLETE & LOCKED (Transactional operational loading, mutation isolation, connector survivorship persistence, SCD2 dim_station history, 43 tests passing, 219/219 cumulative).
   - Step 2.9 COMPLETE & LOCKED (Pure deterministic freshness decay engine, 4 distinct timestamps, STALE != UNAVAILABLE, pluggable decay, 33 tests passing, 252/252 cumulative).
-- **Next Immediate Step**: Step 2.10 — Schedule/repeat ingestion (polling daemons, cron scheduling & retry/backoff policies) (Do NOT start until explicitly instructed).
-- **Production Database**: Live compatibility verified against Supabase; zero schema modifications; legacy warehouse tables untouched.
+  - Step 2.10 COMPLETE & LOCKED (Scheduled ingestion workflows, polling daemons, retry/backoff policies, PostgreSQL session advisory locks, public.ingestion_runs audit log, 32 tests passing, 284/284 cumulative).
+- **Next Immediate Step**: Step 2.11 — Audit coverage (Mumbai coverage audit, missing-field metrics, final Phase 2 sign-off) (Do NOT start until explicitly instructed).
+- **Production Database**: Live compatibility verified against Supabase; migration 20260926000001_step_2_10_ingestion_runs.sql executed; zero test pollution (2 stations, 2 connectors, 1 observation, 0 leaked ingestion runs).
 
 
 ### Historical Progress Log
@@ -410,5 +411,44 @@ Every entry should include:
 - Conceptual verification: Deterministic evaluation; `STALE != UNAVAILABLE`; `UNKNOWN != UNAVAILABLE`; `MISSING != CURRENT`; 4 lifecycle timestamps tracked separately; raw age preserved; pluggable decay; provenance intact; zero database migrations; zero test pollution.
 - Blockers / waiting on: Step 2.10 (Schedule/repeat ingestion).
 - Next step: Phase 2 Step 2.10 — Schedule/repeat ingestion: Polling daemons, cron scheduling, and retry/backoff policies.
+
+### 26 Sep 2026 — Phase 2 Step 2.10 Scheduled Ingestion, Polling Daemons & Retry Policies
+- Phase / Step: Phase 2/6 — Step 2.10 (Schedule/repeat ingestion)
+- What we built/changed:
+  1. Authoritative Scheduling Engine (`backend/ingestion/scheduling.py`):
+     - Single canonical pipeline: Scheduled execution calls the exact same `IngestionRunner.run()` logic without duplicating or bifurcating adapter, validation, resolution, deduplication, or persistence semantics.
+     - State Machine: `STARTED`, `RUNNING`, `SUCCEEDED`, `PARTIAL`, `FAILED`, `CANCELLED`.
+     - Explicit Error Classification: `TRANSIENT` (retried with bounded exponential backoff & jitter) vs `PERMANENT` (fails fast, zero retries for 400, 401, 403, invalid config, or deterministic exceptions).
+     - Upstream Rate Limit & Backoff: HTTP 429 support with `Retry-After` header parsing (both seconds integer and RFC 2822 HTTP date), bounded exponential backoff ($2s, 4s, 8s... \le 60s$), and configurable proportional jitter ($\pm 20\%$).
+     - Concurrency Protection: PostgreSQL session advisory locks (`pg_try_advisory_lock` with deterministic signed 64-bit integer hash of `source_id:scope`) preventing overlapping ingestion runs; clean fallback to thread locks for tests.
+     - Graceful Polling Daemon (`PollingDaemon`): Long-lived worker with signal handling for `SIGINT` (Ctrl+C) and `SIGTERM`, completing active runs before shutdown.
+     - Secret Hygiene: Structured operational logging with automatic token and API key redaction (`_scrub_secrets`).
+  2. Database Ingestion Runs Audit Table (`supabase/migrations/20260926000001_step_2_10_ingestion_runs.sql`):
+     - Created `public.ingestion_runs` table with 23 columns recording exact measured facts (counts, duration, timestamps, errors, dry-run flag). RLS enabled.
+     - Live executed migration on Supabase PostgreSQL.
+  3. Observation Idempotency Enhancement (`backend/ingestion/persistence.py`):
+     - Added idempotency check in `persist_observation()` on `(station_id, observed_at, source_payload_hash)`. Prevents duplicate observations on reruns of the same payload.
+     - Added `persist_ingestion_run()` method to record and update run state in `public.ingestion_runs`.
+  4. CLI & Runner Extension (`backend/ingestion/runner.py`):
+     - Added `run_scheduled()` method delegating to `ScheduledIngestionOrchestrator`.
+     - Extended CLI options: `--source`, `--daemon`, `--interval`, `--run-once`, `--max-attempts`, `--timeout`, `--scope`.
+  5. Platform-Native Scheduling (`.github/workflows/scheduled_ingestion.yml`):
+     - Configured short-lived GitHub Actions scheduled workflow running on cron (`0 */6 * * *`) and `workflow_dispatch`.
+  6. Comprehensive Unit & Integration Test Suite (`tests/test_scheduled_ingestion.py`):
+     - 32 automated tests covering all 30 requirements: success, CLI equivalence, retry on timeout/429/5xx, Retry-After header parsing, no retry on 400/401/403/config errors, max attempts, bounded backoff, deterministic jitter, concurrency locking, partial failures, quarantine handling, idempotency, secret scrubbing, and freshness preservation.
+     - Full automated test suite passes: 284/284 tests across all 9 test modules (100% pass rate).
+  7. Quality Gates:
+     - `pytest tests/` (284/284 passing).
+     - `npx tsc --noEmit` (0 errors).
+     - `npm run lint` (0 errors).
+     - `npm run build` (Turbopack production build compiled all 26 routes cleanly).
+     - Live database inspected: 0 test pollution (2 stations, 2 connectors, 1 observation, 0 leaked ingestion runs).
+  8. Documentation:
+     - Authored comprehensive specification in `docs/step_2_10_scheduled_ingestion_and_retry_policies.md`.
+- Current state: STEP 2.10 COMPLETE & LOCKED — READY FOR STEP 2.11.
+- Conceptual verification: Single pipeline; explicit transient vs permanent retry classification; bounded backoff with jitter; PostgreSQL advisory locks prevent concurrency races; observation-level idempotency prevents duplicate history; measured facts in `public.ingestion_runs`; zero fake telemetry; zero secrets in logs; clean database state.
+- Blockers / waiting on: Step 2.11 (Audit coverage: Mumbai stations, missing-field rates, Phase 2 sign-off).
+- Next step: Phase 2 Step 2.11 — Audit coverage: Verify Mumbai stations against requirements, review missing-field rates, and complete final Phase 2 sign-off.
+
 
 
