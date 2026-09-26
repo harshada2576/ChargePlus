@@ -300,18 +300,140 @@ We will also perform a conceptual check, not just a code check.
     - Security & logging hygiene: Structured operational logs with credential and token redaction (`_scrub_secrets`).
     - 32 comprehensive unit and integration tests in `tests/test_scheduled_ingestion.py`; all 284 tests passing across the 9 test suites in `tests/`.
     - Complete documentation in `docs/step_2_10_scheduled_ingestion_and_retry_policies.md`.
+  - 2.11 Verify Mumbai coverage (spatial audit, missing-field rates & Phase 2 quality sign-off) — COMPLETE / LOCKED
+    - Deterministic read-only audit engine (`backend/ingestion/audit.py`) measuring what the real ingested data can support without fabrication.
+    - Live database audit executed at `as_of=2026-09-26T06:30:00Z` against real Supabase database.
+    - 2 canonical stations confirmed in MMR bounding box (18.70–19.50°N, 72.70–73.30°E); 2/48 grid cells occupied; 46 cells have 0 ingested records (absence of records ≠ absence of chargers).
+    - All architectural invariants verified: STALE ≠ UNAVAILABLE; missing pricing ≠ free; missing connector attribute ≠ zero connectors; static OCM StatusTypeID 50 ≠ live telemetry observation.
+    - 1 genuine observation (March 2024) classified STALE by Step 2.9 FreshnessEngine; historical evidence preserved.
+    - ML maturity stage: COLD — 0 stations with repeated temporal snapshots; queue prediction unsupportable.
+    - 22 product capability matrix entries with AVAILABLE_NOW / PARTIALLY_SUPPORTED / NOT_CURRENTLY_SUPPORTABLE ratings backed by measured evidence.
+    - 64 comprehensive unit tests in `tests/test_mumbai_coverage_audit.py`; all 348 tests passing across 10 test suites in `tests/`.
+    - Complete documentation in `docs/step_2_11_mumbai_coverage_and_data_quality_audit.md`.
+    - **PHASE 2 COMPLETE — READY FOR PHASE 3**
 
-### Current Phase & Step:
-- Current Phase: Phase 2/6 (Real Data Ingestion & Data Quality)
-- Remaining Phases: 4 (Phases 3, 4, 5, 6)
-- Current Step: Step 2.10 COMPLETE / LOCKED
-- Remaining Steps in Phase 2: 1 (Step 2.11)
-
-### What we are doing now:
-- Step 2.10 completed, verified, audited, tested, and locked. Ready to begin Step 2.11 upon instruction.
-
-### What comes next:
-- **Step 2.11 — Audit coverage**: Verify Mumbai stations against requirements, review missing-field rates, and complete final Phase 2 sign-off.
+### Concept check (All Verified)
+- Are stations real? Yes (canonical station table, 2 OCM-sourced stations in live DB).
+- Are source records traceable? Yes (station_source_link with payload hash, source_station_id, retrieval timestamps).
+- Are stale values distinguished from current observations? Yes (FreshnessEngine enforces STALE ≠ UNAVAILABLE; single obs correctly classified STALE not unavailable).
+- Are duplicates controlled? Yes (Step 2.7 decides; Step 2.8 persists; FK constraints prevent broken provenance).
+- Are we accidentally treating operational status as connector availability? No — explicitly tested and confirmed in Step 2.11.
 
 
+---
+
+# Phase 3 — Connect the Locked Frontend
+**Goal:** turn the completed UI into a real product without redesigning it.
+
+### Steps
+3.1 Replace hardcoded station dataset  
+3.2 Connect Explore/map  
+3.3 Connect search/filter  
+3.4 Connect station detail  
+3.5 Connect navigation handoff  
+3.6 Connect auth/OTP  
+3.7 Connect profiles  
+3.8 Connect favorites  
+3.9 Connect reports  
+3.10 Connect reviews  
+3.11 Connect alerts  
+3.12 Connect admin data views  
+3.13 Test loading/empty/error states against real data
+
+### Concept check
+- Does the UI say only what the data supports?
+- Are unknown fields handled honestly?
+- Is login requested only when needed?
+- Does the existing UX remain intact?
+
+---
+
+# Phase 4 — Warehouse, Analytics & Data Quality
+**Goal:** satisfy the data-warehouse requirement using ChargePlus's real product data.
+
+### Steps
+4.1 Build dimensions  
+4.2 Build observation/report facts  
+4.3 Build daily/hourly aggregates where justified  
+4.4 Create ETL/ELT jobs in Python  
+4.5 Add data-quality checks  
+4.6 Create OLAP queries  
+4.7 Build analytics/admin views  
+4.8 Validate historical consistency
+
+### Concept check
+- Are fact grains explicit?
+- Are dimensions reusable?
+- Are aggregates derived from real observations?
+- Can every analytical number be traced back to underlying records?
+
+---
+
+# Phase 5 — Data Mining, Forecasting & Recommendations
+**Goal:** add intelligence only after enough real data exists.
+
+### Steps
+5.1 Measure data maturity  
+5.2 Establish baseline  
+5.3 Feature engineering  
+5.4 Train simple model  
+5.5 Evaluate MAE/RMSE and appropriate metrics  
+5.6 Compare against baseline  
+5.7 Produce station busy-time estimates  
+5.8 Produce congestion/availability intelligence where supported  
+5.9 Build explainable recommendation scoring  
+5.10 Connect recommendations/alerts to frontend  
+5.11 Document limitations
+
+### Concept check
+- Is there enough data?
+- Does ML beat or meaningfully complement the baseline?
+- Are predictions clearly distinguished from observations?
+- Are recommendations explainable?
+- Are we avoiding fake confidence?
+
+---
+
+# Phase 6 — Production & Public Beta
+**Goal:** make ChargePlus safe and stable for real users.
+
+### Steps
+6.1 Production deployment  
+6.2 Domain/configuration  
+6.3 Security review  
+6.4 RLS review  
+6.5 Rate limiting/abuse controls  
+6.6 Error monitoring/logging  
+6.7 Ingestion monitoring  
+6.8 ML/forecast monitoring  
+6.9 Performance testing  
+6.10 Mobile/browser compatibility  
+6.11 Data-quality review  
+6.12 Public beta checklist  
+6.13 Final documentation
+
+### Concept check
+- Could a real user misunderstand stale data as live?
+- Could one user corrupt shared station knowledge?
+- Are failures visible?
+- Are secrets protected?
+- Can the system be maintained?
+
+---
+
+## Current status
+
+**PHASE 2 COMPLETE — READY FOR PHASE 3**
+
+- **Current Phase**: Phase 3/6 — Connect the Locked Frontend (NEXT)
+- **Remaining Phases**: 4 (Phase 3: Connect Locked Frontend, Phase 4: Warehouse, Analytics & Data Quality, Phase 5: Data Mining, Forecasting & Recommendations, Phase 6: Production & Public Beta)
+- **Current Step**: Phase 2 fully closed. Begin Phase 3, Step 3.1.
+- **Remaining Steps in Phase 3**: 13 (Steps 3.1–3.13)
+
+### What is complete:
+- **Phase 1 — Foundation & Real Database (Steps 1.1–1.10) — COMPLETE & SIGNED OFF**
+- **Phase 2 — Real Data Ingestion & Data Quality (Steps 2.1–2.11) — COMPLETE & SIGNED OFF**
+
+### What we are doing next:
+- **Phase 3, Step 3.1 — Replace hardcoded station dataset with real Supabase data.**
 
