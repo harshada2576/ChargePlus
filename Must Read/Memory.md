@@ -32,7 +32,7 @@ Every entry should include:
 
 ## Current project state
 
-**ACTIVE PHASE / STEP: Phase 2/6 — Step 2.7 COMPLETE (Ready for Step 2.8)**
+**ACTIVE PHASE / STEP: Phase 2/6 — Step 2.8 COMPLETE (Ready for Step 2.9)**
 - **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF (All 29 active tables, RLS, 4 views, 2 functions, constraints, indexes live verified on Supabase).
 - **Phase 2 (Real Data Ingestion & Data Quality)**:
   - Step 2.1 COMPLETE (Canonical Station/Connector Input Contract, Pydantic models, validation engine, 17/17 tests passing).
@@ -42,7 +42,8 @@ Every entry should include:
   - Step 2.5 COMPLETE & LOCKED (Cross-source field normalization & standard vocabulary, 97/97 tests passing).
   - Step 2.6 COMPLETE & LOCKED (Ingestion-wide data quality validation & anomaly quarantine, 137/137 tests passing).
   - Step 2.7 COMPLETE & LOCKED (Canonical deduplication decision layer & source merging, 176/176 tests passing).
-- **Next Immediate Step**: Step 2.8 — Persist deduplicated canonical stations & connectors (Do NOT start until explicitly instructed).
+  - Step 2.8 COMPLETE & LOCKED (Transactional operational loading, mutation isolation, connector survivorship persistence, SCD2 dim_station history, 43 tests passing, 219/219 cumulative).
+- **Next Immediate Step**: Step 2.9 — Record freshness/provenance & observation freshness decay (Do NOT start until explicitly instructed).
 - **Production Database**: Live compatibility verified against Supabase; zero schema modifications; legacy warehouse tables untouched.
 
 
@@ -307,5 +308,49 @@ Every entry should include:
 - Conceptual verification: "2.7 DECIDES. 2.8 PERSISTS." Pure in-memory decision layer; zero database writes; zero schema modifications; external source IDs preserved; one physical station = one canonical ID.
 - Blockers / waiting on: Step 2.8 (Persist deduplicated canonical stations & connectors).
 - Next step: Phase 2 Step 2.8 — Persist deduplicated canonical stations & connectors into operational tables (`public.stations`, `public.connectors`, `public.station_source_link`).
+
+### 26 Sep 2026 — Phase 2 Step 2.8 Canonical Operational Loading & Mutation Isolation
+- Phase / Step: Phase 2/6 — Step 2.8
+- What we built/changed:
+  1. Authoritative Canonical Operational Persistence Engine (`backend/ingestion/persistence.py`):
+     - Implemented `CanonicalPersistenceStatus` (`INSERTED`, `UPDATED`, `UNCHANGED`, `REVIEW_SKIPPED`, `FAILED`).
+     - Defined typed result models: `CanonicalPersistenceResult` and `BatchCanonicalPersistenceReport`.
+     - Implemented `persist_canonical_decision` and `persist_canonical_batch` handling all Step 2.7 decision states (`MERGE`, `LINK_TO_CANONICAL`, `KEEP_SEPARATE`, `REVIEW`).
+  2. Transactional Boundary & Atomic Mutation Isolation:
+     - Isolated database transaction per decision with explicit `commit()` on success, `rollback()` on failure.
+     - Added `commit: bool = True` parameter to `get_or_create_data_source`, `_ensure_dim_source`, and `get_or_create_operator`, passing `commit=False` during canonical loading to prevent premature intermediate commits.
+     - Sensitive credentials and tokens scrubbed from error logs via `_scrub_secrets`.
+     - Batch execution isolates transactions per decision; failure in one cluster rolls back cleanly without corrupting other records.
+  3. Station Attribute Reconciliation ("Missing != Conflict"):
+     - Merging and updates apply SQL `COALESCE` to preserve existing non-null canonical attributes when newer payloads omit optional fields.
+     - Enforced `chk_stations_hours` constraint (opening/closing times explicitly cleared to `NULL` when `is_24_hours = True`).
+  4. Authoritative Connector Survivorship Persistence ("2.7 Decides. 2.8 Persists"):
+     - Persistent loader persists the exact quantity decided by Step 2.7 field survivorship (`new_qty = qty` when `has_explicit_decision is True`).
+     - Never independently applies `max(existing, incoming)` over explicit Step 2.7 survivorship decisions.
+     - Equipment mapped by natural capacity group key `(station_id, connector_type, power_kw, charging_standard)` to satisfy unique constraint `uq_connectors_station_type_power`.
+     - Non-destructive guarantee: Omission of a connector in a newer payload never deletes existing equipment in `public.connectors`.
+  5. Provenance Linkage & Reassignment Safety:
+     - Maintains `public.station_source_link` bridging external IDs to canonical ChargePlus UUIDs.
+     - Idempotent re-ingestion with matching SHA-256 payload hash updates `last_seen_at = now()` without mutating station data.
+     - Attempting to reassign an external source ID to a different canonical station UUID aborts and rolls back with an explicit `Unsafe identity mutation` error.
+  6. Conformed Warehouse Dimension History (SCD Type 2):
+     - `analytics.dim_station` tracks canonical attribute history via SCD Type 2.
+     - Attribute changes close the old active row (`is_current = false`, `effective_to = now()`) and open a new version (`version = old_version + 1`, `is_current = true`, `effective_from = now()`).
+  7. Integration & Module Exports:
+     - Exported all Step 2.8 persistence models and functions in `backend/ingestion/__init__.py`.
+  8. Comprehensive Unit Test Suite (`tests/test_canonical_operational_loading.py`):
+     - 43 automated unit tests covering all 12 operational loading requirements, including 6 dedicated connector audit tests (`test_18b` to `test_18g`) and live Supabase PostgreSQL transactional test 37 with verified clean rollback.
+     - Full automated test suite passes: 219/219 tests (17 contract + 20 adapter + 15 persistence + 15 resolution + 30 normalization + 40 quality validation + 39 deduplication + 43 operational loading).
+  9. Quality Gates:
+     - `pytest tests/` (219/219 passing).
+     - `npx tsc --noEmit` (0 errors).
+     - `npm run lint` (0 errors).
+     - `npm run build` (verified Next.js Turbopack build succeeded across all 26 routes).
+  10. Documentation:
+     - Authored comprehensive specification in `docs/step_2_8_canonical_operational_loading_and_mutation_isolation.md`.
+- Current state: STEP 2.8 COMPLETE & LOCKED — READY FOR STEP 2.9.
+- Conceptual verification: Strict layered separation ("2.7 Decides. 2.8 Persists"), missing != conflict, omission != deletion, full transaction rollback on failure, zero test pollution in live database.
+- Blockers / waiting on: Step 2.9 (Record freshness/provenance).
+- Next step: Phase 2 Step 2.9 — Record freshness/provenance & observation freshness decay.
 
 
