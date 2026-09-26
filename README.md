@@ -89,34 +89,37 @@ ChargePlus/
 │       ├── normalization.py           # Authoritative field normalization & standard vocabulary engine
 │       ├── deduplication.py           # Canonical deduplication decision layer & field survivorship policy
 │       ├── freshness.py               # Pure deterministic freshness decay engine & policy abstraction
-│       └── scheduling.py              # Ingestion run state machine, retry policies, backoff & PostgreSQL advisory lock
+│       ├── scheduling.py              # Ingestion run state machine, retry policies, backoff & PostgreSQL advisory lock
+│       └── audit.py                   # Step 2.11 read-only Mumbai coverage & data quality audit engine
 ├── supabase/migrations/               # AUTHORITATIVE database schema — Phase 1 & 2 SQL migrations
-├── tests/                             # Comprehensive test suites (284 automated tests passing)
-│   ├── test_canonical_contracts.py    # 17 unit tests for Step 2.1 canonical input contract
-│   ├── test_openchargemap_adapter.py  # 20 unit tests for Step 2.2 OCM adapter & error isolation
-│   ├── test_ingestion_persistence.py  # 15 unit tests for Step 2.3 persistence & idempotency
-│   ├── test_entity_resolution.py      # 15 unit tests for Step 2.4 cross-source entity resolution
-│   ├── test_field_normalization.py    # 30 unit tests for Step 2.5 cross-source field normalization
-│   ├── test_data_quality_validation.py # 40 unit tests for Step 2.6 data quality validation & quarantine
-│   ├── test_canonical_deduplication.py # 39 unit tests for Step 2.7 canonical decision layer & merging
-│   ├── test_canonical_operational_loading.py # 43 unit tests for Step 2.8 canonical loading & mutation isolation
-│   ├── test_freshness_provenance.py   # 33 unit tests for Step 2.9 freshness, provenance & decay
-│   ├── test_scheduled_ingestion.py    # 32 unit tests for Step 2.10 scheduling, retry, backoff & concurrency lock
-│   └── fixtures/                      # Offline representative test fixtures
-│       └── ocm_fixtures.py            # 18 labeled OCM fixture scenarios
+├── tests/                             # Comprehensive test suites (348 automated tests passing)
+│   ├── test_canonical_contracts.py         # 17 unit tests — Step 2.1 canonical input contract
+│   ├── test_openchargemap_adapter.py        # 20 unit tests — Step 2.2 OCM adapter & error isolation
+│   ├── test_ingestion_persistence.py        # 15 unit tests — Step 2.3 persistence & idempotency
+│   ├── test_entity_resolution.py            # 15 unit tests — Step 2.4 cross-source entity resolution
+│   ├── test_field_normalization.py          # 30 unit tests — Step 2.5 cross-source field normalization
+│   ├── test_data_quality_validation.py      # 40 unit tests — Step 2.6 data quality validation & quarantine
+│   ├── test_canonical_deduplication.py      # 39 unit tests — Step 2.7 canonical decision layer & merging
+│   ├── test_canonical_operational_loading.py # 43 unit tests — Step 2.8 canonical loading & mutation isolation
+│   ├── test_freshness_provenance.py          # 33 unit tests — Step 2.9 freshness, provenance & decay
+│   ├── test_scheduled_ingestion.py           # 32 unit tests — Step 2.10 scheduling, retry, backoff & concurrency
+│   ├── test_mumbai_coverage_audit.py         # 64 unit tests — Step 2.11 Mumbai coverage & data quality audit
+│   └── fixtures/                             # Offline representative test fixtures
+│       └── ocm_fixtures.py                   # 18 labeled OCM fixture scenarios
 ├── Must Read/                         # Locked governance docs (Architecture, Design, Memory, Phases, PRD, Rules)
 └── docs/                              # Architecture specs, data dictionary, warehouse, and research
-    ├── canonical_station_input_contract.md       # Step 2.1 Canonical contract specification
-    ├── source_adapters_architecture.md           # Step 2.2 Source adapter framework specification
-    ├── global_ev_charging_data_source_research.md # Authoritative source research & telemetry lock
-    ├── step_2_3_first_live_source_persistence.md # Step 2.3 Persistence & idempotency documentation
-    ├── step_2_4_cross_source_entity_resolution.md # Step 2.4 Entity resolution & evidence fusion documentation
-    ├── step_2_5_field_normalization.md           # Step 2.5 Field normalization & standard vocabulary documentation
-    ├── step_2_6_data_quality_validation.md       # Step 2.6 Data quality validation & anomaly quarantine documentation
-    ├── step_2_7_canonical_deduplication_and_source_merging.md # Step 2.7 Canonical deduplication & survivorship
-    ├── step_2_8_canonical_operational_loading_and_mutation_isolation.md # Step 2.8 Canonical operational loading & mutation isolation
-    ├── step_2_9_freshness_provenance_and_staleness_decay.md # Step 2.9 Freshness engine, provenance & staleness decay
-    └── step_2_10_scheduled_ingestion_and_retry_policies.md # Step 2.10 Scheduled ingestion, retry policies & concurrency lock
+    ├── canonical_station_input_contract.md              # Step 2.1 Canonical contract specification
+    ├── source_adapters_architecture.md                  # Step 2.2 Source adapter framework specification
+    ├── global_ev_charging_data_source_research.md       # Authoritative source research & telemetry lock
+    ├── step_2_3_first_live_source_persistence.md        # Step 2.3 Persistence & idempotency
+    ├── step_2_4_cross_source_entity_resolution.md       # Step 2.4 Entity resolution & evidence fusion
+    ├── step_2_5_field_normalization.md                  # Step 2.5 Field normalization & vocabulary
+    ├── step_2_6_data_quality_validation.md              # Step 2.6 DQ validation & anomaly quarantine
+    ├── step_2_7_canonical_deduplication_and_source_merging.md # Step 2.7 Canonical deduplication
+    ├── step_2_8_canonical_operational_loading_and_mutation_isolation.md # Step 2.8 Canonical loading
+    ├── step_2_9_freshness_provenance_and_staleness_decay.md # Step 2.9 Freshness engine & staleness
+    ├── step_2_10_scheduled_ingestion_and_retry_policies.md  # Step 2.10 Scheduled ingestion & retry
+    └── step_2_11_mumbai_coverage_and_data_quality_audit.md  # Step 2.11 Mumbai pilot audit & Phase 2 sign-off
 ```
 
 ---
@@ -177,7 +180,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to explore t
 | `npm run start` | Starts the production server |
 | `npm run typecheck` | Runs TypeScript compiler checks without emitting code (`tsc --noEmit`) |
 | `npm run lint` | Runs ESLint analysis across the frontend codebase |
-| `python -m pytest tests/ -v` | Runs the full Python test suite (284 tests: contracts, adapters, persistence, resolution, normalization, validation, deduplication, operational loading, freshness & provenance, scheduled ingestion & retry policies) |
+| `python -m pytest tests/ -v` | Runs the full Python test suite (348 tests: contracts, adapters, persistence, resolution, normalization, validation, deduplication, operational loading, freshness & provenance, scheduled ingestion & retry policies, Mumbai coverage audit) |
+| `python -m backend.ingestion.audit --scope mumbai` | Runs the Step 2.11 deterministic Mumbai coverage & data quality audit against the live database |
 
 ---
 
@@ -194,21 +198,17 @@ supabase db push
 
 ### Roadmap Status
 - **Phase 1 (Foundation & Database):** 100% COMPLETE & LIVE VERIFIED (29 tables with RLS enabled, 29 public RLS policies, 4 views with `security_invoker = true`, 2 functions, 28 constraints, 45 explicit indexes, zero cross-layer FKs).
-- **Phase 2 (Real Data Ingestion):** IN PROGRESS
-  - **Step 2.1 — Canonical Input Contract:** COMPLETE & LOCKED (`RawSourceRecord`, `NormalizedStationRecord`, `NormalizedConnectorRecord`, `NormalizedObservationRecord`, `ProvenanceInfo`, 17/17 tests passing).
-  - **Step 2.2 — Source Adapters & OCM Ingestion:** COMPLETE & LOCKED (`BaseSourceAdapter`, `OpenChargeMapAdapter`, 18 test fixtures, 20 adapter tests passing, global source research & telemetry architecture locked).
-  - **Step 2.3 — Connect First Live Data Source:** COMPLETE & LOCKED (`IngestionPersistenceService`, `IngestionRunner`, idempotency via `station_source_link`, fact observations, 15 tests passing, 52/52 cumulative).
-  - **Step 2.4 — Cross-Source Entity Resolution:** COMPLETE & LOCKED (`CrossSourceEntityResolver`, geodetic candidate generation $\le 50$m, multi-signal evidence fusion, 15 tests passing, 67/67 cumulative).
-  - **Step 2.5 — Normalize Fields:** COMPLETE & LOCKED (`backend/ingestion/normalization.py`, verified operator aliases, standard connector vocabulary, kW power conversion, pricing/hours structures, 30 tests passing, 97/97 cumulative).
-  - **Step 2.6 — Validate Records:** COMPLETE & LOCKED (`backend/ingestion/validation.py`, multi-layered data quality validator, stable `DQ-*` rule catalog, in-memory quarantine ledger, deterministic batch reporting, 40 tests passing, 137/137 cumulative).
-  - **Step 2.7 — Canonical Station Decision Layer:** COMPLETE & LOCKED (`backend/ingestion/deduplication.py`, `CanonicalDeduplicationEngine`, `FieldSurvivorshipPolicy`, 4 decision states, 2-level connector survivorship, deterministic cluster hashing, 39 tests passing, 176/176 cumulative).
-  - **Step 2.8 — Persist Deduplicated Canonical Stations & Connectors:** COMPLETE & LOCKED (`backend/ingestion/persistence.py`, `persist_canonical_decision`, transactional operational loading, atomic mutation isolation, SCD2 dimension history in `analytics.dim_station`, authoritative survivorship persistence without override, 43 tests passing, 219/219 cumulative).
-  - **Step 2.9 — Record Freshness/Provenance:** COMPLETE & LOCKED (`backend/ingestion/freshness.py`, pure deterministic freshness decay engine, zero `datetime.now()` calls, 4 distinct timestamps, `STALE != UNAVAILABLE`, pluggable decay curves `LINEAR`/`EXPONENTIAL`/`STEP`/`NONE`, 33 tests passing, 252/252 cumulative).
-  - **Step 2.10 — Schedule/Repeat Ingestion:** COMPLETE & LOCKED (`backend/ingestion/scheduling.py`, `ScheduledIngestionOrchestrator`, `PollingDaemon`, bounded exponential backoff & jitter, explicit transient vs permanent retry classification, PostgreSQL advisory locks, GitHub Actions cron workflow, `public.ingestion_runs` audit logging, 32 tests passing, 284/284 cumulative).
-  - **Step 2.11 — Mumbai Coverage Audit & Telemetry Validation:** NEXT (spatial coverage gap analysis, missing-field metrics, final Phase 2 operational sign-off).
-
-
-
-
-
-
+- **Phase 2 (Real Data Ingestion & Data Quality):** COMPLETE & SIGNED OFF
+  - **Step 2.1 — Canonical Input Contract:** COMPLETE & LOCKED (17/17 tests).
+  - **Step 2.2 — Source Adapters & OCM Ingestion:** COMPLETE & LOCKED (37/37 cumulative).
+  - **Step 2.3 — Connect First Live Data Source:** COMPLETE & LOCKED (52/52 cumulative).
+  - **Step 2.4 — Cross-Source Entity Resolution:** COMPLETE & LOCKED (67/67 cumulative).
+  - **Step 2.5 — Normalize Fields:** COMPLETE & LOCKED (97/97 cumulative).
+  - **Step 2.6 — Validate Records:** COMPLETE & LOCKED (137/137 cumulative).
+  - **Step 2.7 — Canonical Station Decision Layer:** COMPLETE & LOCKED (176/176 cumulative).
+  - **Step 2.8 — Persist Deduplicated Canonical Stations & Connectors:** COMPLETE & LOCKED (219/219 cumulative).
+  - **Step 2.9 — Record Freshness/Provenance:** COMPLETE & LOCKED (252/252 cumulative).
+  - **Step 2.10 — Schedule/Repeat Ingestion:** COMPLETE & LOCKED (284/284 cumulative).
+  - **Step 2.11 — Mumbai Coverage Audit & Phase 2 Sign-off:** COMPLETE & LOCKED (`backend/ingestion/audit.py`, live audit against Supabase DB at `as_of=2026-09-26T06:30:00Z`, 2 canonical stations in MMR, 348/348 cumulative tests passing, report at `docs/step_2_11_mumbai_coverage_and_data_quality_audit.md`).
+- **Phase 3 (Connect the Locked Frontend):** NEXT
+  - **Step 3.1 — Replace hardcoded station dataset with real Supabase data.**
