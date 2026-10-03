@@ -20,6 +20,7 @@ from backend.ingestion.constants import (
     ValidationOutcome,
 )
 from backend.ingestion.contracts import (
+    CandidateLookupError,
     NormalizedConnectorRecord,
     NormalizedObservationRecord,
     NormalizedStationRecord,
@@ -43,10 +44,6 @@ from backend.ingestion.persistence import (
     IngestionPersistenceService,
     PersistenceStatus,
     StationPersistenceResult,
-)
-from backend.ingestion.runner import (
-    IngestionRunner,
-    IngestionSummary,
 )
 from backend.ingestion.resolution import (
     AddressEvidence,
@@ -142,6 +139,7 @@ __all__ = [
     "QueueLevel",
     "StandardConnectorType",
     "ValidationOutcome",
+    "CandidateLookupError",
     "RawSourceRecord",
     "ProvenanceInfo",
     "NormalizedConnectorRecord",
@@ -242,6 +240,17 @@ __all__ = [
     "ScheduledIngestionOrchestrator",
     "PollingDaemon",
 ]
+
+
+def __getattr__(name: str):
+    """Lazy-load runner symbols to prevent RuntimeWarning when invoking runner via python -m."""
+    if name in ("IngestionRunner", "IngestionSummary"):
+        from backend.ingestion.runner import IngestionRunner, IngestionSummary
+
+        globals()["IngestionRunner"] = IngestionRunner
+        globals()["IngestionSummary"] = IngestionSummary
+        return globals()[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 
