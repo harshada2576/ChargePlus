@@ -249,7 +249,7 @@ class MockDatabaseCursor:
             cid, stn_id, ctype, std, pkw, qty, p_type, p_kwh, p_sess = params
             row = {
                 "id": str(cid), "station_id": str(stn_id), "connector_type": ctype, "charging_standard": std,
-                "power_kw": float(pkw), "quantity": int(qty), "pricing_type": p_type,
+                "power_kw": float(pkw) if pkw is not None else None, "quantity": int(qty), "pricing_type": p_type,
                 "price_per_kwh": float(p_kwh) if p_kwh is not None else None,
                 "price_per_session": float(p_sess) if p_sess is not None else None,
                 "currency": "INR",
@@ -421,7 +421,7 @@ class MockDatabaseCursor:
             existing = next((c for c in self.db.tables["analytics.dim_connector"] if str(c["connector_id"]) == str(cid)), None)
             if existing:
                 existing["quantity"] = int(qty)
-                existing["power_kw"] = float(pkw)
+                existing["power_kw"] = float(pkw) if pkw is not None else None
                 existing["pricing_type"] = p_type
                 existing["price_per_kwh"] = p_kwh
                 existing["price_per_session"] = p_sess
@@ -430,7 +430,8 @@ class MockDatabaseCursor:
                 key = len(self.db.tables["analytics.dim_connector"]) + 1
                 row = {
                     "connector_key": key, "connector_id": str(cid), "station_id": str(stn_id),
-                    "connector_type": ctype, "charging_standard": std, "power_kw": float(pkw),
+                    "connector_type": ctype, "charging_standard": std,
+                    "power_kw": float(pkw) if pkw is not None else None,
                     "quantity": int(qty), "pricing_type": p_type, "price_per_kwh": p_kwh,
                     "price_per_session": p_sess, "currency": "INR", "is_fast_charging": is_fast,
                 }
@@ -466,6 +467,31 @@ class MockDatabaseCursor:
             self.db.tables["analytics.fact_station_observation"].append(row)
             self.db.mutation_counts["fact_station_observation_inserted"] += 1
 
+        # 19. Advisory Locks
+        elif "pg_try_advisory_lock" in sql_clean:
+            self._last_result = [(True,)]
+
+        elif "pg_advisory_unlock" in sql_clean:
+            self._last_result = [(True,)]
+
+        # 20. Ingestion runs
+        elif "INSERT INTO public.ingestion_runs" in sql_clean:
+            r_id = str(params[0])
+            st = str(params[4]) if len(params) > 4 else "SUCCEEDED"
+            row = {
+                "id": r_id,
+                "run_id": r_id,
+                "state": st,
+                "params": list(params),
+            }
+            if "public.ingestion_runs" not in self.db.tables:
+                self.db.tables["public.ingestion_runs"] = []
+            existing = next((r for r in self.db.tables["public.ingestion_runs"] if str(r.get("id")) == r_id or str(r.get("run_id")) == r_id), None)
+            if existing:
+                existing.update(row)
+            else:
+                self.db.tables["public.ingestion_runs"].append(row)
+
         self._iter = iter(self._last_result)
 
     def fetchone(self):
@@ -473,6 +499,9 @@ class MockDatabaseCursor:
 
     def fetchall(self):
         return list(self._iter)
+
+    def close(self):
+        pass
 
     def __enter__(self):
         return self
@@ -492,6 +521,7 @@ class MockDatabaseConnection:
             "public.connectors": [],
             "public.station_source_link": [],
             "public.station_observations": [],
+            "public.ingestion_runs": [],
             "analytics.dim_source": [],
             "analytics.dim_operator": [],
             "analytics.dim_location": [],
