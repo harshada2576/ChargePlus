@@ -58,8 +58,9 @@ We will also perform a conceptual check, not just a code check.
 2.7 Deduplicate/entity-match stations (canonical decision layer, source priority arbitration & survivorship) — COMPLETE / LOCKED (CANONICAL DECISION LAYER, DEDUPLICATION, REFINED CONNECTOR SURVIVORSHIP, 176/176 TESTS PASSED)  
 2.8 Load canonical stations/connectors (transactional operational loading & mutation isolation) — COMPLETE / LOCKED (TRANSACTIONAL OPERATIONAL LOADING & MUTATION ISOLATION, 43 TESTS, 219/219 CUMULATIVE)  
 2.9 Record freshness/provenance (freshness decay engine & observation provenance tracking) — COMPLETE / LOCKED (PURE DETERMINISTIC ENGINE, 4 TIMESTAMPS, STALE != UNAVAILABLE, PLUGGABLE DECAY, 33 TESTS, 252/252 CUMULATIVE)  
-2.10 Schedule/repeat ingestion (polling daemons, cron scheduling & retry/backoff policies) — NEXT  
-2.11 Verify Mumbai coverage (spatial audit, missing-field rates & Phase 2 quality sign-off)
+2.10 Schedule/repeat ingestion (polling daemons, cron scheduling & retry/backoff policies) — COMPLETE / LOCKED (ORCHESTRATOR, POLLING DAEMON, EXPONENTIAL BACKOFF, INGESTION RUNS ACCOUNTING, 32 TESTS, 284/284 CUMULATIVE)  
+2.11 Verify Mumbai coverage (spatial audit, missing-field rates & Phase 2 quality sign-off) — COMPLETE / LOCKED (REAL OCM INGESTION VERIFIED, 8 GENUINE STATIONS, LIVE MMR COVERAGE AUDIT, 357/357 TESTS PASSED)  
+2.12 Recovery hardening & final Phase 2 closure — COMPLETE & LIVE VERIFIED (UNKNOWN-POWER CONNECTOR SEMANTICS PRESERVED AS NULL, FAIL-CLOSED CANDIDATE LOOKUP, SINGLE INGESTION_RUNS OWNER, 376/376 TESTS PASSED)
 
 ### Concept check
 - Are stations real?
@@ -423,17 +424,21 @@ We will also perform a conceptual check, not just a code check.
 
 ## Current status
 
-**PHASE 2 COMPLETE — READY FOR PHASE 3**
+**PHASE 2 RECOVERY — PARTIAL, LIVE INGESTION BLOCKED (2026-09-26)**
 
-- **Current Phase**: Phase 3/6 — Connect the Locked Frontend (NEXT)
+- **Current Phase**: Phase 2/6 — Real Data Ingestion & Data Quality (Recovery, NOT Phase 3)
 - **Remaining Phases**: 4 (Phase 3: Connect Locked Frontend, Phase 4: Warehouse, Analytics & Data Quality, Phase 5: Data Mining, Forecasting & Recommendations, Phase 6: Production & Public Beta)
-- **Current Step**: Phase 2 fully closed. Begin Phase 3, Step 3.1.
-- **Remaining Steps in Phase 3**: 13 (Steps 3.1–3.13)
+- **Current Step**: Phase 2 recovery wired; live OCM ingestion blocked by missing `OPENCHARGEMAP_API_KEY`.
+- **Remaining Steps in Phase 2**: 1 (live OCM dry-run + limited write + `ingestion_runs` verification)
 
 ### What is complete:
 - **Phase 1 — Foundation & Real Database (Steps 1.1–1.10) — COMPLETE & SIGNED OFF**
-- **Phase 2 — Real Data Ingestion & Data Quality (Steps 2.1–2.11) — COMPLETE & SIGNED OFF**
+- **Phase 2 libraries (Steps 2.1–2.11) — BUILT; runtime composition NOW WIRED**
+  - runner.run() composes adapter -> 2.5 normalization -> 2.6 validation gate -> candidate retrieval -> 2.4 resolution (inside 2.7) -> 2.7 dedup -> 2.8 canonical persistence (incl. observations) -> 2.9 freshness (read-only) -> 2.10 run accounting.
+  - Fixture residue (`open_charge_map_test`, 2 stations) remediated; live DB clean (1 source `open_charge_map`, 0 stations, 0 pollution, no fake replacements).
+  - `public.ingestion_runs` grants hardened (SELECT-only for anon/authenticated).
+  - Historical Step 2.11 audit report describes pre-recovery fixture state; re-run required after live ingestion.
 
 ### What we are doing next:
-- **Phase 3, Step 3.1 — Replace hardcoded station dataset with real Supabase data.**
+- **Obtain `OPENCHARGEMAP_API_KEY`, then `--dry-run --limit 10`, review, then one real `--limit 10` write; verify source links (genuine OCM IDs), UUID identity, provenance/hash, observations only from genuine telemetry, analytics alignment, and `ingestion_runs`. Phase 3 remains NOT READY until then.**
 
