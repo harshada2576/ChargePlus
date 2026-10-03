@@ -127,6 +127,7 @@ class CanonicalPersistenceResult:
     connectors_updated: int = 0
     connectors_persisted: int = 0
     connectors_skipped: int = 0
+    connectors_with_unknown_power: int = 0
     observations_persisted: int = 0
     error: Optional[str] = None
     warnings: list[str] = field(default_factory=list)
@@ -150,6 +151,7 @@ class CanonicalPersistenceResult:
             "connectors_updated": self.connectors_updated,
             "connectors_persisted": self.connectors_persisted,
             "connectors_skipped": self.connectors_skipped,
+            "connectors_with_unknown_power": self.connectors_with_unknown_power,
             "observations_persisted": self.observations_persisted,
             "error": self.error,
             "warnings": self.warnings,
@@ -173,6 +175,9 @@ class BatchCanonicalPersistenceReport:
     total_source_links_created: int = 0
     total_source_links_updated: int = 0
     total_connectors_persisted: int = 0
+    total_connectors_with_unknown_power: int = 0
+    total_connectors_skipped: int = 0
+    total_connector_rows_persisted: int = 0
     total_observations_persisted: int = 0
     results: list[CanonicalPersistenceResult] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
@@ -193,6 +198,9 @@ class BatchCanonicalPersistenceReport:
             "total_source_links_created": self.total_source_links_created,
             "total_source_links_updated": self.total_source_links_updated,
             "total_connectors_persisted": self.total_connectors_persisted,
+            "total_connectors_with_unknown_power": self.total_connectors_with_unknown_power,
+            "total_connectors_skipped": self.total_connectors_skipped,
+            "total_connector_rows_persisted": self.total_connector_rows_persisted,
             "total_observations_persisted": self.total_observations_persisted,
             "errors_count": len(self.errors),
             "duration_seconds": round(self.duration_seconds, 2),
@@ -203,13 +211,56 @@ def _scrub_secrets(text: Optional[str]) -> Optional[str]:
     """Sanitizes text by removing database passwords, tokens, and API keys."""
     if not text:
         return text
-    # Mask postgresql://user:password@host
-    s = re.sub(r"://([^:]+):([^@]+)@", r"://:***@", text)
-    # Mask api_key=..., apikey=...
-    s = re.sub(r"(api[_-]?key=)[^&\s'\"]+", r"***", s, flags=re.IGNORECASE)
-    # Mask token=..., secret=...
-    s = re.sub(r"(secret|token|password)=[^&\s'\"]+", r"=***", s, flags=re.IGNORECASE)
+    # Mask postgresql://user:password@host (preserve username via group 1)
+    s = re.sub(r"://([^:]+):([^@]+)@", r"://\1:***@", text)
+    # Mask api_key=..., apikey=..., key=..., access_token=...
+    s = re.sub(r"(api[_-]?key=)[^&\s'\"]+", r"\1***", s, flags=re.IGNORECASE)
+    s = re.sub(r"(access_token=)[^&\s'\"]+", r"\1***", s, flags=re.IGNORECASE)
+    # Mask bare key=... only when key looks like a credential (avoid over-masking).
+    # Requires at least 8 chars to reduce false positives on benign query params.
+    s = re.sub(r"([?&]key=)[^&\s'\"]{8,}", r"\1***", s, flags=re.IGNORECASE)
+    # Mask token=..., secret=..., password=...
+    s = re.sub(r"(secret|token|password)=[^&\s'\"]+", r"\1=***", s, flags=re.IGNORECASE)
+    # Mask Authorization: Bearer <token>
+    s = re.sub(r"(Authorization\s*:\s*Bearer\s+)[^\s'\"]+", r"\1***", s, flags=re.IGNORECASE)
+    s = re.sub(r"(Bearer\s+)[A-Za-z0-9\-._~+/=]{8,}", r"\1***", s)
     return s
+
+
+def _record_payload_hash(rec: Any) -> Optional[str]:
+    """Resolves canonical raw payload hash from contract boundary.
+
+    Authoritative location is NormalizedStationRecord.raw_payload_hash (Layer 2
+    contract field populated by the source adapter). Falls back to legacy
+    extra_metadata['payload_hash'] for decisions constructed by older callers.
+    """
+    direct = getattr(rec, "raw_payload_hash", None)
+    if direct:
+        return direct
+    meta = getattr(rec, "extra_metadata", None)
+    if isinstance(meta, dict):
+        for key in ("payload_hash", "raw_payload_hash", "source_payload_hash"):
+            val = meta.get(key)
+            if val:
+                return val
+    return None
+
+
+def _record_source_url(rec: Any) -> Optional[str]:
+    """Resolves canonical source URL from contract boundary.
+
+    Authoritative location is NormalizedStationRecord.source_url. Falls back to
+    extra_metadata['source_url'] for older callers.
+    """
+    direct = getattr(rec, "source_url", None)
+    if direct:
+        return direct
+    meta = getattr(rec, "extra_metadata", None)
+    if isinstance(meta, dict):
+        val = meta.get("source_url")
+        if val:
+            return val
+    return None
 
 
 def _sanitize_slug(text: Optional[str], fallback: str = "item") -> str:
@@ -401,7 +452,15 @@ class IngestionPersistenceService:
         data_source_id: uuid.UUID,
         dry_run: bool = False,
     ) -> StationPersistenceResult:
-        """Persists or updates a normalized station record and its connectors idempotently."""
+        """Persists or updates a normalized station record and its connectors idempotently.
+
+        DEPRECATED (Phase 2 recovery): legacy Step 2.3 source-local persistence.
+        The production runtime now uses the canonical pipeline
+        (resolution -> CanonicalDeduplicationEngine.evaluate_records ->
+        persist_canonical_decision/batch). This method is retained only for
+        backward-compatible unit tests and must NOT be called by
+        IngestionRunner. New code must use persist_canonical_decision.
+        """
         warnings: list[str] = []
         source_station_id = station.source_station_id
 
@@ -642,7 +701,12 @@ class IngestionPersistenceService:
         connectors: list[NormalizedConnectorRecord],
         warnings: list[str],
     ) -> tuple[int, int]:
-        """Synchronizes connector capacity groups into public.connectors while enforcing database constraints."""
+        """Synchronizes connector capacity groups into public.connectors while enforcing database constraints.
+
+        DEPRECATED: destructive DELETE/reinsert legacy semantics. Retained only
+        for the deprecated persist_station path. Canonical persistence must use
+        _reconcile_and_persist_connectors (non-destructive, survivorship-aware).
+        """
         # Aggregate identical capacity groups (connector_type, power_kw, charging_standard)
         # to satisfy uq_connectors_station_type_power
         grouped: dict[tuple[str, float, str], int] = {}
@@ -1008,6 +1072,7 @@ class IngestionPersistenceService:
                     conns.append(
                         NormalizedConnectorRecord(
                             connector_type=c["connector_type"],
+                            raw_connector_type=c["connector_type"],
                             charging_standard=c["charging_standard"],
                             power_kw=float(c["power_kw"]) if c["power_kw"] is not None else None,
                             quantity=c["quantity"],
@@ -1140,6 +1205,9 @@ class IngestionPersistenceService:
             report.total_source_links_created += res.source_links_created
             report.total_source_links_updated += res.source_links_updated
             report.total_connectors_persisted += res.connectors_persisted
+            report.total_connectors_with_unknown_power += res.connectors_with_unknown_power
+            report.total_connectors_skipped += res.connectors_skipped
+            report.total_connector_rows_persisted += (res.connectors_created + res.connectors_updated)
             report.total_observations_persisted += res.observations_persisted
 
         report.duration_seconds = time.time() - start_time
@@ -1174,36 +1242,55 @@ class IngestionPersistenceService:
             if existing_link else None
         )
 
-        current_hash = rec.extra_metadata.get("payload_hash") if rec.extra_metadata else None
+        current_hash = _record_payload_hash(rec)
 
         # Case A: Identical payload previously ingested -> UNCHANGED
         if link_dict and current_hash and link_dict.get("source_payload_hash") == current_hash:
             stn_id = uuid.UUID(str(link_dict["station_id"]))
-            cur.execute(
-                """
-                UPDATE public.station_source_link
-                SET last_seen_at = now()
-                WHERE id = %s;
-                """,
-                (str(link_dict["id"]),),
-            )
-            return CanonicalPersistenceResult(
-                cluster_id=decision.cluster_id,
-                decision_state=decision.decision_state,
-                status=CanonicalPersistenceStatus.UNCHANGED,
-                station_id=stn_id,
-                is_unchanged=True,
-                source_links_updated=1,
-                connectors_persisted=len(rec.connectors),
-                warnings=warnings,
-            )
+            # Check if station currently has zero connector rows in DB while incoming record has connectors
+            # (e.g. from previously skipped unknown-power connectors needing reconciliation)
+            needs_connector_reconciliation = False
+            if rec.connectors:
+                cur.execute(
+                    """
+                    SELECT id, connector_type, power_kw, charging_standard, quantity, pricing_type, price_per_kwh, price_per_session
+                    FROM public.connectors
+                    WHERE station_id = %s;
+                    """,
+                    (str(stn_id),),
+                )
+                existing_conns = cur.fetchall()
+                if not existing_conns:
+                    needs_connector_reconciliation = True
+
+            if not needs_connector_reconciliation:
+                cur.execute(
+                    """
+                    UPDATE public.station_source_link
+                    SET last_seen_at = now()
+                    WHERE id = %s;
+                    """,
+                    (str(link_dict["id"]),),
+                )
+                unk_cnt = sum(max(1, c.quantity) for c in rec.connectors if c.power_kw is None)
+                return CanonicalPersistenceResult(
+                    cluster_id=decision.cluster_id,
+                    decision_state=decision.decision_state,
+                    status=CanonicalPersistenceStatus.UNCHANGED,
+                    station_id=stn_id,
+                    is_unchanged=True,
+                    source_links_updated=1,
+                    connectors_persisted=sum(max(1, c.quantity) for c in rec.connectors),
+                    connectors_with_unknown_power=unk_cnt,
+                    warnings=warnings,
+                )
 
         # Case B: Existing station updated -> UPDATED
         if link_dict:
             stn_id = uuid.UUID(str(link_dict["station_id"]))
             attrs = self._extract_canonical_station_attributes(decision, warnings)
             self._update_station_record(cur, stn_id, attrs)
-            conn_persisted, conn_created, conn_updated, conn_skipped = self._reconcile_and_persist_connectors(
+            conn_persisted, conn_created, conn_updated, conn_skipped, conn_unknown = self._reconcile_and_persist_connectors(
                 cur, stn_id, decision, warnings
             )
             cur.execute(
@@ -1228,6 +1315,7 @@ class IngestionPersistenceService:
                 connectors_created=conn_created,
                 connectors_updated=conn_updated,
                 connectors_skipped=conn_skipped,
+                connectors_with_unknown_power=conn_unknown,
                 observations_persisted=obs_count,
                 warnings=warnings,
             )
@@ -1236,7 +1324,7 @@ class IngestionPersistenceService:
         stn_id = uuid.uuid4()
         attrs = self._extract_canonical_station_attributes(decision, warnings)
         self._insert_station_record(cur, stn_id, attrs)
-        conn_persisted, conn_created, conn_updated, conn_skipped = self._reconcile_and_persist_connectors(
+        conn_persisted, conn_created, conn_updated, conn_skipped, conn_unknown = self._reconcile_and_persist_connectors(
             cur, stn_id, decision, warnings
         )
         cur.execute(
@@ -1250,7 +1338,7 @@ class IngestionPersistenceService:
                 str(stn_id),
                 str(data_source_id),
                 str(rec.source_station_id),
-                rec.extra_metadata.get("source_url") if rec.extra_metadata else None,
+                _record_source_url(rec),
                 current_hash,
             ),
         )
@@ -1268,6 +1356,7 @@ class IngestionPersistenceService:
             connectors_created=conn_created,
             connectors_updated=conn_updated,
             connectors_skipped=conn_skipped,
+            connectors_with_unknown_power=conn_unknown,
             observations_persisted=obs_count,
             warnings=warnings,
         )
@@ -1321,7 +1410,7 @@ class IngestionPersistenceService:
             self._update_station_record(cur, stn_id, attrs)
 
         # Reconcile connectors (two-level deduplicated connectors from Step 2.7)
-        conn_persisted, conn_created, conn_updated, conn_skipped = self._reconcile_and_persist_connectors(
+        conn_persisted, conn_created, conn_updated, conn_skipped, conn_unknown = self._reconcile_and_persist_connectors(
             cur, stn_id, decision, warnings
         )
 
@@ -1349,6 +1438,7 @@ class IngestionPersistenceService:
             connectors_created=conn_created,
             connectors_updated=conn_updated,
             connectors_skipped=conn_skipped,
+            connectors_with_unknown_power=conn_unknown,
             observations_persisted=obs_count,
             warnings=warnings,
         )
@@ -1375,7 +1465,7 @@ class IngestionPersistenceService:
         self._update_station_record(cur, stn_id, attrs)
 
         # Reconcile connectors
-        conn_persisted, conn_created, conn_updated, conn_skipped = self._reconcile_and_persist_connectors(
+        conn_persisted, conn_created, conn_updated, conn_skipped, conn_unknown = self._reconcile_and_persist_connectors(
             cur, stn_id, decision, warnings
         )
 
@@ -1400,6 +1490,7 @@ class IngestionPersistenceService:
             connectors_created=conn_created,
             connectors_updated=conn_updated,
             connectors_skipped=conn_skipped,
+            connectors_with_unknown_power=conn_unknown,
             observations_persisted=obs_count,
             warnings=warnings,
         )
@@ -1599,7 +1690,8 @@ class IngestionPersistenceService:
                 attrs.get("address_line"), attrs.get("locality"),
                 attrs.get("city"), attrs.get("state"), attrs.get("postal_code"),
                 attrs.get("country"), attrs.get("latitude"), attrs.get("longitude"),
-                attrs.get("is_24_hours"), attrs.get("opening_time"), attrs.get("closing_time"),
+                attrs.get("is_24_hours"), attrs.get("opening_time"),
+                attrs.get("is_24_hours"), attrs.get("closing_time"),
                 attrs.get("is_24_hours"), attrs.get("access_type"), attrs.get("is_public"),
                 attrs.get("operational_status") or "unknown", attrs.get("operational_status") or "unknown",
                 attrs.get("phone"), attrs.get("website_url"), attrs.get("last_verified_at"),
@@ -1613,10 +1705,10 @@ class IngestionPersistenceService:
         station_id: uuid.UUID,
         decision: CanonicalResolutionDecision,
         warnings: list[str],
-    ) -> tuple[int, int, int, int]:
+    ) -> tuple[int, int, int, int, int]:
         """Reconciles canonical connector capacity groups into public.connectors and analytics.dim_connector.
         
-        Returns: (persisted_count, created_count, updated_count, skipped_count)
+        Returns: (persisted_count, created_count, updated_count, skipped_count, unknown_power_count)
         """
         # Fetch existing connectors for station
         cur.execute(
@@ -1628,13 +1720,14 @@ class IngestionPersistenceService:
             (str(station_id),),
         )
         existing_rows = cur.fetchall()
-        existing_map: dict[tuple[str, float, str], dict[str, Any]] = {}
+        existing_map: dict[tuple[str, Optional[float], str], dict[str, Any]] = {}
         for er in existing_rows:
             r_dict = dict(er) if hasattr(er, "keys") else {
                 "id": er[0], "connector_type": er[1], "power_kw": er[2], "charging_standard": er[3],
                 "quantity": er[4], "pricing_type": er[5], "price_per_kwh": er[6], "price_per_session": er[7],
             }
-            k = (r_dict["connector_type"], round(float(r_dict["power_kw"]), 1), r_dict["charging_standard"] or "")
+            er_pkw = round(float(r_dict["power_kw"]), 1) if r_dict["power_kw"] is not None else None
+            k = (r_dict["connector_type"], er_pkw, r_dict["charging_standard"] or "")
             existing_map[k] = r_dict
 
         # Extract canonical connectors from decision
@@ -1659,6 +1752,7 @@ class IngestionPersistenceService:
         created_count = 0
         updated_count = 0
         skipped_count = 0
+        unknown_power_count = 0
 
         for c_data in raw_conns:
             c_type = c_data.get("connector_type")
@@ -1668,14 +1762,19 @@ class IngestionPersistenceService:
                 continue
 
             p_kw = c_data.get("power_kw")
-            if p_kw is None or p_kw <= 0:
-                warnings.append(f"Connector missing or non-positive power_kw ({p_kw}); skipped")
+            if p_kw is not None and p_kw <= 0:
+                warnings.append(f"Connector non-positive power_kw ({p_kw}); skipped")
                 skipped_count += 1
                 continue
 
             std = c_data.get("charging_standard") or ""
             qty = max(1, c_data.get("quantity", 1))
-            key = (c_type, round(float(p_kw), 1), std)
+            p_val = round(float(p_kw), 1) if p_kw is not None else None
+            key = (c_type, p_val, std)
+
+            if p_val is None:
+                unknown_power_count += qty
+                warnings.append(f"Connector type '{c_type}' has unknown power_kw (NULL); persisted without power")
 
             conn_p_type = c_data.get("pricing_type") or p_type
             conn_p_kwh = c_data.get("price_per_kwh") if c_data.get("price_per_kwh") is not None else p_kwh
@@ -1721,7 +1820,7 @@ class IngestionPersistenceService:
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'INR', now(), now());
                     """,
                     (
-                        str(conn_id), str(station_id), c_type, std or None, p_kw,
+                        str(conn_id), str(station_id), c_type, std or None, p_val,
                         qty, conn_p_type, conn_p_kwh, conn_p_sess,
                     ),
                 )
@@ -1736,14 +1835,14 @@ class IngestionPersistenceService:
                 station_id=station_id,
                 connector_type=c_type,
                 charging_standard=std or None,
-                power_kw=float(p_kw),
+                power_kw=p_val,
                 quantity=final_qty,
                 pricing_type=conn_p_type,
                 price_per_kwh=conn_p_kwh,
                 price_per_session=conn_p_sess,
             )
 
-        return persisted_count, created_count, updated_count, skipped_count
+        return persisted_count, created_count, updated_count, skipped_count, unknown_power_count
 
     def _reconcile_and_persist_source_links(
         self,
@@ -1770,8 +1869,8 @@ class IngestionPersistenceService:
             )
             row = cur.fetchone()
             rec = rec_map.get((src_id_str, src_stn_id))
-            p_hash = rec.extra_metadata.get("payload_hash") if rec and rec.extra_metadata else None
-            s_url = rec.extra_metadata.get("source_url") if rec and rec.extra_metadata else None
+            p_hash = _record_payload_hash(rec) if rec is not None else None
+            s_url = _record_source_url(rec) if rec is not None else None
 
             if row:
                 r_dict = dict(row) if hasattr(row, "keys") else {"id": row[0], "station_id": row[1], "source_payload_hash": row[2]}
@@ -1809,11 +1908,11 @@ class IngestionPersistenceService:
         station_id: uuid.UUID,
         connector_type: str,
         charging_standard: Optional[str],
-        power_kw: float,
+        power_kw: Optional[float],
         quantity: int,
-        pricing_type: Optional[str],
-        price_per_kwh: Optional[float],
-        price_per_session: Optional[float],
+        pricing_type: Optional[str] = None,
+        price_per_kwh: Optional[float] = None,
+        price_per_session: Optional[float] = None,
     ) -> None:
         """Mirrors public.connectors into analytics.dim_connector for conformed warehouse lookup."""
         is_fast = (power_kw >= 50.0) if power_kw is not None else None
@@ -2025,7 +2124,7 @@ class IngestionPersistenceService:
         for rec in decision.participating_records:
             if rec.observation is not None:
                 data_source_id = self.get_or_create_data_source(name=rec.source_id, commit=False)
-                payload_hash = rec.extra_metadata.get("payload_hash") if rec.extra_metadata else None
+                payload_hash = _record_payload_hash(rec)
 
                 if payload_hash:
                     cur.execute(
