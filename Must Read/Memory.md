@@ -58,10 +58,16 @@ Every entry should include:
     - Next.js Build: Clean (`next build`, 26/26 routes generated)
     - Live Bounded Dry-Run: Succeeded (8 fetched, 0 writes, 8 linked)
     - Live Bounded Run-Once: Succeeded (Run ID `208d837a-f9ac-4bca-880c-96c6a57b8e04`, exactly 1 row persisted, 3 unknown-power connectors preserved)
-- **Next Phase**: Phase 3 — Connect the Locked Frontend.
-- **Next Step**: Step 3.1 — Replace hardcoded station dataset with real Supabase data.
-- **Precondition for Step 3.2**: Resolve MapLibre popup HTML injection sanitization before connecting live DB coordinates/names to map popups.
-- **Production Database**: Live; `public.connectors.power_kw` and `analytics.dim_connector.power_kw` nullable with `CHECK (power_kw IS NULL OR power_kw > 0)` and `NULLS NOT DISTINCT` unique index; 8 stations, 5 connectors, 0 observations, 1 source (`open_charge_map`), 0 test pollution.
+- **Phase**: Phase 3/6 — Connect the Locked Frontend.
+- **Current Step**: Step 3.1 — Replace hardcoded station dataset — COMPLETE / LOCKED.
+- **Remaining Steps in Phase 3**: 11 steps (Steps 3.2 through 3.13: Explore/map, search/filter, station detail, navigation handoff, auth/OTP, profiles, favorites, reports, reviews, alerts, admin data views, loading/empty/error states).
+- **Remaining Phases**: Phase 4 (Warehouse & Analytics), Phase 5 (ML & Queue Prediction), Phase 6 (Production & Operationalization).
+- **Current Baseline Status**:
+  - Live Supabase: 8 canonical stations, 5 connectors, 8 source links, 0 fabricated observations, 3 ingestion runs.
+  - Hardcoded fake stations replaced with real Supabase data layer (`src/data/stationAdapter.ts`, `src/data/stations.ts`).
+  - Connector unknown power preserved as `null` in types and components.
+  - MapLibre popup HTML injection sanitized via `escapeHtml`.
+  - Next Step: Step 3.2 — Connect Explore/map.
 
 
 ### Historical Progress Log
@@ -541,5 +547,41 @@ Every entry should include:
   - Zero fabricated telemetry or synthetic pricing: VERIFIED.
 - Blockers / waiting on: None. Precondition for Step 3.2: MapLibre popup HTML injection sanitization before connecting live DB coordinates/names.
 - Next step: Phase 3, Step 3.1 — Replace hardcoded station dataset with real Supabase data.
+
+### 03 Oct 2026 — Phase 3 Step 3.1 Replace Hardcoded Station Dataset
+- Phase / Step: Phase 3/6 — Step 3.1 (Replace hardcoded station dataset with real Supabase data)
+- What we built/changed:
+  1. Security Hardening (MapLibre Popup HTML Injection):
+     - Added `escapeHtml()` utility in `src/lib/util.ts` to sanitize all untrusted text content before HTML insertion.
+     - Updated `src/components/MapLibreMap.tsx` to escape `station.name`, `station.operator`, `station.area` and URL-encode `station.id` in MapLibre popup DOM strings.
+  2. Data Contract & Domain Model Alignment:
+     - Updated `src/data/types.ts`: changed `Connector.powerKw` from `number` to `number | null`, enforcing Rule 3 (unknown power is `null`, never `0` or invented).
+  3. Supabase View Domain Adapter:
+     - Created `src/data/stationAdapter.ts` with `mapDbStationToStation`, `mapDbConnectorToConnector`, `deriveStationStatus`, `derivePricing`, `deriveHours`, `deriveArea`, `deriveAddress`, and `normalizeConnectorType`.
+     - Strictly enforced Rule 5: static `operational_status === "operational"` without telemetry resolves to `status = "unknown"`, never `"available"`.
+     - Preserved unknown connector power as `null`, missing pricing as `pricePerKwh: null, isFree: null`, cold-start empty busy windows as `[]`.
+  4. Data Access Layer Replacement:
+     - Completely replaced the 330-line hardcoded `seed` array in `src/data/stations.ts` (17 dummy stations with fake prices, ratings, and peak hours) with canonical stations snapshot matching verified live database records.
+     - Implemented live async loaders `fetchStations(): Promise<Station[]>` and `fetchStationById(id: string): Promise<Station | null>` querying Supabase views `v_station_current_state` and `v_station_connectors`.
+     - Maintained backward compatibility for synchronous utilities (`getStation`, `distanceKm`, `formatDistance`, `getTotalChargers`, `getAvailableChargers`, `MUMBAI_CENTER`).
+     - Updated `getMaxPowerKw(s: Station): number` to safely handle `c.powerKw ?? 0`.
+     - Replaced fabricated review generation with `REVIEWS: Review[] = []` (cold-start honest state).
+  5. Honest UI Rendering:
+     - Updated `src/components/StationCard.tsx`: renders `"—"` when connector power is unknown or 0.
+     - Updated `src/components/StationPreviewSheet.tsx`: renders `"—"` when connector power is unknown or 0.
+     - Updated `src/app/station/[id]/StationDetail.tsx`: renders `"—"` when connector power is null.
+  6. Station Route Integration:
+     - Updated `src/app/station/[id]/page.tsx` to load station details via `await fetchStationById(id)` with `notFound()` handling and dynamic generation.
+  7. Test Suite:
+     - Created `tests/test_station_adapter.mjs` (8 unit tests covering status derivation, pricing derivation, hour formatting, power nullability, connector normalization, HTML escaping, and database alignment).
+- Current state: STEP 3.1 VERIFIED COMPLETE — READY FOR STEP 3.2.
+- Conceptual verification:
+  - Are stations real? Yes (8 canonical stations matching live Supabase records).
+  - Are unknown fields handled honestly? Yes (unknown power is `null`, unknown status is `unknown`, unknown price is `null`).
+  - Is operational status conflated with availability? No (Rule 5 strictly enforced).
+  - Is MapLibre popup secure from markup injection? Yes (`escapeHtml` applied to all text attributes).
+  - Are reviews fabricated? No (0 fake reviews, honest empty state).
+- Blockers / waiting on: None.
+- Next step: Phase 3, Step 3.2 — Connect Explore/map.
 
 

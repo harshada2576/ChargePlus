@@ -75,19 +75,19 @@ We will also perform a conceptual check, not just a code check.
 **Goal:** turn the completed UI into a real product without redesigning it.
 
 ### Steps
-3.1 Replace hardcoded station dataset  
-3.2 Connect Explore/map  
-3.3 Connect search/filter  
-3.4 Connect station detail  
-3.5 Connect navigation handoff  
-3.6 Connect auth/OTP  
-3.7 Connect profiles  
-3.8 Connect favorites  
-3.9 Connect reports  
-3.10 Connect reviews  
-3.11 Connect alerts  
-3.12 Connect admin data views  
-3.13 Test loading/empty/error states against real data
+- 3.1 Replace hardcoded station dataset — COMPLETE / LOCKED
+- 3.2 Connect Explore/map  
+- 3.3 Connect search/filter  
+- 3.4 Connect station detail  
+- 3.5 Connect navigation handoff  
+- 3.6 Connect auth/OTP  
+- 3.7 Connect profiles  
+- 3.8 Connect favorites  
+- 3.9 Connect reports  
+- 3.10 Connect reviews  
+- 3.11 Connect alerts  
+- 3.12 Connect admin data views  
+- 3.13 Test loading/empty/error states against real data
 
 ### Concept check
 - Does the UI say only what the data supports?
@@ -327,19 +327,27 @@ We will also perform a conceptual check, not just a code check.
 **Goal:** turn the completed UI into a real product without redesigning it.
 
 ### Steps
-3.1 Replace hardcoded station dataset  
-3.2 Connect Explore/map  
-3.3 Connect search/filter  
-3.4 Connect station detail  
-3.5 Connect navigation handoff  
-3.6 Connect auth/OTP  
-3.7 Connect profiles  
-3.8 Connect favorites  
-3.9 Connect reports  
-3.10 Connect reviews  
-3.11 Connect alerts  
-3.12 Connect admin data views  
-3.13 Test loading/empty/error states against real data
+- 3.1 Replace hardcoded station dataset — COMPLETE / LOCKED
+  - Security prerequisite resolved: MapLibre popup HTML strings sanitized via `escapeHtml()`.
+  - Replaced 330-line hardcoded fake seed array in `src/data/stations.ts` with real canonical stations snapshot matching live PostgreSQL database records.
+  - Authored domain adapter `src/data/stationAdapter.ts` mapping `public.v_station_current_state` and `public.v_station_connectors` to domain entities.
+  - Implemented live async loaders `fetchStations()` and `fetchStationById(id)` querying Supabase views with public anon key.
+  - Preserved unknown connector power as `null` (not 0), missing price as `null` (not free), unknown status as `unknown` (Rule 5: static operational != live availability), and cold-start reviews as `[]`.
+  - Updated `src/data/types.ts` (`Connector.powerKw: number | null`) and UI components (`StationCard`, `StationPreviewSheet`, `StationDetail`) to render `"—"` when power is unknown.
+  - Connected `src/app/station/[id]/page.tsx` to `fetchStationById(id)` with `notFound()` and dynamic generation.
+  - 8 unit tests in `tests/test_station_adapter.mjs`; all 376 pytest tests, tsc, eslint, and next build passing cleanly.
+- 3.2 Connect Explore/map  
+- 3.3 Connect search/filter  
+- 3.4 Connect station detail  
+- 3.5 Connect navigation handoff  
+- 3.6 Connect auth/OTP  
+- 3.7 Connect profiles  
+- 3.8 Connect favorites  
+- 3.9 Connect reports  
+- 3.10 Connect reviews  
+- 3.11 Connect alerts  
+- 3.12 Connect admin data views  
+- 3.13 Test loading/empty/error states against real data
 
 ### Concept check
 - Does the UI say only what the data supports?

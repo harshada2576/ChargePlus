@@ -213,5 +213,6 @@ supabase db push
   - **Step 2.10 — Schedule/Repeat Ingestion:** COMPLETE & LOCKED (284/284 cumulative).
   - **Step 2.11 — Mumbai Coverage Audit & Phase 2 Sign-off:** COMPLETE & LOCKED (`backend/ingestion/audit.py`, live audit against Supabase DB at `as_of=2026-09-26T06:30:00Z`, 2 canonical stations in MMR, 348/348 cumulative tests passing, report at `docs/step_2_11_mumbai_coverage_and_data_quality_audit.md`).
   - **Step 2.12 — Recovery Hardening & Final Phase 2 Closure:** COMPLETE & SIGNED OFF (Unknown-power connectors preserved as NULL, fail-closed candidate lookup, single ingestion_runs owner, 376/376 cumulative tests passing, live DB verified with 8 MMR stations, 5 connectors, 0 fabricated facts).
-- **Phase 3 (Connect the Locked Frontend):** NEXT
-  - **Step 3.1 — Replace hardcoded station dataset with real Supabase data.**
+- **Phase 3 (Connect the Locked Frontend):** IN PROGRESS
+  - **Step 3.1 — Replace hardcoded station dataset:** COMPLETE & LOCKED (Replaced 330-line fake seed dataset with real canonical Supabase stations, authored domain adapter `src/data/stationAdapter.ts`, async loaders `fetchStations` and `fetchStationById`, sanitized MapLibre popup HTML injection via `escapeHtml`, preserved unknown power as NULL, 8 unit tests in `tests/test_station_adapter.mjs`).
+  - **Step 3.2 — Connect Explore/map:** NEXT
