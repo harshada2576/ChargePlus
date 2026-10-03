@@ -121,21 +121,29 @@ class InMemoryDbCursor:
             self.db.tables["public.operators"].append(row)
             self._last_result = [row if self.as_dict else (op_id,)]
 
-        # 6. SELECT from public.station_source_link
+        # 6. SELECT from public.station_source_link (legacy 6-col + canonical 3/4-col)
         elif "FROM public.station_source_link WHERE source_id = %s AND source_station_id = %s" in sql_clean:
             src_id, src_stn_id = str(params[0]), str(params[1])
             for row in self.db.tables["public.station_source_link"]:
                 if str(row["source_id"]) == src_id and str(row["source_station_id"]) == src_stn_id:
-                    self._last_result = [row if self.as_dict else (row["id"], row["station_id"], row["source_id"], row["source_station_id"], row["source_payload_hash"], row["first_seen_at"])]
+                    if self.as_dict:
+                        self._last_result = [row]
+                    elif "SELECT id, station_id, source_payload_hash" in sql_clean:
+                        # Canonical 3-col variant
+                        self._last_result = [(row["id"], row["station_id"], row["source_payload_hash"])]
+                    elif "SELECT id, station_id, source_payload_hash, first_seen_at" in sql_clean:
+                        self._last_result = [(row["id"], row["station_id"], row["source_payload_hash"], row.get("first_seen_at"))]
+                    else:
+                        self._last_result = [(row["id"], row["station_id"], row["source_id"], row["source_station_id"], row["source_payload_hash"], row.get("first_seen_at"))]
                     break
 
-        # 7. UPDATE public.station_source_link
-        elif "UPDATE public.station_source_link SET last_seen_at = now()" in sql_clean:
+        # 7. UPDATE public.station_source_link (legacy by source ids; canonical by id handled below)
+        elif "UPDATE public.station_source_link SET last_seen_at = now()" in sql_clean and "WHERE id = %s" not in sql_clean:
             src_id, src_stn_id = str(params[0]), str(params[1])
             for row in self.db.tables["public.station_source_link"]:
                 if str(row["source_id"]) == src_id and str(row["source_station_id"]) == src_stn_id:
                     row["last_seen_at"] = datetime.now(timezone.utc)
-                    self.db.mutation_counts["station_source_link_updates"] += 1
+                    self.db.mutation_counts["station_source_link_updates"] = self.db.mutation_counts.get("station_source_link_updates", 0) + 1
                     break
         elif "UPDATE public.station_source_link SET source_payload_hash = %s" in sql_clean:
             new_hash, link_id = params
@@ -194,12 +202,94 @@ class InMemoryDbCursor:
                 c for c in self.db.tables["public.connectors"] if str(c["station_id"]) != stn_id
             ]
 
-        # 11. INSERT INTO public.connectors
+        # 11. INSERT INTO public.connectors (legacy 6-param + canonical 9-param)
         elif "INSERT INTO public.connectors" in sql_clean:
-            cid, stn_id, ctype, std, pkw, qty = params
-            row = {"id": cid, "station_id": stn_id, "connector_type": ctype, "charging_standard": std, "power_kw": pkw, "quantity": qty}
+            if len(params) >= 9:
+                # Canonical reconcile path:
+                # (id, station_id, connector_type, charging_standard, power_kw,
+                #  quantity, pricing_type, price_per_kwh, price_per_session)
+                cid, stn_id, ctype, std, pkw, qty = params[0], params[1], params[2], params[3], params[4], params[5]
+                row = {"id": cid, "station_id": stn_id, "connector_type": ctype, "charging_standard": std, "power_kw": pkw, "quantity": qty,
+                       "pricing_type": params[6], "price_per_kwh": params[7], "price_per_session": params[8]}
+            else:
+                cid, stn_id, ctype, std, pkw, qty = params
+                row = {"id": cid, "station_id": stn_id, "connector_type": ctype, "charging_standard": std, "power_kw": pkw, "quantity": qty}
             self.db.tables["public.connectors"].append(row)
             self.db.mutation_counts["connectors_inserted"] += 1
+        # 11b. Canonical connector reconcile: fetch existing capacity groups
+        # (must exclude the COALESCE SUM lookup handled below)
+        elif "FROM public.connectors WHERE station_id = %s" in sql_clean and sql_clean.strip().startswith("SELECT") and "COALESCE(SUM" not in sql_clean:
+            stn_id = str(params[0])
+            for c in self.db.tables["public.connectors"]:
+                if str(c["station_id"]) == stn_id:
+                    if self.as_dict:
+                        self._last_result.append(c)
+                    else:
+                        self._last_result.append((c["id"], c["connector_type"], c.get("power_kw"), c.get("charging_standard"), c.get("quantity"), c.get("pricing_type"), c.get("price_per_kwh"), c.get("price_per_session")))
+        # 11c. Canonical connector reconcile: update existing capacity group
+        elif "UPDATE public.connectors SET" in sql_clean:
+            # Params: (quantity, pricing_type, price_per_kwh, price_per_session, id)
+            try:
+                new_qty, p_type, p_kwh, p_sess, conn_id = params[:5]
+                for c in self.db.tables["public.connectors"]:
+                    if str(c["id"]) == str(conn_id):
+                        c["quantity"] = new_qty
+                        if p_type is not None:
+                            c["pricing_type"] = p_type
+                        if p_kwh is not None:
+                            c["price_per_kwh"] = p_kwh
+                        if p_sess is not None:
+                            c["price_per_session"] = p_sess
+                        break
+            except Exception:
+                pass
+        # 11d. Canonical warehouse dim_connector mirror (no-op for counts)
+        elif "INSERT INTO analytics.dim_connector" in sql_clean:
+            pass
+        # 11e. Canonical observation total-connectors lookup
+        elif "SELECT COALESCE(SUM(quantity), 0) FROM public.connectors" in sql_clean:
+            stn_id = str(params[0])
+            total = sum(int(c.get("quantity", 0)) for c in self.db.tables["public.connectors"] if str(c["station_id"]) == stn_id)
+            self._last_result = [(total,)]
+        # 11f. Canonical observation idempotency (no LIMIT variant)
+        elif "FROM public.station_observations WHERE station_id = %s AND source_id = %s AND source_payload_hash = %s" in sql_clean:
+            stn_id, src_id, p_hash = str(params[0]), str(params[1]), str(params[2])
+            for row in self.db.tables["public.station_observations"]:
+                if str(row["station_id"]) == stn_id and str(row.get("source_payload_hash")) == p_hash:
+                    self._last_result = [row if self.as_dict else (row["id"],)]
+                    break
+        # 11g. Canonical UNCHANGED link touch by primary key
+        elif "UPDATE public.station_source_link SET last_seen_at = now() WHERE id = %s" in sql_clean:
+            link_id = str(params[0])
+            for row in self.db.tables["public.station_source_link"]:
+                if str(row["id"]) == link_id:
+                    row["last_seen_at"] = datetime.now(timezone.utc)
+                    self.db.mutation_counts["station_source_link_updates"] = self.db.mutation_counts.get("station_source_link_updates", 0) + 1
+                    break
+        # 11h. Canonical fetch_existing (stations + operators, bounding-box optional)
+        elif "FROM public.stations s" in sql_clean and "LEFT JOIN public.operators" in sql_clean and "WHERE s.id = %s" not in sql_clean:
+            for s in self.db.tables["public.stations"]:
+                op_row = next((o for o in self.db.tables["public.operators"] if str(o["id"]) == str(s.get("operator_id"))), None)
+                row = {"id": s["id"], "name": s.get("name"), "latitude": s.get("latitude"), "longitude": s.get("longitude"),
+                       "address_line": s.get("address_line"), "locality": s.get("locality"), "postal_code": s.get("postal_code"),
+                       "operator_name": op_row["name"] if op_row else None, "operator_slug": op_row["slug"] if op_row else None}
+                self._last_result.append(row if self.as_dict else (row["id"], row["name"], row["latitude"], row["longitude"], row["address_line"], row["locality"], row["postal_code"], row["operator_name"], row["operator_slug"]))
+        # 11i. Canonical SCD2 station fetch by id (LEFT JOIN variant)
+        elif "FROM public.stations s" in sql_clean and "LEFT JOIN public.operators" in sql_clean and "WHERE s.id = %s" in sql_clean:
+            stn_id = str(params[0])
+            for s in self.db.tables["public.stations"]:
+                if str(s["id"]) == stn_id:
+                    op_row = next((o for o in self.db.tables["public.operators"] if str(o["id"]) == str(s.get("operator_id"))), None)
+                    op_name = op_row["name"] if op_row else "Unknown Operator"
+                    op_slug = op_row["slug"] if op_row else "unknown"
+                    self._last_result = [(
+                        s.get("name"), s.get("operator_id"), s.get("address_line"), s.get("locality"),
+                        s.get("city"), s.get("state"), s.get("postal_code"), s.get("country"),
+                        s.get("latitude"), s.get("longitude"), s.get("access_type"), s.get("is_public"),
+                        s.get("operational_status"), s.get("is_24_hours"), s.get("opening_time"), s.get("closing_time"),
+                        op_name, op_slug,
+                    )]
+                    break
 
         # 12. INSERT INTO public.station_source_link
         elif "INSERT INTO public.station_source_link" in sql_clean:
