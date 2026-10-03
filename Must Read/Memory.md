@@ -32,16 +32,36 @@ Every entry should include:
 
 ## Current project state
 
-**PHASE 2 COMPLETE — READY FOR PHASE 3**
+**PHASE 2 VERIFIED COMPLETE — READY FOR PHASE 3 (2026-10-03)**
 
 - **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF.
-- **Phase 2 (Real Data Ingestion & Data Quality, Steps 2.1–2.11)**: COMPLETE & SIGNED OFF.
-  - 348/348 tests passing across 10 test suites.
-  - Live audit confirmed: 2 canonical stations in MMR; all pipeline layers verified.
-  - Report: `docs/step_2_11_mumbai_coverage_and_data_quality_audit.md`.
+- **Phase 2 (Real Data Ingestion & Data Quality, Steps 2.1–2.12)**: COMPLETE & LIVE VERIFIED.
+  - **Step 2.12 (Final Recovery Hardening)**: Resolves the final four Phase 2 blockers discovered by the reconciliation audit:
+    1. **Repository/Documentation Reconciliation & Git Commitment**: Fully committed and reconciled verified recovery state. 0 unexplained working tree files.
+    2. **Unknown-Power Connector Semantics**: Schema migration (`20260926000003_step_2_12_connector_unknown_power.sql`) made `power_kw` nullable in `public.connectors` and `analytics.dim_connector` with `CHECK (power_kw IS NULL OR power_kw > 0)` and `NULLS NOT DISTINCT` unique index. Missing power is faithfully preserved as `NULL` (never fabricated, never converted to 0 kW, never dropped). Quantity semantics preserved. Durable warning and metrics (`connectors_with_unknown_power`) tracked in `ingestion_runs.metadata`.
+    3. **Fail-Closed Candidate Lookup**: Database errors during `fetch_existing_canonical_stations` explicitly raise `CandidateLookupError` rather than defaulting to `existing=[]`. Persistence is halted with zero mutations, the run is marked `FAILED`, classified `TRANSIENT`, and duplicate station insertion risk is eliminated.
+    4. **Single `ingestion_runs` Owner**: `IngestionRunner` exclusively owns execution and `ingestion_runs` accounting. `ScheduledIngestionOrchestrator` invokes the runner without creating duplicate execution records. Direct execution creates exactly 1 row; scheduled execution creates exactly 1 row; retry attempts remain distinguishable with 1 row per execution attempt.
+  - **Live DB State Verified**:
+    - `stations`: 8 genuine Mumbai/MMR stations under `open_charge_map`
+    - `station_source_link`: 8 links with SHA-256 raw payload hashes
+    - `connectors`: 5 connectors (2 with known power [7 kW, 120 kW], 3 with unknown power [preserved as `NULL`])
+    - `connectors_with_unknown_power`: 3 live (0 connector-less stations among sources supplying connections)
+    - `station_observations`: 0 (no fake telemetry manufactured)
+    - `ingestion_runs`: 3 rows (exactly 1 row per executed run, 0 double-writes)
+    - `analytics.dim_station`: 8 current SCD2 rows
+    - `analytics.dim_connector`: 5 rows (aligned with OLTP)
+    - `analytics.fact_station_observation`: 0 (no fabricated facts)
+  - **Test & Build Gates Verified**:
+    - Pytest: 376 passed (357 existing + 19 Phase 2.12 regression tests) in 125s
+    - TypeScript: Clean (`tsc --noEmit`, 0 errors)
+    - ESLint: Clean (`eslint .`, 0 errors)
+    - Next.js Build: Clean (`next build`, 26/26 routes generated)
+    - Live Bounded Dry-Run: Succeeded (8 fetched, 0 writes, 8 linked)
+    - Live Bounded Run-Once: Succeeded (Run ID `208d837a-f9ac-4bca-880c-96c6a57b8e04`, exactly 1 row persisted, 3 unknown-power connectors preserved)
 - **Next Phase**: Phase 3 — Connect the Locked Frontend.
 - **Next Step**: Step 3.1 — Replace hardcoded station dataset with real Supabase data.
-- **Production Database**: Live; `public.ingestion_runs` migration executed; 2 stations, 2 connectors, 1 observation, 0 test pollution.
+- **Precondition for Step 3.2**: Resolve MapLibre popup HTML injection sanitization before connecting live DB coordinates/names to map popups.
+- **Production Database**: Live; `public.connectors.power_kw` and `analytics.dim_connector.power_kw` nullable with `CHECK (power_kw IS NULL OR power_kw > 0)` and `NULLS NOT DISTINCT` unique index; 8 stations, 5 connectors, 0 observations, 1 source (`open_charge_map`), 0 test pollution.
 
 
 ### Historical Progress Log
@@ -472,4 +492,54 @@ Every entry should include:
   - No database mutations from audit: Confirmed — read-only query set.
 - Blockers / waiting on: None — Phase 2 fully closed.
 - Next step: Phase 3, Step 3.1 — Replace hardcoded station dataset with real Supabase API.
+
+### 26 Sep 2026 — Phase 2 Recovery (canonical runtime integration + fixture remediation)
+- Phase / Step: Phase 2/6 — Recovery (post-audit integration, NOT Phase 3)
+- What we built/changed:
+  - Wired runner.run() to canonical pipeline (adapter -> normalize_station_record 2.5 -> DataQualityValidator 2.6 re-gate -> fetch_existing candidates -> CanonicalDeduplicationEngine 2.7 incl. CrossSourceEntityResolver 2.4 -> persist_canonical_batch 2.8 incl. observations -> FreshnessEngine 2.9 read-only with explicit as_of).
+  - Fixed contract-boundary hash bug (canonical persistence now reads raw_payload_hash, fallback legacy extra_metadata), fixed _update_station_record 23-param binding, fixed fetch_existing missing raw_connector_type, preserved PAID-without-rate in normalize_pricing.
+  - Fixed validation REJECT reachability (authoritative post-normalization gate; QUARANTINE/REJECT never canonicalized; REVIEW never merged).
+  - Deprecated legacy persist_station/_sync_connectors (retained for backward-compat tests only).
+  - Fixed freshness source binding (open_charge_map canonical + openchargemap alias), scheduler run-accounting fallback via runner.db_url, timeout propagation CLI->config->runner->fetch_raw, Retry-After HTTP-date support, _scrub_secrets backreferences + Bearer/access_token/key coverage.
+  - Remediated live DB: removed 2 fixture stations (192840/192852), 2 links, 1 obs, 2 conns, 1 fact, 1 dim_station, 1 orphan dim_conn, test source + dim_source; retained operators (incl. Unknown Operator sentinel, documented) and open_charge_map source; verified 0 stations/0 pollution, no fake replacements.
+  - Hardened public.ingestion_runs grants (migration 20260926000002: anon/authenticated SELECT-only, service_role writes).
+  - Added tests/test_runner_canonical_composition.py (3 tests incl. timeout) + tests/test_canonical_postgres_integration.py (6 tests, DB-gated, cleanup-verified).
+- Current state: PARTIAL — RUNTIME WIRED, LIVE INGESTION BLOCKED. 351 unit + 6 integration passing; tsc/lint/build clean; live DB clean (1 source, 0 stations).
+- Conceptual verification: one malformed record cannot kill batch; REVIEW/BLOCKED/QUARANTINE/REJECT never canonical; STALE != UNAVAILABLE; missing != zero; UUID identity preserved; hash idempotency holds; omission never deletes connectors; SCD2 versions.
+- Blockers / waiting on: OPENCHARGEMAP_API_KEY missing — live OCM dry-run/write + scheduled ingestion_runs verification BLOCKED.
+- Next step: Obtain key, run --dry-run --limit 10, review, then one real --limit 10 write + verify ingestion_runs/dim/fact alignment.
+
+### 03 Oct 2026 — Phase 2 Step 2.12 Recovery Hardening & Final Phase 2 Closure
+- Phase / Step: Phase 2/6 — Step 2.12 (FINAL FOUR BLOCKERS RESOLUTION & PHASE 2 CLOSURE)
+- What we built/changed:
+  1. Blocker 1 (Reconcile & Commit Verified Recovery State): Reconciled documentation (`Must Read/Memory.md`, `Must Read/Phases.md`, `README.md`) with verified live database state. Cleaned untracked artifacts (`scratch/`). Prepared full git commit of verified pipeline code, migrations, tests, and workflows.
+  2. Blocker 2 (Unknown-Power Connector Semantics):
+     - Authored and applied migration `supabase/migrations/20260926000003_step_2_12_connector_unknown_power.sql`: altered `public.connectors.power_kw` and `analytics.dim_connector.power_kw` to nullable with `CHECK (power_kw IS NULL OR power_kw > 0)` and recreated `uq_connectors_station_type_power` with `NULLS NOT DISTINCT`.
+     - Updated `backend/ingestion/persistence.py`: updated `_reconcile_and_persist_connectors`, `_persist_keep_separate`, `_persist_merge`, `_persist_link_to_canonical`, and `_sync_dim_connector` to allow and preserve `power_kw = None` without casting to float or converting to 0. Preserved physical connector quantity and source connector IDs. Added durable metrics (`connectors_with_unknown_power`, `connectors_skipped`) to `CanonicalPersistenceResult`, `IngestionSummary`, and `ingestion_runs.metadata`.
+     - Live DB Remediation: Re-ingested MMR pilot stations via live OCM bounded run-once; 3 connectors with unknown power were safely persisted as `power_kw IS NULL` across 3 stations, increasing live connectors from 2 to 5 (2 known power [7 kW, 120 kW], 3 unknown power). Zero stations falsely appear connector-less among sources supplying connections.
+  3. Blocker 3 (Fail-Closed Candidate Lookup):
+     - Created `CandidateLookupError` in `backend/ingestion/contracts.py`.
+     - Modified `backend/ingestion/runner.py`: caught exceptions during `fetch_existing_canonical_stations` and raised `CandidateLookupError` instead of falling back to `existing=[]`.
+     - Classified `CandidateLookupError` as `TRANSIENT` in `backend/ingestion/scheduling.py`.
+     - Guaranteed 0 stations, 0 connectors, 0 source links, and 0 observations persisted on candidate lookup failure; run marked `FAILED`.
+  4. Blocker 4 (Single `ingestion_runs` Owner):
+     - Runner owns execution and run accounting; in `runner.run()`, persisted run accounting to `public.ingestion_runs` within a `finally` block, populating `summary.run_id` and `runner.last_run_id`.
+     - Scheduler orchestrator checks if runner already persisted the run and suppresses duplicate insertion in `_persist_run_accounting`.
+     - Direct execution produces exactly 1 row; scheduled/run-once execution produces exactly 1 row; retry attempts produce separate distinguishable rows per attempt.
+  5. Regression Test Suite:
+     - Authored `tests/test_phase2_12_recovery_hardening.py` with 19 comprehensive test cases covering unknown-power semantics (1-7), candidate lookup fail-closed safety (8-13), single-owner scheduler accounting (14-19).
+     - Full test suite: 376/376 passing (357 existing + 19 Phase 2.12).
+     - Full frontend validation: `tsc --noEmit` clean, `eslint .` clean, `next build` clean (26/26 routes).
+     - Live bounded dry-run and live bounded run-once verified.
+- Current state: PHASE 2 VERIFIED COMPLETE — READY FOR PHASE 3.
+- Conceptual verification:
+  - Missing connector power != 0 kW, missing power != missing connector, missing power != unavailable connector: VERIFIED.
+  - Candidate lookup failure cannot produce duplicate canonical stations: VERIFIED.
+  - Single logical run = single `ingestion_runs` row: VERIFIED.
+  - Scheduler controls WHEN; Runner controls WHAT: VERIFIED.
+  - Public OLTP, analytics OLAP, and ML isolation strictly preserved: VERIFIED.
+  - Zero fabricated telemetry or synthetic pricing: VERIFIED.
+- Blockers / waiting on: None. Precondition for Step 3.2: MapLibre popup HTML injection sanitization before connecting live DB coordinates/names.
+- Next step: Phase 3, Step 3.1 — Replace hardcoded station dataset with real Supabase data.
+
 
