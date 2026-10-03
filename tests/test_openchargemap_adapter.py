@@ -9,7 +9,9 @@ semantic availability protections, deterministic provenance hashing, and contrac
 
 from __future__ import annotations
 
+import os
 import unittest
+from unittest import mock
 from datetime import datetime, timezone
 
 from backend.ingestion.adapters.openchargemap import OpenChargeMapAdapter
@@ -276,9 +278,10 @@ class TestOpenChargeMapAdapter(unittest.TestCase):
     def test_20_fetch_raw_security_requires_key(self):
         """20. Calling fetch_raw without an API key raises ValueError (prevents unauthenticated network calls)."""
         # Ensure OPENCHARGEMAP_API_KEY is unset for this test
-        with self.assertRaises(ValueError) as ctx:
-            self.adapter.fetch_raw(api_key=None)
-        self.assertIn("API key required", str(ctx.exception))
+        with unittest.mock.patch.dict(os.environ, {"OPENCHARGEMAP_API_KEY": ""}):
+            with self.assertRaises(ValueError) as ctx:
+                self.adapter.fetch_raw(api_key=None)
+            self.assertIn("API key required", str(ctx.exception))
 
 
 if __name__ == "__main__":
