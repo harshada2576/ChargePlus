@@ -249,7 +249,7 @@ Initially:
 
 ## 7. Analytics model
 
-Logical warehouse schemas:
+Authoritative canonical warehouse schemas (Phase 1 verified):
 
 ```text
 analytics.dim_station
@@ -258,22 +258,22 @@ analytics.dim_connector
 analytics.dim_location
 analytics.dim_date
 analytics.dim_time
+analytics.dim_source
 analytics.dim_weather
 
 analytics.fact_station_observation
 analytics.fact_user_report
+analytics.fact_review
 analytics.fact_station_daily
-analytics.fact_station_hourly        # only if justified by available data
-analytics.fact_forecast
 ```
 
 Fact grains:
 
-- fact_station_observation = one source observation for a station/connector at a point in time
-- fact_user_report = one user report
-- fact_station_daily = one station/day aggregate
-- fact_station_hourly = one station/hour aggregate, if enough data exists
-- fact_forecast = one generated forecast for one station/time horizon
+- `fact_station_observation` = one source observation for a station/connector at a point in time
+- `fact_user_report` = one crowdsourced user status report
+- `fact_review` = one driver experience rating and commentary review
+- `fact_station_daily` = one station/day analytical aggregate
+*(Note: ML model metadata, training runs, and inference predictions are housed in the dedicated `ml.*` schema (`ml.models`, `ml.prediction_runs`, etc.), not as a warehouse fact).*
 
 ## 8. ML / recommendation boundary
 

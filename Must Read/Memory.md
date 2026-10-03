@@ -32,7 +32,39 @@ Every entry should include:
 
 ## Current project state
 
-### 17 Sep 2026 — Frontend → Backend transition
+**PHASE 2 VERIFIED COMPLETE — READY FOR PHASE 3 (2026-10-03)**
+
+- **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF.
+- **Phase 2 (Real Data Ingestion & Data Quality, Steps 2.1–2.12)**: COMPLETE & LIVE VERIFIED.
+  - **Step 2.12 (Final Recovery Hardening)**: Resolves the final four Phase 2 blockers discovered by the reconciliation audit:
+    1. **Repository/Documentation Reconciliation & Git Commitment**: Fully committed and reconciled verified recovery state. 0 unexplained working tree files.
+    2. **Unknown-Power Connector Semantics**: Schema migration (`20260926000003_step_2_12_connector_unknown_power.sql`) made `power_kw` nullable in `public.connectors` and `analytics.dim_connector` with `CHECK (power_kw IS NULL OR power_kw > 0)` and `NULLS NOT DISTINCT` unique index. Missing power is faithfully preserved as `NULL` (never fabricated, never converted to 0 kW, never dropped). Quantity semantics preserved. Durable warning and metrics (`connectors_with_unknown_power`) tracked in `ingestion_runs.metadata`.
+    3. **Fail-Closed Candidate Lookup**: Database errors during `fetch_existing_canonical_stations` explicitly raise `CandidateLookupError` rather than defaulting to `existing=[]`. Persistence is halted with zero mutations, the run is marked `FAILED`, classified `TRANSIENT`, and duplicate station insertion risk is eliminated.
+    4. **Single `ingestion_runs` Owner**: `IngestionRunner` exclusively owns execution and `ingestion_runs` accounting. `ScheduledIngestionOrchestrator` invokes the runner without creating duplicate execution records. Direct execution creates exactly 1 row; scheduled execution creates exactly 1 row; retry attempts remain distinguishable with 1 row per execution attempt.
+  - **Live DB State Verified**:
+    - `stations`: 8 genuine Mumbai/MMR stations under `open_charge_map`
+    - `station_source_link`: 8 links with SHA-256 raw payload hashes
+    - `connectors`: 5 connectors (2 with known power [7 kW, 120 kW], 3 with unknown power [preserved as `NULL`])
+    - `connectors_with_unknown_power`: 3 live (0 connector-less stations among sources supplying connections)
+    - `station_observations`: 0 (no fake telemetry manufactured)
+    - `ingestion_runs`: 3 rows (exactly 1 row per executed run, 0 double-writes)
+    - `analytics.dim_station`: 8 current SCD2 rows
+    - `analytics.dim_connector`: 5 rows (aligned with OLTP)
+    - `analytics.fact_station_observation`: 0 (no fabricated facts)
+  - **Test & Build Gates Verified**:
+    - Pytest: 376 passed (357 existing + 19 Phase 2.12 regression tests) in 125s
+    - TypeScript: Clean (`tsc --noEmit`, 0 errors)
+    - ESLint: Clean (`eslint .`, 0 errors)
+    - Next.js Build: Clean (`next build`, 26/26 routes generated)
+    - Live Bounded Dry-Run: Succeeded (8 fetched, 0 writes, 8 linked)
+    - Live Bounded Run-Once: Succeeded (Run ID `208d837a-f9ac-4bca-880c-96c6a57b8e04`, exactly 1 row persisted, 3 unknown-power connectors preserved)
+- **Next Phase**: Phase 3 — Connect the Locked Frontend.
+- **Next Step**: Step 3.1 — Replace hardcoded station dataset with real Supabase data.
+- **Precondition for Step 3.2**: Resolve MapLibre popup HTML injection sanitization before connecting live DB coordinates/names to map popups.
+- **Production Database**: Live; `public.connectors.power_kw` and `analytics.dim_connector.power_kw` nullable with `CHECK (power_kw IS NULL OR power_kw > 0)` and `NULLS NOT DISTINCT` unique index; 8 stations, 5 connectors, 0 observations, 1 source (`open_charge_map`), 0 test pollution.
+
+
+### Historical Progress Log
 - Phase / Step: Phase 1/6 — Step 1.1
 - What we built/changed: ChargePlus frontend is complete and frozen as the presentation/product layer. Must-Read project governance files are being established.
 - Current state: UI structure exists; core station/user data plumbing still needs to move from prototype/mock storage to Supabase.
@@ -93,5 +125,420 @@ Every entry should include:
 - Current state: PHASE 1 OFFICIALLY VERIFIED & CLOSED — READY FOR PHASE 2.
 - Blockers / waiting on: None.
 - Next step: Phase 2 Step 2.1 — Define canonical station/connector input contract.
+
+### 25 Sep 2026 — Phase 2 Step 2.1 Canonical Station/Connector Input Contract
+- Phase / Step: Phase 2/6 — Step 2.1
+- What we built/changed: Designed and implemented the source-neutral canonical input contract for ChargePlus EV data ingestion: (1) Established the 6-layer architecture (Raw Source, Normalized Record, Canonical Station, Canonical Connector, Telemetry Observations, Analytical Warehouse); (2) Clarified Layer 6 canonical warehouse facts: exactly 4 canonical facts (`analytics.fact_station_observation`, `analytics.fact_user_report`, `analytics.fact_review`, `analytics.fact_station_daily`), explicitly excluding `fact_charging_session` which is not in our canonical Phase 1 warehouse; (3) Created strongly-typed Python models (`backend/ingestion/contracts.py`) for `RawSourceRecord`, `NormalizedStationRecord`, `NormalizedConnectorRecord`, and `NormalizedObservationRecord` with strict validation rules and contract versioning (`1.0.0`); (4) Created data quality validation engine (`backend/ingestion/validation.py`) with deterministic outcomes (`ACCEPT`, `ACCEPT_WITH_WARNINGS`, `QUARANTINE`, `REJECT`) and completeness scoring; (5) Refined coordinate validation: coordinates in `[-90, 90]` and `[-180, 180]` are valid, individual 0.0 on the Equator or Prime Meridian is valid, and ONLY `(0.0, 0.0)` together is rejected as Null Island; (6) Formalized missing-data semantics ("Missing means Missing" — no fake ₹0 prices, no fake 0 kW power, no fake 'available' statuses); (7) Formalized the 6 distinct status semantics (operational state, connector availability, observation state, user reports, predictions, data freshness); (8) Defined entity resolution / deduplication candidate features (geodetic distance, operator slug, token sort name matching, address/PIN, connector signatures); (9) Preserved raw source payloads and unmapped vendor fields via `extra_metadata`; (10) Built comprehensive unit test suite (`tests/test_canonical_contracts.py`) covering all 17 contract scenarios with 100% pass rate; (11) Authored complete specification document `docs/canonical_station_input_contract.md`; (12) Verified clean TypeScript typecheck (`tsc --noEmit`) and ESLint (`eslint src`).
+- Current state: STEP 2.1 COMPLETE & LOCKED — READY FOR STEP 2.2.
+- Conceptual verification: Fully source-neutral contract matching real-world EV charging topologies (single station to multiple connectors, aggregated capacity vs individual plugs, multi-operator support, Mumbai pilot bounds with India-wide expansion, strict separation of static identity from telemetry observations); zero production database mutations; zero fake data.
+- Blockers / waiting on: Step 2.2 (Build Python source-adapter structure).
+- Next step: Phase 2 Step 2.2 — Build Python source-adapter structure.
+
+### 25 Sep 2026 — Phase 2 Step 2.2 Build Source-Specific Adapters
+- Phase / Step: Phase 2/6 — Step 2.2
+- What we built/changed: Designed and implemented the first source adapter architecture and the production-grade `OpenChargeMapAdapter`:
+  1. Base Source Adapter Architecture (`backend/ingestion/base.py`): Defined `BaseSourceAdapter` abstract base class with clean lifecycle phases (`fetch_raw`, `parse_raw`, `normalize_station`, `validate_record`, `process_record`, `process_batch`), `AdapterResult` (single-record outcome with error/warning tracking), and `BatchAdapterResult` (batch execution with record-level error isolation where malformed records are quarantined/rejected without failing the entire batch).
+  2. First-Class Provenance Integration: Added `ProvenanceInfo` model and `RawSourceRecord.to_provenance()` method in `backend/ingestion/contracts.py`, ensuring deterministic SHA-256 fingerprinting of pristine source JSON payloads alongside timestamps and source IDs.
+  3. Real OpenChargeMap Ingestion Adapter (`backend/ingestion/adapters/openchargemap.py`):
+     - Verified actual OCM API schema (`AddressInfo`, `Connections`, `StatusType`, `UsageType`, `OperatorInfo`, `UsageCost`).
+     - Mapped OCM station identity (`ID`, `Title`), geocoordinates, full postal address, country (`IN`), operator, access rules, and contact info.
+     - Preserved unmapped vendor fields (`UUID`, `DataProviderID`, `NumberOfPoints`) in `extra_metadata`.
+     - Connector Normalization: Implemented confident type mapping (OCM 33 $\to$ CCS2, 32 $\to$ CCS1, 25/1036 $\to$ Type 2, 2 $\to$ CHAdeMO, 34/35 $\to$ GB/T) and ambiguous fallback to `OTHER` with explicit warnings. Supported both individual connector IDs and aggregated connector information (`quantity >= 1`, omitting fake IDs).
+     - Power Normalization: Extracted `PowerKW` to float kW; preserved missing power strictly as `None` (never default to 0 kW or guessed from connector type); safely caught malformed power values.
+     - Operational vs Availability Separation: OCM StatusType 50 ("Operational") mapped to `OperationalStatus.OPERATIONAL` on station, with connector status remaining `UNKNOWN` and `observation = None` (no fake observations manufactured). Real telemetry status (StatusType 10 "Available", 20 "Occupied") paired with `DateLastStatusUpdate` produces formal `NormalizedObservationRecord`.
+     - Transport & Security Isolation: Abstracted `fetch_raw()` with strict `OPENCHARGEMAP_API_KEY` environment variable enforcement and runtime exceptions if credentials are missing; offline tests run strictly against fixtures.
+  4. Test Fixtures & Unit Test Suite:
+     - Authored 18 comprehensive test fixture scenarios in `tests/fixtures/ocm_fixtures.py` (complete valid station, multiple connectors, aggregated connectors, missing optional fields, unknown connector, missing power, equator zero-latitude, prime meridian zero-longitude, Null Island rejection, non-India quarantine, malformed coordinates, malformed power, telemetry observation, static operational non-observation, extra fields preservation, duplicate payload hash determinism, malformed empty payload, missing station ID).
+     - Authored 20 unit tests in `tests/test_openchargemap_adapter.py` testing all fixture scenarios, batch error isolation, and credential security.
+     - Full test suite passed: 37/37 tests (17 canonical contract tests + 20 adapter tests).
+  5. Verified Zero Database Mutations: Confirmed 0 rows inserted into `public.stations`, `public.connectors`, `public.station_observations`, `analytics.*`, or `ml.*`.
+  6. Documentation & Secrets: Created `docs/source_adapters_architecture.md`, created `docs/global_ev_charging_data_source_research.md` (authoritative global EV data source research, 5-tier classification, telemetry models, Kafka exclusion decision, and duplicate prevention architecture), updated `.env.example` with `OPENCHARGEMAP_API_KEY`, verified `tsc --noEmit` and `npm run lint` clean (0 errors).
+- Current state: STEP 2.1 COMPLETE, STEP 2.2 COMPLETE & LOCKED, STEP 2.2A RESEARCH COMPLETE & LOCKED — READY FOR STEP 2.3.
+- Conceptual verification: Unidirectional boundary maintained (Source $\to$ Adapter $\to$ Step 2.1 Canonical Contract); no Supabase persistence; no cross-source entity deduplication; no synthetic business truth invented; record-level batch error isolation verified; Kafka excluded; real-time telemetry strictly separated from static equipment state; "Stale != Unavailable" invariant codified.
+- Blockers / waiting on: Step 2.3 (Connect first legitimate station data source).
+- Next step: Phase 2 Step 2.3 — Connect first legitimate station data source.
+
+### 25 Sep 2026 — Phase 2 Step 2.3 Connect First Legitimate Station Data Source
+- Phase / Step: Phase 2/6 — Step 2.3
+- What we built/changed: Designed and implemented the controlled operational and historical observation persistence boundary for OpenChargeMap data:
+  1. Transactional Persistence Service (`backend/ingestion/persistence.py`):
+     - `IngestionPersistenceService` separates persistence logic entirely from transformation adapters.
+     - Feeds registered in `public.data_sources` and mirrored to `analytics.dim_source`.
+     - Operators registered in `public.operators` and mirrored to `analytics.dim_operator`.
+     - Physical stations persisted to `public.stations` with PostGIS geometry trigger `trg_stations_geom` generating `POINT(lng lat)` automatically.
+     - Connectors synchronized to `public.connectors` by aggregating identical `(connector_type, power_kw, charging_standard)` capacity groups to satisfy `uq_connectors_station_type_power`.
+     - Strictly enforced `NOT NULL` and positive power without inventing power values; connectors lacking power are safely skipped with warnings.
+     - Enforced `chk_stations_hours` constraint (opening/closing times NULL when `is_24_hours = true`).
+     - Enforced Indian 6-digit PIN regex; non-compliant postal codes stored as NULL with warnings logged.
+  2. Idempotency & Provenance Linkage:
+     - Implemented `public.station_source_link` tracking `(source_id, source_station_id)`.
+     - SHA-256 payload hash comparison: identical re-ingestion returns `UNCHANGED` and refreshes `last_seen_at` with 0 duplicate stations or connectors.
+     - Changed source payload triggers in-place station attribute and connector `UPDATED`.
+     - External source ID (`192840`) is decoupled from ChargePlus station `uuid.uuid4()`.
+  3. Observation History & Analytics Fact Persistence:
+     - Real point-in-time telemetry produces operational observation in `public.station_observations`.
+     - Conformed observation mirrored to `analytics.fact_station_observation` resolving `station_key`, `operator_key`, `location_key`, `date_key` (YYYYMMDD UTC), and `time_key` (0..95 15-min interval UTC).
+     - Static operational status (`StatusTypeID: 50`) never creates fake availability observations.
+  4. Ingestion Orchestrator & CLI Runner (`backend/ingestion/runner.py`):
+     - CLI options: `--dry-run`, `--limit`, `--all-india`, `--use-fixtures`, `--json`.
+     - Geographic bounding box strictly defaults to Mumbai Metropolitan Region (`18.70-19.50 N`, `72.70-73.30 E`).
+     - Record-level error isolation: individual record failure does not abort the entire batch.
+     - Zero credentials exposed in logs or reports.
+  5. Test Suite & Verification:
+     - 15 comprehensive unit tests authored in `tests/test_ingestion_persistence.py`.
+     - All 52 automated tests in `tests/` pass with 100% success rate (17 contract + 20 adapter + 15 persistence).
+     - Dry run verified with 0 database writes.
+     - Live Supabase PostgreSQL database compatibility tested and verified (PostGIS trigger, idempotency, observation fact keys).
+     - Documentation completed in `docs/step_2_3_first_live_source_persistence.md`.
+- Current state: STEP 2.3 COMPLETE & LOCKED.
+- Conceptual verification: Operational state (`public.*`) separated from canonical warehouse facts (`analytics.*`); adapters remain strictly non-persistent; "Missing means missing" strictly honored; external IDs never become station UUIDs; no message brokers; no cross-source fuzzy entity matching (deferred to Step 2.4).
+- Blockers / waiting on: Step 2.4.
+- Next step: Phase 2 Step 2.4 — Cross-source entity resolution (candidate generation & evidence fusion).
+
+### 25 Sep 2026 — Phase 2 Step 2.4 Cross-Source Entity Resolution (Candidate Generation & Evidence Fusion)
+- Phase / Step: Phase 2/6 — Step 2.4
+- What we built/changed:
+  1. Authoritative Evidence Generation Engine (`backend/ingestion/resolution.py`):
+     - Pure computational, deterministic, multi-signal evidence fusion layer.
+     - Geodetic candidate generation using Haversine great-circle distance on WGS 84 ($R=6,371,000$m). Configurable candidate radius default $\le 50.0$ meters.
+     - Multi-signal evaluation: Spatial proximity (0.30), Lexical name similarity with Mumbai acronym expansion and token overlap (0.30), Operator reconciliation (0.15), Electrical connector signature compatibility (0.15), and Locality/PIN overlap (0.10).
+     - Discrete match states: `MATCH`, `NON_MATCH`, `AMBIGUOUS`.
+     - Invariant: Proximity alone ($\le 50$m) does NOT prove identity. Weak or conflicting signals within 50m evaluate to `AMBIGUOUS`.
+     - Invariant: Missing data evaluates to `UNKNOWN` (neutral weight), never negative disagreement ("Missing != Disagreement").
+     - Invariant: Commercial takeover / rebranding handled safely (Rule A3 allows MATCH on identical physical site despite operator divergence).
+     - Invariant: External source identifiers preserved verbatim; zero generation of ChargePlus station UUIDs in resolution.
+     - Invariant: Non-destructive guarantee. Zero mutations to `public.stations`, `public.connectors`, `public.station_source_link`, or `analytics` facts.
+  2. Module Integration & Exports:
+     - Exported all core classes in `backend/ingestion/__init__.py`.
+  3. Comprehensive Unit Test Suite (`tests/test_entity_resolution.py`):
+     - 15 unit tests covering all 14 mandatory scenarios: strong agreement, clearly different stations, close conflicting coordinates (ambiguous), same name far apart, missing connector data handling, rebranding/takeover, 50m boundary precision, 0m coordinates with weak metadata, missing address/PIN, connector signature variants, determinism, non-destructive immutability, multiple candidates preservation, and source identity preservation.
+     - All 67 project automated tests pass with 100% success rate.
+  4. Quality Gates:
+     - `pytest` (67/67 passing).
+     - `npx tsc --noEmit` (0 errors).
+     - `npm run lint` (0 errors).
+     - `npm run build` (successful production build).
+  5. Documentation:
+     - Completed comprehensive reference in `docs/step_2_4_cross_source_entity_resolution.md`.
+- Current state: STEP 2.4 COMPLETE & LOCKED — READY FOR STEP 2.5.
+- Conceptual verification: Resolution engine is purely computational; evidence dossier is fully transparent with auditable reasons; ambiguity is preserved rather than discarded; source IDs remain source IDs; zero DB migrations; canonical source precedence and survivorship deferred to Step 2.7.
+- Blockers / waiting on: Step 2.5 (Normalize fields).
+- Next step: Phase 2 Step 2.5 — Normalize fields (cross-source operator, connector, tariff & electrical vocabulary).
+
+### 25 Sep 2026 — Phase 2 Step 2.5 Cross-Source Field Normalization & Standard Vocabulary
+- Phase / Step: Phase 2/6 — Step 2.5
+- What we built/changed:
+  1. Authoritative Field Normalization Engine (`backend/ingestion/normalization.py`):
+     - Pure computational, deterministic normalization layer converting vendor representations into ChargePlus canonical vocabulary.
+     - Normalized status tracking via `NormalizationStatus`: `NORMALIZED`, `UNCHANGED`, `UNKNOWN`, `UNMAPPED`, `INVALID`.
+     - Invariant: "Missing means missing" strictly preserved (missing power -> None, missing price -> None, missing PIN -> None, missing hours -> None). Never default to 0 kW or ₹0.
+     - Operator normalization: Canonical registry of verified Indian EV networks strictly supported by project evidence (`Tata Power`, `Jio-bp pulse`, `Ather Energy`, `Fortum Charge & Drive`, `ChargeZone`, `Statiq`, `Magenta ChargeGrid`, `Bolt.Earth`, `Zeon Charging`, `Kazam`, `Lithion Power`, `Stilt Mobility`, `ChargePlus`). Exact vs alias vs unmapped matching. Unrecognized operators remain unmapped and are never guessed.
+     - Connector vocabulary: Standardized mapping to `StandardConnectorType` (`CCS2`, `CCS1`, `Type 2`, `Type 1`, `CHAdeMO`, `GB/T`, `Bharat AC001`, `Bharat DC001`, `Other`). Preserves source-specific raw connector text without loss.
+     - Electrical normalization: Converts Watts to kW ($W / 1000.0$) and preserves direct kW. Voltage (V) and amperage (A) remain strictly separate. Current type mapped to `CurrentType` (`AC`, `DC`, `UNKNOWN`). Non-positive power/voltage/amperage rejected as `INVALID`.
+     - Address & Geocoordinates: Unicode NFKD normalization, punctuation spacing cleanup, safe abbreviation expansion (`Rd` $\to$ `Road`, `Opp` $\to$ `Opposite`), and infrastructure acronym preservation (`BKC`, `MIDC`, `MCA`). WGS 84 float coordinates preserved without aggressive rounding; individual 0.0 allowed on Equator/Prime Meridian; (0,0) rejected as Null Island.
+     - Indian 6-Digit PIN: Strips spaces/hyphens (`400 051` $\to$ `400051`) and enforces `^[1-9][0-9]{5}$`. Malformed PINs evaluate to `INVALID` with raw preserved, never silently repaired.
+     - Pricing / Tariff: Distinguishes tariff basis (`per_kwh`, `per_session`, `per_hour`). Explicit free charging represented as genuine semantic state (`is_free = True`, `price_per_kwh = 0.0`, `pricing_type = FREE`). Missing pricing remains `UNKNOWN` and is never converted to ₹0.
+     - Operating hours: Standardized `NormalizedOperatingHours` supporting 24x7 (`is_24_hours = True` with opening/closing `None` adhering to `chk_stations_hours`), daily intervals, overnight intervals, multiple intervals, and closed days. Unstructured text preserved with `is_structured = False` and `status = UNMAPPED`. Missing hours remain `UNKNOWN`.
+     - Non-destructive guarantee: Input records remain completely immutable (`copy.deepcopy` verified). Layer 1 provenance survives intact. Deterministic and idempotent: $\text{normalize}(\text{normalize}(x)) \equiv \text{normalize}(x)$.
+  2. Integration & Module Exports:
+     - Exported all normalization models, enums, and functions in `backend/ingestion/__init__.py`.
+  3. Comprehensive Unit Test Suite (`tests/test_field_normalization.py`):
+     - 30 unit tests covering all 32 required scenarios.
+     - Full automated test suite passes: 97/97 tests (17 contract + 20 adapter + 15 persistence + 15 resolution + 30 normalization).
+  4. Quality Gates:
+     - `pytest tests/` (97/97 passing).
+     - `npx tsc --noEmit` (0 errors).
+     - `npm run lint` (0 errors).
+     - `npm run build` (successful production build).
+  5. Documentation:
+     - Authored comprehensive specification in `docs/step_2_5_field_normalization.md`.
+- Current state: STEP 2.5 COMPLETE & LOCKED.
+- Conceptual verification: Normalization standardizes representations into comparable forms; it does NOT merge entities, does NOT assign station UUIDs, and does NOT decide source precedence (deferred to Step 2.7). Zero database migrations required.
+
+### 25 Sep 2026 — Phase 2 Step 2.6 Ingestion-Wide Data Quality Validation & Anomaly Quarantine
+- Phase / Step: Phase 2/6 — Step 2.6
+- What we built/changed:
+  1. Authoritative Data Quality Validation Framework (`backend/ingestion/validation.py`):
+     - Implemented `QualitySeverity` (`INFO`, `WARNING`, `HIGH`, `CRITICAL`) and `QualityRuleCategory` across 11 architectural layers.
+     - Implemented typed Pydantic models: `QualityFinding`, `QuarantineRecord`, `ValidationResult`, and `BatchValidationReport`.
+     - Built comprehensive rule catalog with stable IDs:
+       - Provenance: `DQ-PROV-001` (source_id), `DQ-PROV-002` (source_station_id), `DQ-PROV-003` (contract_version 1.x.x), `DQ-PROV-004` (64-char hex SHA-256 hash).
+       - Station Identity: `DQ-NAME-001` (name length >= 2), `DQ-NAME-002` (demo/test placeholder name), `DQ-OP-001` (unbranded operator completeness).
+       - Geolocation & Geofence: `DQ-GEO-001` (lat in [-90, 90]), `DQ-GEO-002` (lng in [-180, 180]), `DQ-GEO-003` (Null Island (0,0) rejected sentinel; individual 0.0 on Equator/Prime Meridian allowed), `DQ-GEO-004` (India geofence anomaly triggers QUARANTINE), `DQ-GEO-005` (MMR pilot box warning).
+       - Address & PIN: `DQ-ADDR-001` (coordinate-only precision warning), `DQ-ADDR-002` (Indian 6-digit PIN format ^[1-9][0-9]{5}$).
+       - Operating Hours: `DQ-HOURS-001` (24/7 hours consistency with opening/closing times), `DQ-HOURS-002` (24-hour clock format HH:MM), `DQ-HOURS-003` (24/7 flag vs closed schedule/status contradiction triggers QUARANTINE).
+       - Connectors & Electrical: `DQ-CONN-001` (0 connectors shell station), `DQ-CONN-002` (quantity >= 1), `DQ-CONN-003` (unmapped connector type), `DQ-CONN-004` (unusually high quantity > 50), `DQ-ELEC-001` (power <= 0 kW), `DQ-ELEC-002` (extreme power > 2000 kW triggers QUARANTINE), `DQ-ELEC-003` (suspicious commercial power outside [1, 500] kW), `DQ-ELEC-004` (voltage <= 0 V), `DQ-ELEC-005` (suspicious voltage > 1000 V), `DQ-ELEC-006` (amperage <= 0 A), `DQ-ELEC-007` (suspicious amperage > 1000 A), `DQ-ELEC-008` (missing power_kw recommendation).
+       - Pricing & Tariffs: `DQ-PRICE-001` (negative tariff rate or session fee), `DQ-PRICE-002` (FREE pricing with positive rate triggers QUARANTINE), `DQ-PRICE-003` (missing pricing details recommendation), `DQ-PRICE-004` (non-alphabetic currency code rejection / length warning).
+       - Operational Semantics & Telemetry: `DQ-OBS-001` (future telemetry > 5 min clock skew), `DQ-OBS-002` (stale telemetry > 24 hours old), `DQ-OBS-003` (available connectors > total connectors).
+     - In-memory anomaly quarantine ledger (`QuarantineRecord`) preserving full Layer 1 provenance, all failed rule IDs, and human-readable diagnostic messages, isolated from canonical operational tables.
+     - Deterministic batch validation engine (`BatchValidationReport`) with completeness ratios, issue distributions, and zero record loss.
+     - Strict architectural invariants: No silent repair (bad data is never secretly corrected), missing means missing (never defaulted to 0 kW or ₹0), operational state decoupled from real-time availability and freshness.
+     - Pure functional determinism: Zero network calls, zero random numbers, zero LLMs, zero record mutations.
+  2. Integration & Module Exports:
+     - Exported all new validation symbols (`QualitySeverity`, `QualityRuleCategory`, `QualityFinding`, `QuarantineRecord`, `BatchValidationReport`) in `backend/ingestion/__init__.py`.
+  3. Comprehensive Unit Test Suite (`tests/test_data_quality_validation.py`):
+     - 40 unit tests covering all 40 required scenarios: fully valid station, missing optional power, missing optional price, missing operator, missing connector quantity, lat/lng range, Equator/Prime Meridian, Null Island, negative electrical/pricing values, suspicious power warning vs extreme power quarantine, unknown connector standard, explicit FREE pricing + 0.0, contradictory free pricing quarantine, normal/overnight/invalid hours, missing hours, contradictory 24/7 schedule quarantine, missing provenance source IDs, operational state vs live availability decoupling, stale observation handling, batch report complete accounting, batch determinism, multi-defect preservation, quarantine provenance retention, quarantine operational isolation, and input immutability.
+     - Full automated test suite passes: 137/137 tests (17 contract + 20 adapter + 15 persistence + 15 resolution + 30 normalization + 40 quality validation).
+  4. Quality Gates:
+     - `pytest tests/` (137/137 passing).
+     - `npx tsc --noEmit` (0 errors).
+     - `npm run lint` (0 errors).
+     - `npm run build` (verified production build).
+  5. Documentation:
+     - Authored comprehensive specification in `docs/step_2_6_data_quality_validation.md`.
+- Current state: STEP 2.6 COMPLETE & LOCKED.
+- Conceptual verification: Validator evaluates records against data-quality rules and physical plausibility; it does NOT merge entities, does NOT assign station UUIDs, and does NOT decide source precedence (deferred to Step 2.7). Zero database migrations required.
+
+### 25 Sep 2026 — Phase 2 Step 2.7 Canonical Deduplication Decision Layer & Source Merging
+- Phase / Step: Phase 2/6 — Step 2.7
+- What we built/changed:
+  1. Authoritative Canonical Deduplication Decision Engine (`backend/ingestion/deduplication.py`):
+     - Implemented `CanonicalDecisionState` (`MERGE`, `LINK_TO_CANONICAL`, `KEEP_SEPARATE`, `REVIEW`).
+     - Implemented `SurvivorshipStrategy` (`UNANIMOUS_AGREEMENT`, `SINGLE_REPORTING_SOURCE`, `HIGHEST_QUALITY_SCORE`, `MOST_COMPLETE_VALUE`, `EXPLICIT_FIELD_POLICY`, `DEDUPLICATED_SET`, `CONFLICT_UNRESOLVED`).
+     - Defined typed models: `ExistingCanonicalStation`, `FieldSurvivorshipDecision`, and `CanonicalResolutionDecision`.
+     - Built pure functional `FieldSurvivorshipPolicy`:
+       - Coordinates: Deterministic selection from highest-quality source for close coordinates ($\le 50$m); material contradiction ($> 50$m) triggers `REVIEW`; zero synthetic coordinate averaging.
+       - Names: Unanimous agreement or most complete descriptive name.
+       - Operators: Exact and alias agreement; rebrand/takeover temporal recency policy; unaliased conflicts trigger `REVIEW`; full provenance preserved.
+       - Pricing: Missing preserved as unknown (never ₹0); explicit free preserved; conflicting rates or Free vs Paid trigger `REVIEW`.
+       - Connectors: Deduplicated by `(connector_type, round(power_kw))` using `max(quantity)`; blind summation strictly prevented; incompatible signatures trigger `REVIEW`.
+     - Built stateless `CanonicalDeduplicationEngine`:
+       - Deterministic input sorting by `(source_id, source_station_id)`.
+       - Strict validation gating: `REJECT` records immediately isolated and blocked; `QUARANTINE` records routed to `REVIEW` with `is_blocked = True`.
+       - Cluster concordance verification: Transitive contradictions across multi-source candidate clusters detected and routed to `REVIEW` (preventing transitive false merges).
+       - Existing canonical reconciliation: Safely links to single existing stations; prevents multi-canonical bridges and silent collapse.
+       - Deterministic cluster hashing (`cluster_` + SHA-256 of sorted source IDs); zero `datetime.now()` execution drift.
+  2. Integration & Module Exports:
+     - Exported all Step 2.7 models and engines in `backend/ingestion/__init__.py`.
+  3. Comprehensive Unit Test Suite (`tests/test_canonical_deduplication.py`):
+     - 39 unit tests covering all required scenarios: basic identity, validation gating, field survivorship, coordinates, connectors, operators, pricing, multi-source clusters, existing canonical stations, determinism/idempotence, and provenance.
+     - Full automated test suite passes: 176/176 tests (17 contract + 20 adapter + 15 persistence + 15 resolution + 30 normalization + 40 quality validation + 39 deduplication).
+  4. Quality Gates:
+     - `pytest tests/` (176/176 passing).
+     - `npx tsc --noEmit` (0 errors).
+     - `npm run lint` (0 errors).
+     - `npm run build` (verified production build).
+  5. Documentation:
+     - Authored comprehensive specification in `docs/step_2_7_canonical_deduplication_and_source_merging.md`.
+- Current state: STEP 2.7 COMPLETE & LOCKED — READY FOR STEP 2.8.
+- Conceptual verification: "2.7 DECIDES. 2.8 PERSISTS." Pure in-memory decision layer; zero database writes; zero schema modifications; external source IDs preserved; one physical station = one canonical ID.
+- Blockers / waiting on: Step 2.8 (Persist deduplicated canonical stations & connectors).
+- Next step: Phase 2 Step 2.8 — Persist deduplicated canonical stations & connectors into operational tables (`public.stations`, `public.connectors`, `public.station_source_link`).
+
+### 26 Sep 2026 — Phase 2 Step 2.8 Canonical Operational Loading & Mutation Isolation
+- Phase / Step: Phase 2/6 — Step 2.8
+- What we built/changed:
+  1. Authoritative Canonical Operational Persistence Engine (`backend/ingestion/persistence.py`):
+     - Implemented `CanonicalPersistenceStatus` (`INSERTED`, `UPDATED`, `UNCHANGED`, `REVIEW_SKIPPED`, `FAILED`).
+     - Defined typed result models: `CanonicalPersistenceResult` and `BatchCanonicalPersistenceReport`.
+     - Implemented `persist_canonical_decision` and `persist_canonical_batch` handling all Step 2.7 decision states (`MERGE`, `LINK_TO_CANONICAL`, `KEEP_SEPARATE`, `REVIEW`).
+  2. Transactional Boundary & Atomic Mutation Isolation:
+     - Isolated database transaction per decision with explicit `commit()` on success, `rollback()` on failure.
+     - Added `commit: bool = True` parameter to `get_or_create_data_source`, `_ensure_dim_source`, and `get_or_create_operator`, passing `commit=False` during canonical loading to prevent premature intermediate commits.
+     - Sensitive credentials and tokens scrubbed from error logs via `_scrub_secrets`.
+     - Batch execution isolates transactions per decision; failure in one cluster rolls back cleanly without corrupting other records.
+  3. Station Attribute Reconciliation ("Missing != Conflict"):
+     - Merging and updates apply SQL `COALESCE` to preserve existing non-null canonical attributes when newer payloads omit optional fields.
+     - Enforced `chk_stations_hours` constraint (opening/closing times explicitly cleared to `NULL` when `is_24_hours = True`).
+  4. Authoritative Connector Survivorship Persistence ("2.7 Decides. 2.8 Persists"):
+     - Persistent loader persists the exact quantity decided by Step 2.7 field survivorship (`new_qty = qty` when `has_explicit_decision is True`).
+     - Never independently applies `max(existing, incoming)` over explicit Step 2.7 survivorship decisions.
+     - Equipment mapped by natural capacity group key `(station_id, connector_type, power_kw, charging_standard)` to satisfy unique constraint `uq_connectors_station_type_power`.
+     - Non-destructive guarantee: Omission of a connector in a newer payload never deletes existing equipment in `public.connectors`.
+  5. Provenance Linkage & Reassignment Safety:
+     - Maintains `public.station_source_link` bridging external IDs to canonical ChargePlus UUIDs.
+     - Idempotent re-ingestion with matching SHA-256 payload hash updates `last_seen_at = now()` without mutating station data.
+     - Attempting to reassign an external source ID to a different canonical station UUID aborts and rolls back with an explicit `Unsafe identity mutation` error.
+  6. Conformed Warehouse Dimension History (SCD Type 2):
+     - `analytics.dim_station` tracks canonical attribute history via SCD Type 2.
+     - Attribute changes close the old active row (`is_current = false`, `effective_to = now()`) and open a new version (`version = old_version + 1`, `is_current = true`, `effective_from = now()`).
+  7. Integration & Module Exports:
+     - Exported all Step 2.8 persistence models and functions in `backend/ingestion/__init__.py`.
+  8. Comprehensive Unit Test Suite (`tests/test_canonical_operational_loading.py`):
+     - 43 automated unit tests covering all 12 operational loading requirements, including 6 dedicated connector audit tests (`test_18b` to `test_18g`) and live Supabase PostgreSQL transactional test 37 with verified clean rollback.
+     - Full automated test suite passes: 219/219 tests (17 contract + 20 adapter + 15 persistence + 15 resolution + 30 normalization + 40 quality validation + 39 deduplication + 43 operational loading).
+  9. Quality Gates:
+     - `pytest tests/` (219/219 passing).
+     - `npx tsc --noEmit` (0 errors).
+     - `npm run lint` (0 errors).
+     - `npm run build` (verified Next.js Turbopack build succeeded across all 26 routes).
+  10. Documentation:
+     - Authored comprehensive specification in `docs/step_2_8_canonical_operational_loading_and_mutation_isolation.md`.
+- Current state: STEP 2.8 COMPLETE & LOCKED.
+- Conceptual verification: Strict layered separation ("2.7 Decides. 2.8 Persists"), missing != conflict, omission != deletion, full transaction rollback on failure, zero test pollution in live database.
+- Blockers / waiting on: Step 2.9.
+- Next step: Phase 2 Step 2.9 — Record freshness/provenance & observation freshness decay.
+
+### 26 Sep 2026 — Phase 2 Step 2.9 Record Freshness, Observation Provenance & Staleness Decay
+- Phase / Step: Phase 2/6 — Step 2.9
+- What we built/changed:
+  1. Authoritative Pure Python Freshness Engine (`backend/ingestion/freshness.py`):
+     - Implemented `FreshnessState` (`FRESH`, `AGING`, `STALE`, `UNKNOWN`).
+     - Implemented `FreshnessBasis` (`OBSERVATION_TIME`, `SOURCE_UPDATED_AT`, `RETRIEVED_AT`, `UNKNOWN`).
+     - Implemented `InformationType` (`LIVE_TELEMETRY`, `OPERATIONAL_STATUS`, `STATIC_METADATA`, `PRICING`, `HOURS`).
+     - Implemented `DecayCurve` (`NONE`, `LINEAR`, `EXPONENTIAL`, `STEP`).
+     - Defined typed models: `FreshnessPolicy`, `FreshnessEvaluationResult`, and `StationFreshnessSummary`.
+     - Built purely functional, deterministic `FreshnessEngine`:
+       - Zero hidden `datetime.now()` calls; mandatory explicit `as_of` reference time across all evaluations.
+       - Clock skew tolerance (up to 5.0 seconds in the future clamped to zero age with warning; material future timestamps flagged as unvalidated).
+       - Invariant enforcement: `STALE != UNAVAILABLE` (old observations are historical evidence and are never coerced to broken/unavailable).
+       - Invariant enforcement: `UNKNOWN != UNAVAILABLE` (missing freshness basis retains historical status).
+       - Invariant enforcement: `MISSING TIMESTAMP != CURRENT` (missing dates evaluate to `UNKNOWN` with `None` age; never defaulted to current time).
+       - Strict separation of station metadata freshness from live connector observation freshness via `StationFreshnessSummary`.
+  2. Policy Abstraction & Registry:
+     - Implemented `FreshnessPolicyRegistry` with pre-registered operational SLA policies:
+       - `chargeplus_live_telemetry_v1` (5m fresh, 15m stale, LINEAR decay).
+       - `chargeplus_operational_status_v1` (1h fresh, 24h stale, LINEAR decay).
+       - `chargeplus_static_metadata_v1` (7d fresh, 30d stale, retrieval fallback permitted, NO synthetic score).
+       - `chargeplus_pricing_v1` (24h fresh, 7d stale, NO synthetic score).
+       - Source-specific presets: `ocm_live_observation_v1`, `ocm_static_metadata_v1`.
+     - Clearly documented that thresholds and decay curves are ChargePlus operational policies, not universal external domain facts.
+     - Preserved raw `age_seconds` transparently across all evaluations regardless of whether a decay score is generated.
+  3. Operational Persistence Integration (`backend/ingestion/persistence.py`):
+     - Updated `persist_observation` to preserve the authentic `obs.retrieved_at` timestamp as `received_at` in `public.station_observations` and warehouse fact tables.
+     - Preserved causal time invariant (`received_at >= observed_at`) to satisfy PostgreSQL check constraint `chk_observations_causal_time`.
+  4. Integration & Module Exports:
+     - Exported all Step 2.9 models, enums, policies, and engine methods in `backend/ingestion/__init__.py`.
+  5. Comprehensive Unit Test Suite (`tests/test_freshness_provenance.py`):
+     - 33 automated unit and integration tests covering all requirements A through Z:
+       - Determinism and explicit `as_of` reference times (tests 1, 16).
+       - Timezone handling: aware UTC and naive local normalized cleanly (test 2).
+       - Exact boundary transitions for fresh, aging, and stale thresholds (tests 3, 4, 5).
+       - Missing timestamp semantics and retrieval fallbacks (tests 6, 7, 8, 9, 31).
+       - `STALE != UNAVAILABLE` and status immutability invariants (tests 10, 11, 12, 17).
+       - Timestamp semantic separation and source-specific policies (tests 13, 14, 15, 29, 30).
+       - Future timestamp defensive behavior and clock skew handling (tests 18, 28).
+       - Provenance preservation through normalization and persistence (tests 19, 20, 21, 22).
+       - Pluggable decay curve evaluations (tests 23, 24, 25, 26).
+       - Metadata vs live telemetry freshness separation (test 27).
+       - Persistence causal ordering and live PostgreSQL transaction with clean rollback (tests 32, 33).
+     - Full automated test suite passes: 252/252 tests (17 contract + 20 adapter + 15 persistence + 15 resolution + 30 normalization + 40 quality validation + 39 deduplication + 43 operational loading + 33 freshness & provenance).
+  6. Quality Gates:
+     - `pytest tests/` (252/252 passing).
+     - `npx tsc --noEmit` (0 errors).
+     - `npm run lint` (0 errors).
+     - `npm run build` (verified Next.js Turbopack build succeeded across all 26 routes).
+     - Live database inspected: 0 test pollution (exactly 2 stations, 1 observation, 2 data sources, 3 operators).
+  7. Documentation:
+     - Authored comprehensive specification in `docs/step_2_9_freshness_provenance_and_staleness_decay.md`.
+- Current state: STEP 2.9 COMPLETE & LOCKED — READY FOR STEP 2.10.
+- Conceptual verification: Deterministic evaluation; `STALE != UNAVAILABLE`; `UNKNOWN != UNAVAILABLE`; `MISSING != CURRENT`; 4 lifecycle timestamps tracked separately; raw age preserved; pluggable decay; provenance intact; zero database migrations; zero test pollution.
+- Blockers / waiting on: Step 2.10 (Schedule/repeat ingestion).
+- Next step: Phase 2 Step 2.10 — Schedule/repeat ingestion: Polling daemons, cron scheduling, and retry/backoff policies.
+
+### 26 Sep 2026 — Phase 2 Step 2.10 Scheduled Ingestion, Polling Daemons & Retry Policies
+- Phase / Step: Phase 2/6 — Step 2.10 (Schedule/repeat ingestion)
+- What we built/changed:
+  1. Authoritative Scheduling Engine (`backend/ingestion/scheduling.py`):
+     - Single canonical pipeline: Scheduled execution calls the exact same `IngestionRunner.run()` logic without duplicating or bifurcating adapter, validation, resolution, deduplication, or persistence semantics.
+     - State Machine: `STARTED`, `RUNNING`, `SUCCEEDED`, `PARTIAL`, `FAILED`, `CANCELLED`.
+     - Explicit Error Classification: `TRANSIENT` (retried with bounded exponential backoff & jitter) vs `PERMANENT` (fails fast, zero retries for 400, 401, 403, invalid config, or deterministic exceptions).
+     - Upstream Rate Limit & Backoff: HTTP 429 support with `Retry-After` header parsing (both seconds integer and RFC 2822 HTTP date), bounded exponential backoff ($2s, 4s, 8s... \le 60s$), and configurable proportional jitter ($\pm 20\%$).
+     - Concurrency Protection: PostgreSQL session advisory locks (`pg_try_advisory_lock` with deterministic signed 64-bit integer hash of `source_id:scope`) preventing overlapping ingestion runs; clean fallback to thread locks for tests.
+     - Graceful Polling Daemon (`PollingDaemon`): Long-lived worker with signal handling for `SIGINT` (Ctrl+C) and `SIGTERM`, completing active runs before shutdown.
+     - Secret Hygiene: Structured operational logging with automatic token and API key redaction (`_scrub_secrets`).
+  2. Database Ingestion Runs Audit Table (`supabase/migrations/20260926000001_step_2_10_ingestion_runs.sql`):
+     - Created `public.ingestion_runs` table with 23 columns recording exact measured facts (counts, duration, timestamps, errors, dry-run flag). RLS enabled.
+     - Live executed migration on Supabase PostgreSQL.
+  3. Observation Idempotency Enhancement (`backend/ingestion/persistence.py`):
+     - Added idempotency check in `persist_observation()` on `(station_id, observed_at, source_payload_hash)`. Prevents duplicate observations on reruns of the same payload.
+     - Added `persist_ingestion_run()` method to record and update run state in `public.ingestion_runs`.
+  4. CLI & Runner Extension (`backend/ingestion/runner.py`):
+     - Added `run_scheduled()` method delegating to `ScheduledIngestionOrchestrator`.
+     - Extended CLI options: `--source`, `--daemon`, `--interval`, `--run-once`, `--max-attempts`, `--timeout`, `--scope`.
+  5. Platform-Native Scheduling (`.github/workflows/scheduled_ingestion.yml`):
+     - Configured short-lived GitHub Actions scheduled workflow running on cron (`0 */6 * * *`) and `workflow_dispatch`.
+  6. Comprehensive Unit & Integration Test Suite (`tests/test_scheduled_ingestion.py`):
+     - 32 automated tests covering all 30 requirements: success, CLI equivalence, retry on timeout/429/5xx, Retry-After header parsing, no retry on 400/401/403/config errors, max attempts, bounded backoff, deterministic jitter, concurrency locking, partial failures, quarantine handling, idempotency, secret scrubbing, and freshness preservation.
+     - Full automated test suite passes: 284/284 tests across all 9 test modules (100% pass rate).
+  7. Quality Gates:
+     - `pytest tests/` (284/284 passing).
+     - `npx tsc --noEmit` (0 errors).
+     - `npm run lint` (0 errors).
+     - `npm run build` (Turbopack production build compiled all 26 routes cleanly).
+     - Live database inspected: 0 test pollution (2 stations, 2 connectors, 1 observation, 0 leaked ingestion runs).
+  8. Documentation:
+     - Authored comprehensive specification in `docs/step_2_10_scheduled_ingestion_and_retry_policies.md`.
+- Current state: STEP 2.10 COMPLETE & LOCKED.
+- Conceptual verification: Single pipeline; explicit transient vs permanent retry classification; bounded backoff with jitter; PostgreSQL advisory locks prevent concurrency races; observation-level idempotency prevents duplicate history; measured facts in `public.ingestion_runs`; zero fake telemetry; zero secrets in logs; clean database state.
+- Blockers / waiting on: None.
+- Next step: Step 2.11.
+
+### 26 Sep 2026 — Phase 2 Step 2.11 — Mumbai Pilot Coverage & Data Quality Audit (PHASE 2 SIGN-OFF)
+- Phase / Step: Phase 2/6 — Step 2.11 — COMPLETE & LOCKED
+- What we built/changed:
+  1. Authoritative read-only audit engine (`backend/ingestion/audit.py`, ~1100 lines): `MumbaiCoverageAuditor`, `AuditConfig`, 11 dataclasses, `format_report()` markdown renderer, and `main()` CLI.
+  2. Live database audit executed at `as_of=2026-09-26T06:30:00Z` against real Supabase PostgreSQL instance.
+  3. Comprehensive test suite (`tests/test_mumbai_coverage_audit.py`, 64 tests) covering all 22 testing requirements in spec including: geographic classification, freshness, stale-≠-unavailable, static-vs-telemetry isolation, determinism, as_of behaviour, empty/partial datasets, ML readiness, no-mutation invariant.
+  4. Live audit report written to `docs/step_2_11_mumbai_coverage_and_data_quality_audit.md`.
+  5. Updated `Must Read/Phases.md` and `Must Read/Memory.md` to close Phase 2.
+- Key audit findings:
+  - 2 canonical stations, both in MMR bounding box (100% in-pilot).
+  - 2/48 grid cells occupied — 46 empty cells do NOT indicate zero real chargers (source coverage limitation).
+  - 1 genuine STALE observation (March 2024, availability=available) — preserved as historical evidence; NOT rewritten as unavailable.
+  - All connectors: CCS2, 60 kW, quantity 2 — zero connector diversity in current dataset.
+  - Pricing: 0/2 stations — all price_per_kwh null; displayed as UNKNOWN not ₹0.
+  - OpenChargeMap static StatusTypeID 50 correctly NOT counted as live telemetry.
+  - ML maturity: COLD — 0 stations with repeated snapshots; queue prediction unsupportable.
+  - No fake data, no mutations, no credential exposure.
+- Current state: STEP 2.11 COMPLETE & LOCKED — PHASE 2 COMPLETE — READY FOR PHASE 3.
+- Conceptual verification:
+  - STALE ≠ UNAVAILABLE: Confirmed in test and live audit.
+  - Missing pricing ≠ Free: Confirmed — no pricing data treated as unknown.
+  - Missing connector attribute ≠ zero connectors: Confirmed.
+  - Static OCM status ≠ live telemetry: Confirmed — tested separately.
+  - No fabricated data: Confirmed.
+  - No database mutations from audit: Confirmed — read-only query set.
+- Blockers / waiting on: None — Phase 2 fully closed.
+- Next step: Phase 3, Step 3.1 — Replace hardcoded station dataset with real Supabase API.
+
+### 26 Sep 2026 — Phase 2 Recovery (canonical runtime integration + fixture remediation)
+- Phase / Step: Phase 2/6 — Recovery (post-audit integration, NOT Phase 3)
+- What we built/changed:
+  - Wired runner.run() to canonical pipeline (adapter -> normalize_station_record 2.5 -> DataQualityValidator 2.6 re-gate -> fetch_existing candidates -> CanonicalDeduplicationEngine 2.7 incl. CrossSourceEntityResolver 2.4 -> persist_canonical_batch 2.8 incl. observations -> FreshnessEngine 2.9 read-only with explicit as_of).
+  - Fixed contract-boundary hash bug (canonical persistence now reads raw_payload_hash, fallback legacy extra_metadata), fixed _update_station_record 23-param binding, fixed fetch_existing missing raw_connector_type, preserved PAID-without-rate in normalize_pricing.
+  - Fixed validation REJECT reachability (authoritative post-normalization gate; QUARANTINE/REJECT never canonicalized; REVIEW never merged).
+  - Deprecated legacy persist_station/_sync_connectors (retained for backward-compat tests only).
+  - Fixed freshness source binding (open_charge_map canonical + openchargemap alias), scheduler run-accounting fallback via runner.db_url, timeout propagation CLI->config->runner->fetch_raw, Retry-After HTTP-date support, _scrub_secrets backreferences + Bearer/access_token/key coverage.
+  - Remediated live DB: removed 2 fixture stations (192840/192852), 2 links, 1 obs, 2 conns, 1 fact, 1 dim_station, 1 orphan dim_conn, test source + dim_source; retained operators (incl. Unknown Operator sentinel, documented) and open_charge_map source; verified 0 stations/0 pollution, no fake replacements.
+  - Hardened public.ingestion_runs grants (migration 20260926000002: anon/authenticated SELECT-only, service_role writes).
+  - Added tests/test_runner_canonical_composition.py (3 tests incl. timeout) + tests/test_canonical_postgres_integration.py (6 tests, DB-gated, cleanup-verified).
+- Current state: PARTIAL — RUNTIME WIRED, LIVE INGESTION BLOCKED. 351 unit + 6 integration passing; tsc/lint/build clean; live DB clean (1 source, 0 stations).
+- Conceptual verification: one malformed record cannot kill batch; REVIEW/BLOCKED/QUARANTINE/REJECT never canonical; STALE != UNAVAILABLE; missing != zero; UUID identity preserved; hash idempotency holds; omission never deletes connectors; SCD2 versions.
+- Blockers / waiting on: OPENCHARGEMAP_API_KEY missing — live OCM dry-run/write + scheduled ingestion_runs verification BLOCKED.
+- Next step: Obtain key, run --dry-run --limit 10, review, then one real --limit 10 write + verify ingestion_runs/dim/fact alignment.
+
+### 03 Oct 2026 — Phase 2 Step 2.12 Recovery Hardening & Final Phase 2 Closure
+- Phase / Step: Phase 2/6 — Step 2.12 (FINAL FOUR BLOCKERS RESOLUTION & PHASE 2 CLOSURE)
+- What we built/changed:
+  1. Blocker 1 (Reconcile & Commit Verified Recovery State): Reconciled documentation (`Must Read/Memory.md`, `Must Read/Phases.md`, `README.md`) with verified live database state. Cleaned untracked artifacts (`scratch/`). Prepared full git commit of verified pipeline code, migrations, tests, and workflows.
+  2. Blocker 2 (Unknown-Power Connector Semantics):
+     - Authored and applied migration `supabase/migrations/20260926000003_step_2_12_connector_unknown_power.sql`: altered `public.connectors.power_kw` and `analytics.dim_connector.power_kw` to nullable with `CHECK (power_kw IS NULL OR power_kw > 0)` and recreated `uq_connectors_station_type_power` with `NULLS NOT DISTINCT`.
+     - Updated `backend/ingestion/persistence.py`: updated `_reconcile_and_persist_connectors`, `_persist_keep_separate`, `_persist_merge`, `_persist_link_to_canonical`, and `_sync_dim_connector` to allow and preserve `power_kw = None` without casting to float or converting to 0. Preserved physical connector quantity and source connector IDs. Added durable metrics (`connectors_with_unknown_power`, `connectors_skipped`) to `CanonicalPersistenceResult`, `IngestionSummary`, and `ingestion_runs.metadata`.
+     - Live DB Remediation: Re-ingested MMR pilot stations via live OCM bounded run-once; 3 connectors with unknown power were safely persisted as `power_kw IS NULL` across 3 stations, increasing live connectors from 2 to 5 (2 known power [7 kW, 120 kW], 3 unknown power). Zero stations falsely appear connector-less among sources supplying connections.
+  3. Blocker 3 (Fail-Closed Candidate Lookup):
+     - Created `CandidateLookupError` in `backend/ingestion/contracts.py`.
+     - Modified `backend/ingestion/runner.py`: caught exceptions during `fetch_existing_canonical_stations` and raised `CandidateLookupError` instead of falling back to `existing=[]`.
+     - Classified `CandidateLookupError` as `TRANSIENT` in `backend/ingestion/scheduling.py`.
+     - Guaranteed 0 stations, 0 connectors, 0 source links, and 0 observations persisted on candidate lookup failure; run marked `FAILED`.
+  4. Blocker 4 (Single `ingestion_runs` Owner):
+     - Runner owns execution and run accounting; in `runner.run()`, persisted run accounting to `public.ingestion_runs` within a `finally` block, populating `summary.run_id` and `runner.last_run_id`.
+     - Scheduler orchestrator checks if runner already persisted the run and suppresses duplicate insertion in `_persist_run_accounting`.
+     - Direct execution produces exactly 1 row; scheduled/run-once execution produces exactly 1 row; retry attempts produce separate distinguishable rows per attempt.
+  5. Regression Test Suite:
+     - Authored `tests/test_phase2_12_recovery_hardening.py` with 19 comprehensive test cases covering unknown-power semantics (1-7), candidate lookup fail-closed safety (8-13), single-owner scheduler accounting (14-19).
+     - Full test suite: 376/376 passing (357 existing + 19 Phase 2.12).
+     - Full frontend validation: `tsc --noEmit` clean, `eslint .` clean, `next build` clean (26/26 routes).
+     - Live bounded dry-run and live bounded run-once verified.
+- Current state: PHASE 2 VERIFIED COMPLETE — READY FOR PHASE 3.
+- Conceptual verification:
+  - Missing connector power != 0 kW, missing power != missing connector, missing power != unavailable connector: VERIFIED.
+  - Candidate lookup failure cannot produce duplicate canonical stations: VERIFIED.
+  - Single logical run = single `ingestion_runs` row: VERIFIED.
+  - Scheduler controls WHEN; Runner controls WHAT: VERIFIED.
+  - Public OLTP, analytics OLAP, and ML isolation strictly preserved: VERIFIED.
+  - Zero fabricated telemetry or synthetic pricing: VERIFIED.
+- Blockers / waiting on: None. Precondition for Step 3.2: MapLibre popup HTML injection sanitization before connecting live DB coordinates/names.
+- Next step: Phase 3, Step 3.1 — Replace hardcoded station dataset with real Supabase data.
 
 
