@@ -6,8 +6,8 @@ export type ConnectorType = "CCS2" | "CCS1" | "CHAdeMO" | "Type 2" | "Type 1" | 
 export type Connector = {
   id: string;
   type: ConnectorType;
-  /** peak power in kW */
-  powerKw: number;
+  /** peak power in kW; null if unknown */
+  powerKw: number | null;
   /** number of physical chargers of this type */
   total: number;
   /** number currently available (we use only for 'available' stations) */
