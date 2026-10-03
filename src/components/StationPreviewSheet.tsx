@@ -70,7 +70,7 @@ export function StationPreviewSheet({
             {station.connectors.map((c) => c.type).join(" · ")}
           </span>
           <span className="text-ink-300">·</span>
-          <span>{maxKw} kW</span>
+          <span>{maxKw > 0 ? `${maxKw} kW` : "—"}</span>
         </p>
         <p>
           <span className="font-medium text-ink-900">

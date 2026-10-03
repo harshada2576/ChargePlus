@@ -186,7 +186,7 @@ export function StationDetail({ station }: { station: Station }) {
                 <div>
                   <p className="text-[14.5px] font-semibold text-ink-900">{c.type}</p>
                   <p className="mt-0.5 inline-flex items-center gap-1.5 text-[12.5px] text-ink-600">
-                    <BoltIcon size={12} /> {c.powerKw} kW
+                    <BoltIcon size={12} /> {c.powerKw != null ? `${c.powerKw} kW` : "—"}
                   </p>
                 </div>
                 <p className="text-[13px] text-ink-700">

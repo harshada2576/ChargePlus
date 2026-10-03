@@ -1,190 +1,91 @@
-import type { Review, Station } from "./types";
-
-const ARGS = 0.017453292519943295;
+import type { Station, Review } from "./types";
+import {
+  mapDbStationToStation,
+  type DbStationRow,
+  type DbConnectorRow,
+} from "./stationAdapter";
+import { supabase } from "@/lib/supabase";
 
 export const MUMBAI_CENTER = { lat: 19.076, lng: 72.8777 };
 
-const seed: Station[] = [
+/** Haversine argument conversion factor (degrees to radians) */
+const ARGS = Math.PI / 180;
+
+/**
+ * Canonical station baseline derived from the authoritative PostgreSQL database.
+ * No fabricated availability, no invented pricing, unknown power kept as null.
+ */
+export const CANONICAL_STATIONS: Station[] = [
   {
-    id: "st-andheri-east-1",
-    name: "ChargePlus Hub — Andheri East",
-    operator: "ChargePlus",
-    area: "Andheri East",
-    address: "Near Andheri Metro Station, Andheri East",
-    lat: 19.1197,
-    lng: 72.8468,
-    status: "available",
-    minutesSinceUpdate: 8,
+    id: "2979dde1-c576-437b-b881-3bea4c43a70d",
+    name: "Tata Power Receiving Station",
+    operator: "(Business Owner at Location)",
+    area: "Vikhroli",
+    address: "3, Vikhroli Village Road, Vikhroli, Mumbai, 400077",
+    lat: 19.0957956,
+    lng: 72.9260109,
+    status: "unknown",
+    minutesSinceUpdate: null,
     connectors: [
-      { id: "c1", type: "CCS2", powerKw: 120, total: 2, available: 2 },
-      { id: "c2", type: "CCS2", powerKw: 60, total: 2, available: 1 },
-      { id: "c3", type: "Type 2", powerKw: 22, total: 2, available: 2 },
+      {
+        id: "c163be25-b6b6-46f7-9404-41cb5eee6a92",
+        type: "Type 1",
+        powerKw: null,
+        total: 3,
+        available: 0,
+      },
     ],
-    pricePerKwh: 18,
-    isFree: false,
-    hours: { kind: "24h" },
-    rating: 4.4,
-    reviewCount: 128,
-    busyWindows: ["7 PM – 9 PM"],
+    pricePerKwh: null,
+    isFree: null,
+    hours: { kind: "unknown" },
+    rating: null,
+    reviewCount: 0,
+    busyWindows: [],
   },
   {
-    id: "st-bandra-w-1",
-    name: "Stilt Charge — Bandra West",
-    operator: "Stilt Mobility",
-    area: "Bandra West",
-    address: "Linking Road, Bandra West",
-    lat: 19.0596,
-    lng: 72.8295,
-    status: "busy",
-    minutesSinceUpdate: 14,
+    id: "4ae2adf1-a5fa-4b7d-9920-ffda8ee3f86e",
+    name: "Mira Road",
+    operator: "Unknown Operator",
+    area: "Maharashtra",
+    address: "A/1104, Unique Heights, Poonam Garden, Above New India Co-Op Bank, Near S K Stone, Mira Bhayender Road, Near S K Stone, Maharashtra, 401107",
+    lat: 19.1400060534561,
+    lng: 72.8534438284495,
+    status: "unknown",
+    minutesSinceUpdate: null,
     connectors: [
-      { id: "c1", type: "CCS2", powerKw: 60, total: 1, available: 0 },
-      { id: "c2", type: "Type 2", powerKw: 22, total: 2, available: 1 },
+      {
+        id: "2ec5cd42-b0ba-4c9f-a95e-bc61b1ea36e6",
+        type: "CCS2",
+        powerKw: null,
+        total: 1,
+        available: 0,
+      },
     ],
-    pricePerKwh: 22,
-    isFree: false,
-    hours: { kind: "open-close", open: "07:00", close: "23:00" },
-    rating: 4.1,
-    reviewCount: 64,
-    busyWindows: ["6 PM – 10 PM"],
+    pricePerKwh: null,
+    isFree: null,
+    hours: { kind: "unknown" },
+    rating: null,
+    reviewCount: 0,
+    busyWindows: [],
   },
   {
-    id: "st-powai-1",
-    name: "Ather Grid — Powai",
-    operator: "Ather Energy",
-    area: "Powai",
-    address: "Hiranandani Gardens, Powai",
-    lat: 19.117,
-    lng: 72.906,
-    status: "available",
-    minutesSinceUpdate: 3,
-    connectors: [
-      { id: "c1", type: "CCS2", powerKw: 60, total: 2, available: 1 },
-      { id: "c2", type: "Type 2", powerKw: 22, total: 1, available: 1 },
-    ],
-    pricePerKwh: 20,
-    isFree: false,
-    hours: { kind: "24h" },
-    rating: 4.6,
-    reviewCount: 92,
-    busyWindows: ["8 AM – 10 AM", "7 PM – 9 PM"],
-  },
-  {
-    id: "st-lower-parel-1",
-    name: "Tata Power EZ — Lower Parel",
-    operator: "Tata Power",
-    area: "Lower Parel",
-    address: "Senapati Bapat Marg, Lower Parel",
-    lat: 19.0,
-    lng: 72.829,
-    status: "available",
-    minutesSinceUpdate: 22,
-    connectors: [
-      { id: "c1", type: "CCS2", powerKw: 150, total: 2, available: 1 },
-      { id: "c2", type: "Bharat AC001", powerKw: 15, total: 2, available: 2 },
-    ],
-    pricePerKwh: 17,
-    isFree: false,
-    hours: { kind: "24h" },
-    rating: 4.3,
-    reviewCount: 211,
-    busyWindows: ["9 AM – 11 AM"],
-  },
-  {
-    id: "st-worli-1",
-    name: "Statiq — Worli Sea Face",
-    operator: "Statiq",
-    area: "Worli",
-    address: "Worli Sea Face, Worli",
-    lat: 19.018,
-    lng: 72.812,
+    id: "862847e0-83fe-43cf-84d9-a6e936451aec",
+    name: "SALZER DEVELOPMENT",
+    operator: "Salzer NexCharge (IN)",
+    area: "Mumbai",
+    address: "The Lalit Hotel, Mumbai, Mumbai",
+    lat: 19.105321,
+    lng: 72.875887,
     status: "broken",
-    minutesSinceUpdate: 120,
-    connectors: [
-      { id: "c1", type: "CCS2", powerKw: 60, total: 1, available: 0 },
-    ],
-    pricePerKwh: 19,
-    isFree: false,
-    hours: { kind: "24h" },
-    rating: 3.2,
-    reviewCount: 18,
-    busyWindows: [],
-  },
-  {
-    id: "st-juhu-1",
-    name: "ChargeZone — Juhu",
-    operator: "ChargeZone",
-    area: "Juhu",
-    address: "Juhu Tara Road, Juhu",
-    lat: 19.098,
-    lng: 72.826,
-    status: "available",
-    minutesSinceUpdate: 5,
-    connectors: [
-      { id: "c1", type: "CCS2", powerKw: 60, total: 2, available: 2 },
-      { id: "c2", type: "Type 2", powerKw: 22, total: 2, available: 1 },
-    ],
-    pricePerKwh: 24,
-    isFree: false,
-    hours: { kind: "24h" },
-    rating: 4.5,
-    reviewCount: 76,
-    busyWindows: ["6 PM – 8 PM"],
-  },
-  {
-    id: "st-malad-1",
-    name: "Bolt.Earth — Malad West",
-    operator: "Bolt.Earth",
-    area: "Malad West",
-    address: "Malad West, near station",
-    lat: 19.187,
-    lng: 72.848,
-    status: "available",
-    minutesSinceUpdate: 12,
-    connectors: [
-      { id: "c1", type: "CCS2", powerKw: 25, total: 2, available: 2 },
-      { id: "c2", type: "Bharat AC001", powerKw: 15, total: 1, available: 1 },
-    ],
-    pricePerKwh: 15,
-    isFree: false,
-    hours: { kind: "open-close", open: "06:00", close: "23:00" },
-    rating: 4.0,
-    reviewCount: 39,
-    busyWindows: [],
-  },
-  {
-    id: "st-goregaon-1",
-    name: "Goregaon FastCharge",
-    operator: "ChargePlus",
-    area: "Goregaon East",
-    address: "Western Express Highway, Goregaon East",
-    lat: 19.166,
-    lng: 72.852,
-    status: "busy",
-    minutesSinceUpdate: 28,
-    connectors: [
-      { id: "c1", type: "CCS2", powerKw: 120, total: 2, available: 0 },
-      { id: "c2", type: "CCS2", powerKw: 60, total: 2, available: 1 },
-    ],
-    pricePerKwh: 21,
-    isFree: false,
-    hours: { kind: "24h" },
-    rating: 4.2,
-    reviewCount: 47,
-    busyWindows: ["5 PM – 8 PM"],
-  },
-  {
-    id: "st-thane-1",
-    name: "Tata Power — Thane",
-    operator: "Tata Power",
-    area: "Thane West",
-    address: "Ghodbunder Road, Thane West",
-    lat: 19.218,
-    lng: 72.978,
-    status: "unknown",
     minutesSinceUpdate: null,
     connectors: [
-      { id: "c1", type: "CCS2", powerKw: 60, total: 1, available: 0 },
+      {
+        id: "41268dcc-3c36-4c4a-b941-64ef2083211c",
+        type: "Type 2",
+        powerKw: 7,
+        total: 1,
+        available: 0,
+      },
     ],
     pricePerKwh: null,
     isFree: null,
@@ -194,197 +95,195 @@ const seed: Station[] = [
     busyWindows: [],
   },
   {
-    id: "st-cbd-1",
-    name: "BKC Plaza Charge",
-    operator: "Statiq",
-    area: "Bandra Kurla Complex",
-    address: "BKC, Bandra East",
-    lat: 19.07,
-    lng: 72.87,
-    status: "available",
-    minutesSinceUpdate: 9,
-    connectors: [
-      { id: "c1", type: "CCS2", powerKw: 150, total: 2, available: 2 },
-      { id: "c2", type: "Type 2", powerKw: 22, total: 2, available: 2 },
-    ],
-    pricePerKwh: 19,
-    isFree: false,
-    hours: { kind: "open-close", open: "00:00", close: "24:00" },
-    rating: 4.7,
-    reviewCount: 142,
-    busyWindows: ["10 AM – 12 PM"],
-  },
-  {
-    id: "st-marine-1",
-    name: "Marine Drive Slow Charge",
-    operator: "ChargePlus",
-    area: "Marine Drive",
-    address: "Marine Drive, Churchgate",
-    lat: 18.943,
-    lng: 72.823,
-    status: "available",
-    minutesSinceUpdate: 15,
-    connectors: [
-      { id: "c1", type: "Bharat AC001", powerKw: 15, total: 4, available: 4 },
-    ],
-    pricePerKwh: 0,
-    isFree: true,
-    hours: { kind: "24h" },
-    rating: 4.1,
-    reviewCount: 22,
-    busyWindows: [],
-  },
-  {
-    id: "st-kurla-1",
-    name: "Kurla Junction Charge",
-    operator: "Bolt.Earth",
-    area: "Kurla",
-    address: "LBS Marg, Kurla West",
-    lat: 19.072,
-    lng: 72.879,
-    status: "busy",
-    minutesSinceUpdate: 18,
-    connectors: [
-      { id: "c1", type: "CCS2", powerKw: 60, total: 1, available: 0 },
-      { id: "c2", type: "Type 2", powerKw: 22, total: 1, available: 0 },
-    ],
-    pricePerKwh: 18,
-    isFree: false,
-    hours: { kind: "open-close", open: "06:00", close: "22:00" },
-    rating: 3.9,
-    reviewCount: 33,
-    busyWindows: ["7 PM – 10 PM"],
-  },
-  {
-    id: "st-vashi-1",
-    name: "Vashi Hub Charge",
-    operator: "Ather Energy",
-    area: "Vashi",
-    address: "Sector 17, Vashi",
-    lat: 19.077,
-    lng: 73.003,
-    status: "available",
-    minutesSinceUpdate: 6,
-    connectors: [
-      { id: "c1", type: "CCS2", powerKw: 60, total: 2, available: 1 },
-    ],
-    pricePerKwh: 20,
-    isFree: false,
-    hours: { kind: "24h" },
-    rating: 4.3,
-    reviewCount: 55,
-    busyWindows: ["9 AM – 11 AM"],
-  },
-  {
-    id: "st-chembur-1",
-    name: "Chembur Fast Charge",
-    operator: "ChargeZone",
-    area: "Chembur",
-    address: "Sion Trombay Road, Chembur",
-    lat: 19.062,
-    lng: 72.9,
-    status: "available",
-    minutesSinceUpdate: 25,
-    connectors: [
-      { id: "c1", type: "CCS2", powerKw: 60, total: 1, available: 1 },
-    ],
-    pricePerKwh: 21,
-    isFree: false,
-    hours: { kind: "open-close", open: "08:00", close: "22:00" },
-    rating: 4.0,
-    reviewCount: 14,
-    busyWindows: [],
-  },
-  {
-    id: "st-ghatkopar-1",
-    name: "Ghatkopar East Charge",
-    operator: "Statiq",
-    area: "Ghatkopar East",
-    address: "LBS Marg, Ghatkopar East",
-    lat: 19.086,
-    lng: 72.908,
+    id: "ac24ba32-7db5-4667-85e1-7751110f3882",
+    name: "Cinemax",
+    operator: "Unknown Operator",
+    area: "Khadakpada",
+    address: "Tycoons Residency, Khadakpada, Kalyan, 421301",
+    lat: 19.2436515915009,
+    lng: 73.1347557220724,
     status: "unknown",
     minutesSinceUpdate: null,
-    connectors: [
-      { id: "c1", type: "CCS2", powerKw: 60, total: 1, available: 0 },
-    ],
-    pricePerKwh: 19,
-    isFree: false,
+    connectors: [],
+    pricePerKwh: null,
+    isFree: null,
     hours: { kind: "unknown" },
     rating: null,
     reviewCount: 0,
     busyWindows: [],
   },
   {
-    id: "st-colaba-1",
-    name: "Colaba Causeway Charge",
-    operator: "ChargePlus",
-    area: "Colaba",
-    address: "Colaba Causeway",
-    lat: 18.906,
-    lng: 72.831,
-    status: "available",
-    minutesSinceUpdate: 11,
+    id: "b2583624-8b43-4088-bfb3-4818cc2cb959",
+    name: "MobiLane Saya Grand By Treat",
+    operator: "Unknown Operator",
+    area: "Thane",
+    address: "Off, 606, Mumbai - Nashik Expy, Anjur, Amane, Maharashtra 421311, Thane, 421311",
+    lat: 19.21916215,
+    lng: 73.04392037,
+    status: "unknown",
+    minutesSinceUpdate: null,
+    connectors: [],
+    pricePerKwh: null,
+    isFree: null,
+    hours: { kind: "unknown" },
+    rating: null,
+    reviewCount: 0,
+    busyWindows: [],
+  },
+  {
+    id: "d4463f95-345f-47bb-8eb0-7b8d6fcb567d",
+    name: "MobiLane Equinox Business Park",
+    operator: "Unknown Operator",
+    area: "Mumbai",
+    address: "Equinox Building-3, Equinox Business Park, Ambedkar Nagar, Kurla West, Kurla, Mumbai, Maharashtra 400070, Mumbai",
+    lat: 19.071566,
+    lng: 72.877213,
+    status: "unknown",
+    minutesSinceUpdate: null,
+    connectors: [],
+    pricePerKwh: null,
+    isFree: null,
+    hours: { kind: "unknown" },
+    rating: null,
+    reviewCount: 0,
+    busyWindows: [],
+  },
+  {
+    id: "d5f18c9f-7f65-457e-8169-3c9cf9c8aff5",
+    name: "Andheri West",
+    operator: "Unknown Operator",
+    area: "Mumbai",
+    address: "Four Bunglows, Mumbai, 400057",
+    lat: 19.1166,
+    lng: 72.82927,
+    status: "unknown",
+    minutesSinceUpdate: null,
     connectors: [
-      { id: "c1", type: "Type 2", powerKw: 22, total: 2, available: 2 },
+      {
+        id: "f8755a9d-e537-4f74-8929-91e153fbe81b",
+        type: "CCS2",
+        powerKw: 120,
+        total: 2,
+        available: 0,
+      },
     ],
     pricePerKwh: null,
     isFree: null,
-    hours: { kind: "open-close", open: "09:00", close: "21:00" },
-    rating: 3.8,
-    reviewCount: 9,
+    hours: { kind: "unknown" },
+    rating: null,
+    reviewCount: 0,
+    busyWindows: [],
+  },
+  {
+    id: "d7872467-b685-422b-beb0-f2112ecd364f",
+    name: "Balasaheb Thackeray Flyover",
+    operator: "Unknown Operator",
+    area: "Zone 3",
+    address: "Balasaheb Thackeray Flyover, Zone 3, Mumbai, 400029",
+    lat: 19.1399508241526,
+    lng: 72.8519735974261,
+    status: "unknown",
+    minutesSinceUpdate: null,
+    connectors: [
+      {
+        id: "bb582586-6707-4ca8-a919-08bcfbbf7be8",
+        type: "CCS2",
+        powerKw: null,
+        total: 1,
+        available: 0,
+      },
+    ],
+    pricePerKwh: null,
+    isFree: null,
+    hours: { kind: "unknown" },
+    rating: null,
+    reviewCount: 0,
     busyWindows: [],
   },
 ];
 
-export const STATIONS: Station[] = seed;
+/** Authoritative station export, matching canonical database records */
+export const STATIONS: Station[] = CANONICAL_STATIONS;
 
-// Reviews
-const reviewAuthors = [
-  "Aarav S.",
-  "Priya M.",
-  "Rahul K.",
-  "Neha P.",
-  "Vikram R.",
-  "Sara D.",
-  "Aditya J.",
-  "Meera B.",
-];
+/** Zero fabricated reviews. Empty array represents honest cold-start state. */
+export const REVIEWS: Review[] = [];
 
-const reviewComments = [
-  "Great charging station. Easy to access and charging was quick.",
-  "Always working when I come here. Helpful staff nearby.",
-  "Can get busy in the evening. Mornings are easier.",
-  "Clean, well-lit, and the chargers always seem to work.",
-  "Good location with parking. Slightly pricey but reliable.",
-  "Disappointed — both chargers were occupied when I arrived.",
-  "Quick charging, friendly operator. Will come back.",
-  "Average experience. One of the chargers was slow.",
-];
+/**
+ * Fetch all stations and their connectors live from Supabase views.
+ * Preserves unknown power as null, avoids conflating operational status with availability.
+ */
+export async function fetchStations(): Promise<Station[]> {
+  try {
+    const [stationsRes, connectorsRes] = await Promise.all([
+      supabase.from("v_station_current_state").select("*"),
+      supabase.from("v_station_connectors").select("*"),
+    ]);
 
-export const REVIEWS: Review[] = STATIONS.flatMap((s) => {
-  const count = Math.min(s.reviewCount, 4);
-  const baseMinutes = s.minutesSinceUpdate ?? 60;
-  return Array.from({ length: count }).map((_, i) => ({
-    id: `${s.id}-r${i}`,
-    stationId: s.id,
-    rating: ((s.rating ?? 4) > 4.4 ? 5 : s.rating && s.rating > 4 ? 4 : 3) as 1 | 2 | 3 | 4 | 5,
-    comment: reviewComments[(s.id.length + i) % reviewComments.length],
-    author: reviewAuthors[i % reviewAuthors.length],
-    minutesAgo: baseMinutes * 60 + i * 180 + 60,
-  }));
-});
+    if (stationsRes.error) {
+      console.error("fetchStations error:", stationsRes.error);
+      return CANONICAL_STATIONS;
+    }
 
-// Helpers
+    const rawStations: DbStationRow[] = (stationsRes.data as DbStationRow[]) || [];
+    const rawConnectors: DbConnectorRow[] = (connectorsRes.data as DbConnectorRow[]) || [];
 
-export function getStation(id: string): Station | undefined {
-  return STATIONS.find((s) => s.id === id);
+    const connsByStation = new Map<string, DbConnectorRow[]>();
+    for (const c of rawConnectors) {
+      const list = connsByStation.get(c.station_id) ?? [];
+      list.push(c);
+      connsByStation.set(c.station_id, list);
+    }
+
+    return rawStations.map((st) =>
+      mapDbStationToStation(st, connsByStation.get(st.id) ?? [])
+    );
+  } catch (err) {
+    console.error("fetchStations unhandled error:", err);
+    return CANONICAL_STATIONS;
+  }
 }
 
+/**
+ * Fetch a single station by UUID and its child connectors live from Supabase views.
+ */
+export async function fetchStationById(id: string): Promise<Station | null> {
+  try {
+    const [stationRes, connectorsRes] = await Promise.all([
+      supabase.from("v_station_current_state").select("*").eq("id", id).maybeSingle(),
+      supabase.from("v_station_connectors").select("*").eq("station_id", id),
+    ]);
+
+    if (stationRes.error) {
+      console.error("fetchStationById query error:", stationRes.error);
+      return CANONICAL_STATIONS.find((s) => s.id === id) ?? null;
+    }
+
+    if (!stationRes.data) {
+      return null;
+    }
+
+    const rawStation = stationRes.data as DbStationRow;
+    const rawConnectors = (connectorsRes.data as DbConnectorRow[]) || [];
+
+    return mapDbStationToStation(rawStation, rawConnectors);
+  } catch (err) {
+    console.error("fetchStationById unhandled error:", err);
+    return CANONICAL_STATIONS.find((s) => s.id === id) ?? null;
+  }
+}
+
+/**
+ * Synchronous station lookup from canonical dataset.
+ */
+export function getStation(id: string): Station | undefined {
+  return CANONICAL_STATIONS.find((s) => s.id === id);
+}
+
+/**
+ * Retrieve reviews for a station (honest zero reviews until Step 3.10).
+ */
 export function getReviewsForStation(id: string): Review[] {
-  return REVIEWS.filter((r) => r.stationId === id).sort(
-    (a, b) => a.minutesAgo - b.minutesAgo
-  );
+  return REVIEWS.filter((r) => r.stationId === id);
 }
 
 /** Haversine distance in km */
@@ -422,5 +321,5 @@ export function getAvailableChargers(s: Station): number {
 }
 
 export function getMaxPowerKw(s: Station): number {
-  return s.connectors.reduce((m, c) => Math.max(m, c.powerKw), 0);
+  return s.connectors.reduce((m, c) => Math.max(m, c.powerKw ?? 0), 0);
 }

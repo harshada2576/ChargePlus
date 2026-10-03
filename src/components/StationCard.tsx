@@ -80,7 +80,7 @@ export function StationCard({
       <div className="mt-3 flex items-center gap-3 text-[13px] text-ink-700">
         <div className="inline-flex items-center gap-1.5">
           <BoltIcon size={14} className="text-coral-600" />
-          <span>{maxKw} kW</span>
+          <span>{maxKw > 0 ? `${maxKw} kW` : "—"}</span>
         </div>
         <span className="text-ink-300">•</span>
         <span>{t("station.chargerCount", { n: chargers })}</span>
