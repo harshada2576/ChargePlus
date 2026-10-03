@@ -13,7 +13,8 @@ const ARGS = Math.PI / 180;
 
 /**
  * Canonical station baseline derived from the authoritative PostgreSQL database.
- * No fabricated availability, no invented pricing, unknown power kept as null.
+ * No fabricated availability (connector available is null without telemetry),
+ * unknown power preserved as null, and factual physical quantities preserved.
  */
 export const CANONICAL_STATIONS: Station[] = [
   {
@@ -21,7 +22,7 @@ export const CANONICAL_STATIONS: Station[] = [
     name: "Tata Power Receiving Station",
     operator: "(Business Owner at Location)",
     area: "Vikhroli",
-    address: "3, Vikhroli Village Road, Vikhroli, Mumbai, 400077",
+    address: "3, Vikhroli Village Road, Vikhroli, Mumbai, Maharashtra, 400077",
     lat: 19.0957956,
     lng: 72.9260109,
     status: "unknown",
@@ -32,7 +33,7 @@ export const CANONICAL_STATIONS: Station[] = [
         type: "Type 1",
         powerKw: null,
         total: 3,
-        available: 0,
+        available: null,
       },
     ],
     pricePerKwh: null,
@@ -47,7 +48,7 @@ export const CANONICAL_STATIONS: Station[] = [
     name: "Mira Road",
     operator: "Unknown Operator",
     area: "Maharashtra",
-    address: "A/1104, Unique Heights, Poonam Garden, Above New India Co-Op Bank, Near S K Stone, Mira Bhayender Road, Near S K Stone, Maharashtra, 401107",
+    address: "A/1104, Unique Heights, Poonam Garden, Above New India Co-Op Bank, Near S K Stone, Mira Bhayender Road, Near S K Stone, Maharashtra, India, 401107",
     lat: 19.1400060534561,
     lng: 72.8534438284495,
     status: "unknown",
@@ -58,7 +59,7 @@ export const CANONICAL_STATIONS: Station[] = [
         type: "CCS2",
         powerKw: null,
         total: 1,
-        available: 0,
+        available: null,
       },
     ],
     pricePerKwh: null,
@@ -73,7 +74,7 @@ export const CANONICAL_STATIONS: Station[] = [
     name: "SALZER DEVELOPMENT",
     operator: "Salzer NexCharge (IN)",
     area: "Mumbai",
-    address: "The Lalit Hotel, Mumbai, Mumbai",
+    address: "The Lalit Hotel, Mumbai, Maharashtra",
     lat: 19.105321,
     lng: 72.875887,
     status: "broken",
@@ -84,7 +85,7 @@ export const CANONICAL_STATIONS: Station[] = [
         type: "Type 2",
         powerKw: 7,
         total: 1,
-        available: 0,
+        available: null,
       },
     ],
     pricePerKwh: null,
@@ -99,7 +100,7 @@ export const CANONICAL_STATIONS: Station[] = [
     name: "Cinemax",
     operator: "Unknown Operator",
     area: "Khadakpada",
-    address: "Tycoons Residency, Khadakpada, Kalyan, 421301",
+    address: "Tycoons Residency, Khadakpada, Kalyan, Maharashtra, 421301",
     lat: 19.2436515915009,
     lng: 73.1347557220724,
     status: "unknown",
@@ -117,7 +118,7 @@ export const CANONICAL_STATIONS: Station[] = [
     name: "MobiLane Saya Grand By Treat",
     operator: "Unknown Operator",
     area: "Thane",
-    address: "Off, 606, Mumbai - Nashik Expy, Anjur, Amane, Maharashtra 421311, Thane, 421311",
+    address: "Off, 606, Mumbai - Nashik Expy, Anjur, Amane, Maharashtra 421311, Thane",
     lat: 19.21916215,
     lng: 73.04392037,
     status: "unknown",
@@ -135,7 +136,7 @@ export const CANONICAL_STATIONS: Station[] = [
     name: "MobiLane Equinox Business Park",
     operator: "Unknown Operator",
     area: "Mumbai",
-    address: "Equinox Building-3, Equinox Business Park, Ambedkar Nagar, Kurla West, Kurla, Mumbai, Maharashtra 400070, Mumbai",
+    address: "Equinox Building-3, Equinox Business Park, Ambedkar Nagar, Kurla West, Kurla, Mumbai, Maharashtra 400070",
     lat: 19.071566,
     lng: 72.877213,
     status: "unknown",
@@ -153,7 +154,7 @@ export const CANONICAL_STATIONS: Station[] = [
     name: "Andheri West",
     operator: "Unknown Operator",
     area: "Mumbai",
-    address: "Four Bunglows, Mumbai, 400057",
+    address: "Four Bunglows, Mumbai, Maharashtra, 400057",
     lat: 19.1166,
     lng: 72.82927,
     status: "unknown",
@@ -164,7 +165,7 @@ export const CANONICAL_STATIONS: Station[] = [
         type: "CCS2",
         powerKw: 120,
         total: 2,
-        available: 0,
+        available: null,
       },
     ],
     pricePerKwh: null,
@@ -179,7 +180,7 @@ export const CANONICAL_STATIONS: Station[] = [
     name: "Balasaheb Thackeray Flyover",
     operator: "Unknown Operator",
     area: "Zone 3",
-    address: "Balasaheb Thackeray Flyover, Zone 3, Mumbai, 400029",
+    address: "Balasaheb Thackeray Flyover, Zone 3, Mumbai, Maharashtra, 400029",
     lat: 19.1399508241526,
     lng: 72.8519735974261,
     status: "unknown",
@@ -190,7 +191,7 @@ export const CANONICAL_STATIONS: Station[] = [
         type: "CCS2",
         powerKw: null,
         total: 1,
-        available: 0,
+        available: null,
       },
     ],
     pricePerKwh: null,
@@ -210,7 +211,8 @@ export const REVIEWS: Review[] = [];
 
 /**
  * Fetch all stations and their connectors live from Supabase views.
- * Preserves unknown power as null, avoids conflating operational status with availability.
+ * Preserves unknown power as null, unknown connector availability as null,
+ * and avoids conflating operational status with availability.
  */
 export async function fetchStations(): Promise<Station[]> {
   try {
@@ -312,12 +314,18 @@ export function formatDistance(km: number): { value: string; unit: "m" | "km" } 
   };
 }
 
-export function getTotalChargers(s: Station): number {
-  return s.connectors.reduce((acc, c) => acc + c.total, 0);
+export function getTotalChargers(s: Station): number | null {
+  if (s.connectors.length === 0) return 0;
+  const known = s.connectors.map((c) => c.total).filter((n): n is number => n != null);
+  if (known.length === 0) return null;
+  return known.reduce((acc, n) => acc + n, 0);
 }
 
-export function getAvailableChargers(s: Station): number {
-  return s.connectors.reduce((acc, c) => acc + c.available, 0);
+export function getAvailableChargers(s: Station): number | null {
+  if (s.connectors.length === 0) return 0;
+  const known = s.connectors.map((c) => c.available).filter((n): n is number => n != null);
+  if (known.length === 0) return null;
+  return known.reduce((acc, n) => acc + n, 0);
 }
 
 export function getMaxPowerKw(s: Station): number {

@@ -1,17 +1,24 @@
 export type StationStatus = "available" | "busy" | "broken" | "unknown";
 export type QueueLevel = "none" | "short" | "medium" | "long";
 
-export type ConnectorType = "CCS2" | "CCS1" | "CHAdeMO" | "Type 2" | "Type 1" | "Bharat AC001";
+export type ConnectorType =
+  | "CCS2"
+  | "CCS1"
+  | "CHAdeMO"
+  | "Type 2"
+  | "Type 1"
+  | "Bharat AC001"
+  | "Unknown";
 
 export type Connector = {
   id: string;
   type: ConnectorType;
   /** peak power in kW; null if unknown */
   powerKw: number | null;
-  /** number of physical chargers of this type */
-  total: number;
-  /** number currently available (we use only for 'available' stations) */
-  available: number;
+  /** number of physical chargers of this type; null if unknown */
+  total: number | null;
+  /** number currently available; null if unknown */
+  available: number | null;
 };
 
 export type Station = {

@@ -83,7 +83,7 @@ export function StationCard({
           <span>{maxKw > 0 ? `${maxKw} kW` : "—"}</span>
         </div>
         <span className="text-ink-300">•</span>
-        <span>{t("station.chargerCount", { n: chargers })}</span>
+        <span>{chargers != null ? t("station.chargerCount", { n: chargers }) : "—"}</span>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">

@@ -548,36 +548,45 @@ Every entry should include:
 - Blockers / waiting on: None. Precondition for Step 3.2: MapLibre popup HTML injection sanitization before connecting live DB coordinates/names.
 - Next step: Phase 3, Step 3.1 — Replace hardcoded station dataset with real Supabase data.
 
-### 03 Oct 2026 — Phase 3 Step 3.1 Replace Hardcoded Station Dataset
-- Phase / Step: Phase 3/6 — Step 3.1 (Replace hardcoded station dataset with real Supabase data)
+### 03 Oct 2026 — Phase 3 Step 3.1 Replace Hardcoded Station Dataset & Data-Honesty Audit
+- Phase / Step: Phase 3/6 — Step 3.1 (Replace hardcoded station dataset with real Supabase data & Data-Honesty Audit)
 - What we built/changed:
   1. Security Hardening (MapLibre Popup HTML Injection):
      - Added `escapeHtml()` utility in `src/lib/util.ts` to sanitize all untrusted text content before HTML insertion.
      - Updated `src/components/MapLibreMap.tsx` to escape `station.name`, `station.operator`, `station.area` and URL-encode `station.id` in MapLibre popup DOM strings.
   2. Data Contract & Domain Model Alignment:
-     - Updated `src/data/types.ts`: changed `Connector.powerKw` from `number` to `number | null`, enforcing Rule 3 (unknown power is `null`, never `0` or invented).
-  3. Supabase View Domain Adapter:
-     - Created `src/data/stationAdapter.ts` with `mapDbStationToStation`, `mapDbConnectorToConnector`, `deriveStationStatus`, `derivePricing`, `deriveHours`, `deriveArea`, `deriveAddress`, and `normalizeConnectorType`.
-     - Strictly enforced Rule 5: static `operational_status === "operational"` without telemetry resolves to `status = "unknown"`, never `"available"`.
-     - Preserved unknown connector power as `null`, missing pricing as `pricePerKwh: null, isFree: null`, cold-start empty busy windows as `[]`.
-  4. Data Access Layer Replacement:
-     - Completely replaced the 330-line hardcoded `seed` array in `src/data/stations.ts` (17 dummy stations with fake prices, ratings, and peak hours) with canonical stations snapshot matching verified live database records.
+     - Updated `src/data/types.ts`:
+       - `Connector.powerKw: number | null` (preserving uninvented power as SQL/TypeScript `null`).
+       - `Connector.total: number | null` (preserving unknown connector quantity as `null`, never defaulting to 1).
+       - `Connector.available: number | null` (preserving unobserved connector availability as `null`, never defaulting to total or 0).
+       - `ConnectorType` includes `"Unknown"` (never defaulting unrecognized types to `"CCS2"`).
+  3. Supabase View Domain Adapter (`src/data/stationAdapter.ts`) Data-Honesty Corrections:
+     - Corrected connector quantity: missing `total_quantity` preserves `total: null` (never fabricated as 1).
+     - Corrected connector availability: `available: null` unless explicit observation telemetry exists (never derived from station status).
+     - Corrected connector type: missing or unrecognized types map to `"Unknown"` (never `"CCS2"`).
+     - Corrected address derivation: missing address components return `"Address unavailable"` (never constructed as `"${name}, Mumbai, Maharashtra"`).
+     - Corrected area derivation: missing locality/city/state returns `"Area unknown"` (never defaulted to `"Mumbai"`).
+     - Corrected operator derivation: missing operator returns `"Unknown Operator"` (never `"Independent"`).
+     - Preserved pricing as `null` when unobserved, hours as `unknown`, and busy windows as `[]`.
+  4. Data Access Layer Replacement (`src/data/stations.ts`):
+     - Completely replaced the 330-line hardcoded `seed` array (17 dummy stations) with canonical stations snapshot matching verified live database records.
      - Implemented live async loaders `fetchStations(): Promise<Station[]>` and `fetchStationById(id: string): Promise<Station | null>` querying Supabase views `v_station_current_state` and `v_station_connectors`.
-     - Maintained backward compatibility for synchronous utilities (`getStation`, `distanceKm`, `formatDistance`, `getTotalChargers`, `getAvailableChargers`, `MUMBAI_CENTER`).
-     - Updated `getMaxPowerKw(s: Station): number` to safely handle `c.powerKw ?? 0`.
+     - Updated `getTotalChargers(s)` and `getAvailableChargers(s)` to return `number | null` without claiming unsupported counts.
+     - Maintained backward compatibility for synchronous utilities (`getStation`, `distanceKm`, `formatDistance`, `getMaxPowerKw`, `MUMBAI_CENTER`).
      - Replaced fabricated review generation with `REVIEWS: Review[] = []` (cold-start honest state).
   5. Honest UI Rendering:
-     - Updated `src/components/StationCard.tsx`: renders `"—"` when connector power is unknown or 0.
-     - Updated `src/components/StationPreviewSheet.tsx`: renders `"—"` when connector power is unknown or 0.
-     - Updated `src/app/station/[id]/StationDetail.tsx`: renders `"—"` when connector power is null.
+     - Updated `src/components/StationCard.tsx`: renders `"—"` when connector power is unknown or 0, and `"—"` when charger count is null.
+     - Updated `src/components/StationPreviewSheet.tsx`: guards charger count when null.
+     - Updated `src/app/station/[id]/StationDetail.tsx`: renders `"—"` when connector power is null, handles null availability and null total count honestly via `t("station.availabilityUnavailable")`.
+     - Updated `src/app/explore/ExploreClient.tsx`: safely handles nullable `getTotalChargers` and `getAvailableChargers`.
   6. Station Route Integration:
      - Updated `src/app/station/[id]/page.tsx` to load station details via `await fetchStationById(id)` with `notFound()` handling and dynamic generation.
   7. Test Suite:
-     - Created `tests/test_station_adapter.mjs` (8 unit tests covering status derivation, pricing derivation, hour formatting, power nullability, connector normalization, HTML escaping, and database alignment).
-- Current state: STEP 3.1 VERIFIED COMPLETE — READY FOR STEP 3.2.
+     - Created `tests/test_station_adapter.mjs` (8 comprehensive unit tests covering status derivation, pricing derivation, hour formatting, power nullability, missing quantity, missing connector availability, missing location, and HTML escaping).
+- Current state: STEP 3.1 VERIFIED COMPLETE & AUDITED — READY FOR STEP 3.2.
 - Conceptual verification:
   - Are stations real? Yes (8 canonical stations matching live Supabase records).
-  - Are unknown fields handled honestly? Yes (unknown power is `null`, unknown status is `unknown`, unknown price is `null`).
+  - Are unknown fields handled honestly? Yes (unknown power is `null`, unknown quantity is `null`, unknown availability is `null`, unknown status is `unknown`, unknown price is `null`, unknown location is `Area unknown`).
   - Is operational status conflated with availability? No (Rule 5 strictly enforced).
   - Is MapLibre popup secure from markup injection? Yes (`escapeHtml` applied to all text attributes).
   - Are reviews fabricated? No (0 fake reviews, honest empty state).

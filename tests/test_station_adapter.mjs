@@ -32,7 +32,7 @@ test("deriveStationStatus enforces telemetry priority and Rule 5 (static != avai
   assert.equal(deriveStationStatus(null, "out_of_service"), "broken");
 });
 
-test("derivePricing handles null, zero, and positive prices honestly", () => {
+test("derivePricing handles null, zero, and positive prices honestly without fabricating free rates", () => {
   // Missing price is unknown (null), NOT free
   assert.deepEqual(derivePricing({ id: "1", name: "S1", latitude: 19, longitude: 72 }), {
     pricePerKwh: null,
@@ -74,11 +74,17 @@ test("deriveHours formats 24h, open-close, and unknown hours", () => {
   );
 });
 
-test("deriveArea and deriveAddress handle fallback and formatting cleanly", () => {
+test("deriveArea and deriveAddress handle missing location honestly without presuming Mumbai", () => {
+  // Locality precedence
   assert.equal(deriveArea({ id: "1", name: "S1", latitude: 19, longitude: 72, locality: "Vikhroli" }), "Vikhroli");
+  // City fallback
   assert.equal(deriveArea({ id: "1", name: "S1", latitude: 19, longitude: 72, city: "Thane" }), "Thane");
-  assert.equal(deriveArea({ id: "1", name: "S1", latitude: 19, longitude: 72 }), "Mumbai");
+  // State fallback
+  assert.equal(deriveArea({ id: "1", name: "S1", latitude: 19, longitude: 72, state: "Maharashtra" }), "Maharashtra");
+  // Missing location must NOT invent Mumbai
+  assert.equal(deriveArea({ id: "1", name: "S1", latitude: 19, longitude: 72 }), "Area unknown");
 
+  // Address composition from available parts
   assert.equal(
     deriveAddress({
       id: "1",
@@ -87,39 +93,58 @@ test("deriveArea and deriveAddress handle fallback and formatting cleanly", () =
       longitude: 72,
       address_line: "Line 1",
       locality: "Area",
-      city: "Mumbai",
-      postal_code: "400001",
+      city: "Thane",
+      postal_code: "400601",
     }),
-    "Line 1, Area, Mumbai, 400001"
+    "Line 1, Area, Thane, 400601"
+  );
+
+  // Missing address must NOT invent "${name}, Mumbai, Maharashtra"
+  assert.equal(
+    deriveAddress({
+      id: "1",
+      name: "S1",
+      latitude: 19,
+      longitude: 72,
+    }),
+    "Address unavailable"
   );
 });
 
-test("normalizeConnectorType maps standards and aliases safely", () => {
+test("normalizeConnectorType does not fabricate CCS2 for missing or unknown types", () => {
   assert.equal(normalizeConnectorType("CCS2"), "CCS2");
-  assert.equal(normalizeConnectorType("IEC 62196-3 Configuration FF (CCS2)"), "CCS2");
+  assert.equal(normalizeConnectorType("IEC 62196-3"), "CCS2");
   assert.equal(normalizeConnectorType("Type 2"), "Type 2");
   assert.equal(normalizeConnectorType("IEC 62196-2"), "Type 2");
   assert.equal(normalizeConnectorType("Type 1"), "Type 1");
   assert.equal(normalizeConnectorType("CHAdeMO"), "CHAdeMO");
   assert.equal(normalizeConnectorType("Bharat AC001"), "Bharat AC001");
-  assert.equal(normalizeConnectorType(null), "CCS2");
+
+  // Missing or invalid must return "Unknown", NEVER "CCS2"
+  assert.equal(normalizeConnectorType(null), "Unknown");
+  assert.equal(normalizeConnectorType(undefined), "Unknown");
+  assert.equal(normalizeConnectorType(""), "Unknown");
+  assert.equal(normalizeConnectorType("Proprietary Socket"), "Unknown");
 });
 
-test("mapDbConnectorToConnector preserves null power and clamps availability", () => {
-  const cNullPower = mapDbConnectorToConnector({
+test("mapDbConnectorToConnector preserves missing quantity and unobserved availability as null", () => {
+  // Missing total_quantity must remain null (NOT defaulted to 1)
+  // Missing latest_available_connectors must remain null (NOT 0, NOT total)
+  const cMissing = mapDbConnectorToConnector({
     id: "conn-1",
     station_id: "st-1",
     connector_type: "CCS2",
     power_kw: null,
-    total_quantity: 2,
+    total_quantity: null,
     latest_available_connectors: null,
-  }, "unknown");
+  }, "available"); // Even if stationStatus is "available", connector availability is NOT fabricated!
 
-  assert.equal(cNullPower.powerKw, null); // Rule 3: Unknown connector power is null, never zero
-  assert.equal(cNullPower.total, 2);
-  assert.equal(cNullPower.available, 0);
+  assert.equal(cMissing.powerKw, null); // Rule 3: Unknown power is null
+  assert.equal(cMissing.total, null);   // Unknown quantity is null (never defaulted to 1)
+  assert.equal(cMissing.available, null); // Unobserved availability is null (never defaulted to total or 0)
 
-  const cWithPower = mapDbConnectorToConnector({
+  // With explicit quantity and availability
+  const cExplicit = mapDbConnectorToConnector({
     id: "conn-2",
     station_id: "st-1",
     connector_type: "Type 2",
@@ -128,18 +153,18 @@ test("mapDbConnectorToConnector preserves null power and clamps availability", (
     latest_available_connectors: 2,
   }, "available");
 
-  assert.equal(cWithPower.powerKw, 22);
-  assert.equal(cWithPower.total, 3);
-  assert.equal(cWithPower.available, 2);
+  assert.equal(cExplicit.powerKw, 22);
+  assert.equal(cExplicit.total, 3);
+  assert.equal(cExplicit.available, 2);
 });
 
-test("mapDbStationToStation creates faithful domain entities with cold-start empty arrays", () => {
+test("mapDbStationToStation does not invent operator, address, or busy windows", () => {
   const station = mapDbStationToStation({
     id: "st-test-1",
     name: "Test Station",
-    operator_name: "Tata Power",
-    locality: "Bandra",
-    city: "Mumbai",
+    operator_name: null, // Missing operator must NOT become "Independent"
+    locality: null,
+    city: null,
     latitude: 19.05,
     longitude: 72.83,
     operational_status: "operational",
@@ -151,14 +176,15 @@ test("mapDbStationToStation creates faithful domain entities with cold-start emp
 
   assert.equal(station.id, "st-test-1");
   assert.equal(station.name, "Test Station");
-  assert.equal(station.operator, "Tata Power");
-  assert.equal(station.area, "Bandra");
-  assert.equal(station.status, "unknown"); // No telemetry -> unknown
+  assert.equal(station.operator, "Unknown Operator"); // Never "Independent"
+  assert.equal(station.area, "Area unknown");          // Never "Mumbai"
+  assert.equal(station.address, "Address unavailable"); // Never fabricated
+  assert.equal(station.status, "unknown");             // Rule 5: static operational != available
   assert.equal(station.pricePerKwh, null);
   assert.equal(station.isFree, null);
   assert.equal(station.rating, null);
   assert.equal(station.reviewCount, 0);
-  assert.deepEqual(station.busyWindows, []); // Cold start: empty
+  assert.deepEqual(station.busyWindows, []);            // Cold-start empty
   assert.deepEqual(station.connectors, []);
 });
 

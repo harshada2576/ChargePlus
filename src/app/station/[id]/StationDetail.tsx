@@ -156,11 +156,11 @@ export function StationDetail({ station }: { station: Station }) {
             <StatusBadge status={station.status} />
           </div>
           <p className="mt-2 text-[13.5px] text-ink-700">
-            {station.status === "unknown"
+            {station.status === "unknown" || getAvailableChargers(station) == null || getTotalChargers(station) == null
               ? t("station.availabilityUnavailable")
               : t("station.availableOf", {
-                  available: getAvailableChargers(station),
-                  total: getTotalChargers(station),
+                  available: getAvailableChargers(station)!,
+                  total: getTotalChargers(station)!,
                 })}
           </p>
           <p className="mt-1 text-[12.5px] text-ink-500">
@@ -190,7 +190,7 @@ export function StationDetail({ station }: { station: Station }) {
                   </p>
                 </div>
                 <p className="text-[13px] text-ink-700">
-                  {station.status === "unknown"
+                  {station.status === "unknown" || c.available == null
                     ? t("station.availabilityUnavailable")
                     : c.available > 0
                     ? `${c.available} ${t("common.open")}`

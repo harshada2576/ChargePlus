@@ -135,7 +135,7 @@ export function ExploreClient() {
     if (filters.fastCharging) list = list.filter((s) => getMaxPowerKw(s) >= 50);
     if (filters.freeOnly) list = list.filter((s) => s.isFree === true);
     if (filters.maxPrice > 0) list = list.filter((s) => s.pricePerKwh != null && s.pricePerKwh <= filters.maxPrice);
-    if (filters.minChargers > 0) list = list.filter((s) => getTotalChargers(s) >= filters.minChargers);
+    if (filters.minChargers > 0) list = list.filter((s) => (getTotalChargers(s) ?? 0) >= filters.minChargers);
     if (filters.lessBusy) {
       // 'lessBusy' filter: pick stations with at least one known quiet hour from busyWindows
       // In this mock, 'lessBusy' correlates with non-empty busyWindows (we treat them as known)
@@ -178,13 +178,13 @@ export function ExploreClient() {
 
   const recommendations: Recommendation[] = useMemo(() => {
     // Recommend up to 1 well-matched station from the visible list
-    const cand = filtered.find((s) => s.status === "available" && getAvailableChargers(s) > 0);
+    const cand = filtered.find((s) => s.status === "available" && (getAvailableChargers(s) ?? 0) > 0);
     if (!cand) return [];
     return [
       {
         stationId: cand.id,
         reasons: ["availableNow", "matchConnector"],
-        availableCount: getAvailableChargers(cand),
+        availableCount: getAvailableChargers(cand) ?? undefined,
       },
     ];
   }, [filtered]);

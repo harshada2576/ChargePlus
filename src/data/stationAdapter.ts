@@ -60,27 +60,48 @@ export type DbConnectorRow = {
   minutes_since_observation?: number | null;
 };
 
+/**
+ * Normalizes raw connector string to known standards without fabricating unsupported types.
+ * Unrecognized or missing types return "Unknown".
+ */
 export function normalizeConnectorType(raw: string | null | undefined): ConnectorType {
-  if (!raw) return "CCS2";
+  if (!raw || !raw.trim()) return "Unknown";
   const upper = raw.trim().toUpperCase();
-  if (upper.includes("CCS2") || upper.includes("CCS 2") || upper.includes("COMBO 2") || upper.includes("62196-3")) return "CCS2";
-  if (upper.includes("CCS1") || upper.includes("CCS 1") || upper.includes("COMBO 1")) return "CCS1";
-  if (upper.includes("CHADEMO")) return "CHAdeMO";
-  if (upper.includes("TYPE 2") || upper.includes("MENNEKES") || upper.includes("62196-2")) return "Type 2";
-  if (upper.includes("TYPE 1") || upper.includes("J1772")) return "Type 1";
-  if (upper.includes("BHARAT") || upper.includes("AC001") || upper.includes("AC 001")) return "Bharat AC001";
 
-  if (["CCS2", "CCS1", "CHAdeMO", "Type 2", "Type 1", "Bharat AC001"].includes(raw)) {
-    return raw as ConnectorType;
+  if (upper.includes("CCS2") || upper.includes("CCS 2") || upper.includes("COMBO 2") || upper.includes("62196-3")) {
+    return "CCS2";
   }
-  return "CCS2";
+  if (upper.includes("CCS1") || upper.includes("CCS 1") || upper.includes("COMBO 1")) {
+    return "CCS1";
+  }
+  if (upper.includes("CHADEMO")) {
+    return "CHAdeMO";
+  }
+  if (upper.includes("TYPE 2") || upper.includes("MENNEKES") || upper.includes("62196-2")) {
+    return "Type 2";
+  }
+  if (upper.includes("TYPE 1") || upper.includes("J1772")) {
+    return "Type 1";
+  }
+  if (upper.includes("BHARAT") || upper.includes("AC001") || upper.includes("AC 001")) {
+    return "Bharat AC001";
+  }
+
+  if (["CCS2", "CCS1", "CHAdeMO", "Type 2", "Type 1", "Bharat AC001"].includes(raw.trim())) {
+    return raw.trim() as ConnectorType;
+  }
+
+  return "Unknown";
 }
 
+/**
+ * Derives operational status. Telemetry observations take strict precedence.
+ * Without telemetry, operational stations resolve to "unknown" (Rule 5: static != live).
+ */
 export function deriveStationStatus(
   latestAvailabilityStatus: string | null | undefined,
   operationalStatus: string | null | undefined
 ): StationStatus {
-  // Telemetry observation takes priority if present
   if (latestAvailabilityStatus) {
     const s = latestAvailabilityStatus.trim().toLowerCase();
     if (s === "available") return "available";
@@ -89,28 +110,47 @@ export function deriveStationStatus(
     return "unknown";
   }
 
-  // Without live telemetry, check static operational status:
-  // If explicitly flagged unavailable/decommissioned in registry, it cannot be working
   const op = (operationalStatus || "").trim().toLowerCase();
   if (op === "temporarily_unavailable" || op === "decommissioned" || op === "out_of_service") {
     return "broken";
   }
 
-  // Operational stations with NO telemetry must be 'unknown', NOT 'available' (Rule 5)
   return "unknown";
 }
 
+/**
+ * Composes physical address from explicit source fields only.
+ * Does not synthesize addresses or presume cities.
+ */
 export function deriveAddress(row: DbStationRow): string {
-  const parts = [row.address_line, row.locality, row.city, row.postal_code]
+  const parts = [
+    row.address_line,
+    row.locality,
+    row.city,
+    row.state,
+    row.postal_code,
+    row.country,
+  ]
     .map((s) => s?.trim())
     .filter((s): s is string => Boolean(s && s.length > 0));
 
-  if (parts.length > 0) {
-    return parts.join(", ");
+  const uniqueParts: string[] = [];
+  for (const part of parts) {
+    if (!uniqueParts.some((p) => p.toLowerCase() === part.toLowerCase())) {
+      uniqueParts.push(part);
+    }
   }
-  return `${row.name}, Mumbai, Maharashtra`;
+
+  if (uniqueParts.length > 0) {
+    return uniqueParts.join(", ");
+  }
+  return "Address unavailable";
 }
 
+/**
+ * Derives locality/area descriptor from explicit location hierarchy.
+ * Never invents a presumed city when unstated.
+ */
 export function deriveArea(row: DbStationRow): string {
   if (row.locality && row.locality.trim().length > 0) {
     return row.locality.trim();
@@ -118,7 +158,10 @@ export function deriveArea(row: DbStationRow): string {
   if (row.city && row.city.trim().length > 0) {
     return row.city.trim();
   }
-  return "Mumbai";
+  if (row.state && row.state.trim().length > 0) {
+    return row.state.trim();
+  }
+  return "Area unknown";
 }
 
 export function deriveHours(row: DbStationRow): Station["hours"] {
@@ -152,9 +195,13 @@ export function derivePricing(row: DbStationRow): {
   };
 }
 
+/**
+ * Maps connector row to domain entity without claiming unsupported physical counts or availability.
+ * Missing power is null, missing total quantity is null, unobserved availability is null.
+ */
 export function mapDbConnectorToConnector(
   row: DbConnectorRow,
-  stationStatus?: StationStatus
+  _stationStatus?: StationStatus
 ): Connector {
   const powerKw =
     row.power_kw != null && !isNaN(Number(row.power_kw))
@@ -162,20 +209,21 @@ export function mapDbConnectorToConnector(
       : null;
 
   const total =
-    row.total_quantity != null && Number(row.total_quantity) > 0
+    row.total_quantity != null &&
+    !isNaN(Number(row.total_quantity)) &&
+    Number(row.total_quantity) > 0
       ? Number(row.total_quantity)
-      : 1;
+      : null;
 
-  let available = 0;
+  // Connector availability must strictly originate from explicit observations.
+  // Never default to total count or 0 when unobserved.
+  let available: number | null = null;
   if (
     row.latest_available_connectors != null &&
     !isNaN(Number(row.latest_available_connectors))
   ) {
-    available = Math.max(0, Math.min(total, Number(row.latest_available_connectors)));
-  } else if (stationStatus === "available") {
-    available = total;
-  } else {
-    available = 0;
+    const rawAvail = Number(row.latest_available_connectors);
+    available = total != null ? Math.max(0, Math.min(total, rawAvail)) : Math.max(0, rawAvail);
   }
 
   return {
@@ -210,7 +258,7 @@ export function mapDbStationToStation(
     mapDbConnectorToConnector(c, status)
   );
 
-  const operator = row.operator_name?.trim() || "Independent";
+  const operator = row.operator_name?.trim() || "Unknown Operator";
 
   return {
     id: row.id,

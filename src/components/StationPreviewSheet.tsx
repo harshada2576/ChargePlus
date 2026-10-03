@@ -72,11 +72,13 @@ export function StationPreviewSheet({
           <span className="text-ink-300">·</span>
           <span>{maxKw > 0 ? `${maxKw} kW` : "—"}</span>
         </p>
-        <p>
-          <span className="font-medium text-ink-900">
-            {t("station.chargerCount", { n: chargers })}
-          </span>
-        </p>
+        {chargers != null && (
+          <p>
+            <span className="font-medium text-ink-900">
+              {t("station.chargerCount", { n: chargers })}
+            </span>
+          </p>
+        )}
         <p className="text-[15px] font-semibold text-ink-900">
           {station.isFree
             ? "Free"
