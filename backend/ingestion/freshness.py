@@ -472,9 +472,13 @@ class FreshnessPolicyRegistry:
         self.register(DEFAULT_PRICING_POLICY, is_type_default=True)
 
         # Source-specific configurations
+        # Canonical source identifier is "open_charge_map" (adapter.source_id).
+        # "openchargemap" is retained as a legacy alias so older callers still resolve.
         self.register(OCM_LIVE_TELEMETRY_POLICY)
+        self.bind_source("open_charge_map", InformationType.LIVE_TELEMETRY, OCM_LIVE_TELEMETRY_POLICY)
         self.bind_source("openchargemap", InformationType.LIVE_TELEMETRY, OCM_LIVE_TELEMETRY_POLICY)
         self.register(OCM_STATIC_METADATA_POLICY)
+        self.bind_source("open_charge_map", InformationType.STATIC_METADATA, OCM_STATIC_METADATA_POLICY)
         self.bind_source("openchargemap", InformationType.STATIC_METADATA, OCM_STATIC_METADATA_POLICY)
 
     def register(self, policy: FreshnessPolicy, is_type_default: bool = False) -> None:
