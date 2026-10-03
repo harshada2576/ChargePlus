@@ -18,3 +18,15 @@ export function minutesToFriendly(minutes: number | null | undefined): {
 export function delay(ms: number) {
   return new Promise<void>((res) => setTimeout(res, ms));
 }
+
+/** Safely escape untrusted text content before inserting into HTML strings. */
+export function escapeHtml(str: string | null | undefined): string {
+  if (str == null) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+

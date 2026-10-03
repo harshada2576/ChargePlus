@@ -6,7 +6,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import type { Station } from "@/data/types";
 import { MUMBAI_CENTER } from "@/data/stations";
 import { PlusIcon, MinusIcon, CompassIcon, PinIcon } from "./Icon";
-import { cx } from "@/lib/util";
+import { cx, escapeHtml } from "@/lib/util";
 
 export type MapLibreMapProps = {
   stations: Station[];
@@ -396,10 +396,10 @@ export function MapLibreMap({
           ${priceText}
         </span>
       </div>
-      <p class="mt-1.5 line-clamp-1 text-[13px] font-semibold text-ink-900">${st.name}</p>
-      <p class="text-[11.5px] text-ink-600">${st.operator} · ${st.area}</p>
+      <p class="mt-1.5 line-clamp-1 text-[13px] font-semibold text-ink-900">${escapeHtml(st.name)}</p>
+      <p class="text-[11.5px] text-ink-600">${escapeHtml(st.operator)} · ${escapeHtml(st.area)}</p>
       <div class="mt-2 flex justify-end">
-        <a href="/station/${st.id}" class="inline-flex items-center rounded-full bg-coral-600 px-3 py-1 text-[11px] font-medium text-white hover:bg-coral-700">
+        <a href="/station/${encodeURIComponent(st.id)}" class="inline-flex items-center rounded-full bg-coral-600 px-3 py-1 text-[11px] font-medium text-white hover:bg-coral-700">
           View details →
         </a>
       </div>
