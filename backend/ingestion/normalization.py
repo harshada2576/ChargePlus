@@ -1448,6 +1448,23 @@ def normalize_pricing(
                 rule="PRICING_TEXT_PAID_RATES_UNSTRUCTURED",
             )
 
+    # Preserve explicit PAID without a numeric rate (e.g. adapter detected paid
+    # usage-cost text but no extractable per-kWh figure). Downgrading to UNKNOWN
+    # would lose genuine source signal; missing rate stays None (never 0.0).
+    if pricing_type == PricingType.PAID:
+        return NormalizedPricing(
+            pricing_type=PricingType.PAID,
+            currency=currency or "INR",
+            price_per_kwh=None,
+            price_per_session=None,
+            price_per_hour=None,
+            is_free=False,
+            pricing_basis=PricingBasis.UNKNOWN,
+            raw_pricing_text=raw_pricing_text,
+            status=NormalizationStatus.UNMAPPED,
+            rule="PRICING_PAID_NO_RATE",
+        )
+
     # Fallback unmapped text
     return NormalizedPricing(
         pricing_type=PricingType.UNKNOWN,
