@@ -92,7 +92,7 @@ ChargePlus/
 │       ├── scheduling.py              # Ingestion run state machine, retry policies, backoff & PostgreSQL advisory lock
 │       └── audit.py                   # Step 2.11 read-only Mumbai coverage & data quality audit engine
 ├── supabase/migrations/               # AUTHORITATIVE database schema — Phase 1 & 2 SQL migrations
-├── tests/                             # Comprehensive test suites (348 automated tests passing)
+├── tests/                             # Comprehensive test suites (376 automated tests passing)
 │   ├── test_canonical_contracts.py         # 17 unit tests — Step 2.1 canonical input contract
 │   ├── test_openchargemap_adapter.py        # 20 unit tests — Step 2.2 OCM adapter & error isolation
 │   ├── test_ingestion_persistence.py        # 15 unit tests — Step 2.3 persistence & idempotency
@@ -104,6 +104,7 @@ ChargePlus/
 │   ├── test_freshness_provenance.py          # 33 unit tests — Step 2.9 freshness, provenance & decay
 │   ├── test_scheduled_ingestion.py           # 32 unit tests — Step 2.10 scheduling, retry, backoff & concurrency
 │   ├── test_mumbai_coverage_audit.py         # 64 unit tests — Step 2.11 Mumbai coverage & data quality audit
+│   ├── test_phase2_12_recovery_hardening.py  # 19 regression tests — Step 2.12 recovery hardening & final closure
 │   └── fixtures/                             # Offline representative test fixtures
 │       └── ocm_fixtures.py                   # 18 labeled OCM fixture scenarios
 ├── Must Read/                         # Locked governance docs (Architecture, Design, Memory, Phases, PRD, Rules)
@@ -119,7 +120,8 @@ ChargePlus/
     ├── step_2_8_canonical_operational_loading_and_mutation_isolation.md # Step 2.8 Canonical loading
     ├── step_2_9_freshness_provenance_and_staleness_decay.md # Step 2.9 Freshness engine & staleness
     ├── step_2_10_scheduled_ingestion_and_retry_policies.md  # Step 2.10 Scheduled ingestion & retry
-    └── step_2_11_mumbai_coverage_and_data_quality_audit.md  # Step 2.11 Mumbai pilot audit & Phase 2 sign-off
+    ├── step_2_11_mumbai_coverage_and_data_quality_audit.md  # Step 2.11 Mumbai pilot audit & Phase 2 sign-off
+    └── step_2_12_recovery_hardening_and_final_closure.md   # Step 2.12 Recovery hardening & final Phase 2 closure
 ```
 
 ---
@@ -180,7 +182,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to explore t
 | `npm run start` | Starts the production server |
 | `npm run typecheck` | Runs TypeScript compiler checks without emitting code (`tsc --noEmit`) |
 | `npm run lint` | Runs ESLint analysis across the frontend codebase |
-| `python -m pytest tests/ -v` | Runs the full Python test suite (348 tests: contracts, adapters, persistence, resolution, normalization, validation, deduplication, operational loading, freshness & provenance, scheduled ingestion & retry policies, Mumbai coverage audit) |
+| `python -m pytest tests/ -v` | Runs the full Python test suite (376 tests: contracts, adapters, persistence, resolution, normalization, validation, deduplication, operational loading, freshness & provenance, scheduled ingestion, coverage audit, recovery hardening) |
 | `python -m backend.ingestion.audit --scope mumbai` | Runs the Step 2.11 deterministic Mumbai coverage & data quality audit against the live database |
 
 ---
@@ -210,5 +212,6 @@ supabase db push
   - **Step 2.9 — Record Freshness/Provenance:** COMPLETE & LOCKED (252/252 cumulative).
   - **Step 2.10 — Schedule/Repeat Ingestion:** COMPLETE & LOCKED (284/284 cumulative).
   - **Step 2.11 — Mumbai Coverage Audit & Phase 2 Sign-off:** COMPLETE & LOCKED (`backend/ingestion/audit.py`, live audit against Supabase DB at `as_of=2026-09-26T06:30:00Z`, 2 canonical stations in MMR, 348/348 cumulative tests passing, report at `docs/step_2_11_mumbai_coverage_and_data_quality_audit.md`).
+  - **Step 2.12 — Recovery Hardening & Final Phase 2 Closure:** COMPLETE & SIGNED OFF (Unknown-power connectors preserved as NULL, fail-closed candidate lookup, single ingestion_runs owner, 376/376 cumulative tests passing, live DB verified with 8 MMR stations, 5 connectors, 0 fabricated facts).
 - **Phase 3 (Connect the Locked Frontend):** NEXT
   - **Step 3.1 — Replace hardcoded station dataset with real Supabase data.**
