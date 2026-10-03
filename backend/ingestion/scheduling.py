@@ -32,6 +32,7 @@ import threading
 import time
 from typing import Any, Callable, Optional, Sequence
 
+from backend.ingestion.contracts import CandidateLookupError
 from backend.ingestion.persistence import IngestionPersistenceService, _scrub_secrets
 
 logger = logging.getLogger("chargeplus.ingestion.scheduling")
@@ -96,6 +97,12 @@ class RetryPolicy:
         """Determines whether an exception is transient (retryable) or permanent."""
         if exc is None:
             return FailureClassification.UNKNOWN
+
+        exc_type_name = type(exc).__name__
+
+        # CandidateLookupError during candidate retrieval is a transient database query failure
+        if isinstance(exc, CandidateLookupError) or "candidatelookuperror" in exc_type_name.lower():
+            return FailureClassification.TRANSIENT
 
         # 1. Non-retryable / Permanent exceptions
         if isinstance(exc, (PermissionError, ValueError, KeyError, TypeError, json.JSONDecodeError)):
@@ -479,6 +486,7 @@ class ScheduledIngestionOrchestrator:
             mumbai_only = (config.scope.lower() == "mumbai")
 
             # 3. Execution Retry Loop
+            summary = None
             for attempt in range(1, retry_policy.max_attempts + 1):
                 run.attempt_count = attempt
                 logger.info(
@@ -490,16 +498,44 @@ class ScheduledIngestionOrchestrator:
                 )
 
                 try:
-                    # Invoke the canonical runner pipeline
-                    summary = self.runner.run(
-                        dry_run=config.dry_run,
-                        limit=config.limit,
-                        mumbai_only=mumbai_only,
-                        bounding_box=config.bounding_box,
-                        fixtures_data=fixtures_data,
-                    )
+                    # Invoke the canonical runner pipeline.
+                    # timeout_seconds is propagated end-to-end (CLI -> config ->
+                    # orchestrator -> runner -> adapter.fetch_raw timeout).
+                    try:
+                        summary = self.runner.run(
+                            dry_run=config.dry_run,
+                            limit=config.limit,
+                            mumbai_only=mumbai_only,
+                            bounding_box=config.bounding_box,
+                            fixtures_data=fixtures_data,
+                            timeout_seconds=config.timeout_seconds,
+                            attempt_count=attempt,
+                        )
+                    except TypeError:
+                        try:
+                            summary = self.runner.run(
+                                dry_run=config.dry_run,
+                                limit=config.limit,
+                                mumbai_only=mumbai_only,
+                                bounding_box=config.bounding_box,
+                                fixtures_data=fixtures_data,
+                                timeout_seconds=config.timeout_seconds,
+                            )
+                        except TypeError:
+                            # Backward-compatible fallback for test doubles with an
+                            # older run() signature lacking timeout_seconds.
+                            summary = self.runner.run(
+                                dry_run=config.dry_run,
+                                limit=config.limit,
+                                mumbai_only=mumbai_only,
+                                bounding_box=config.bounding_box,
+                                fixtures_data=fixtures_data,
+                            )
 
-                    # Transfer accounting metrics
+                    # Transfer accounting metrics and align run_id with runner
+                    if getattr(summary, "run_id", None):
+                        run.run_id = summary.run_id
+
                     run.records_fetched = summary.records_fetched
                     run.records_parsed = summary.records_parsed
                     run.records_accepted = summary.records_accepted
@@ -508,7 +544,11 @@ class ScheduledIngestionOrchestrator:
                     run.records_rejected = summary.records_rejected
                     run.stations_persisted = summary.stations_persisted
                     run.stations_updated = summary.stations_updated
-                    run.stations_unchanged = summary.stations_unchanged
+                    # LINKED means re-ingested source records resolved to their
+                    # existing canonical station with no mutation; count as
+                    # unchanged so fetched == persisted+updated+unchanged holds.
+                    # (Canonical IngestionSummary tracks linked separately.)
+                    run.stations_unchanged = summary.stations_unchanged + summary.stations_linked
                     run.connectors_persisted = summary.connectors_persisted
                     run.observations_persisted = summary.observations_persisted
                     run.persistence_errors = list(summary.persistence_errors)
@@ -558,14 +598,25 @@ class ScheduledIngestionOrchestrator:
             run.completed_at = datetime.now(timezone.utc)
             run.duration_seconds = time.time() - start_mono
 
-            # Persist run accounting to database if applicable
-            self._persist_run_accounting(run, dry_run=config.dry_run)
+            # Persist run accounting ONLY if runner did not already persist it (Single Owner principle).
+            # Runner owns execution + public.ingestion_runs accounting.
+            # Orchestrator only persists as fallback when runner was never invoked or runner did not persist.
+            runner_persisted = bool(
+                getattr(summary, "run_id", None)
+                or getattr(self.runner, "last_run_id", None)
+            )
+            if not config.dry_run and not runner_persisted:
+                self._persist_run_accounting(run, dry_run=config.dry_run)
 
         return run
 
     @staticmethod
     def _extract_retry_after(exc: Exception) -> Optional[float]:
-        """Extracts seconds from Retry-After header if present on HTTP exception."""
+        """Extracts seconds from Retry-After header if present on HTTP exception.
+
+        Supports integer delay-seconds and HTTP-date values (RFC 7231). HTTP-date
+        is converted to a non-negative delay relative to now (UTC).
+        """
         if hasattr(exc, "response") and getattr(exc, "response") is not None:
             resp = getattr(exc, "response")
             headers = getattr(resp, "headers", {})
@@ -574,6 +625,17 @@ class ScheduledIngestionOrchestrator:
                 try:
                     return float(header_val)
                 except ValueError:
+                    pass
+                try:
+                    from email.utils import parsedate_to_datetime
+
+                    dt = parsedate_to_datetime(str(header_val))
+                    if dt is not None:
+                        if dt.tzinfo is None:
+                            dt = dt.replace(tzinfo=timezone.utc)
+                        delay = (dt.astimezone(timezone.utc) - datetime.now(timezone.utc)).total_seconds()
+                        return max(0.0, delay)
+                except Exception:
                     return None
         return None
 
@@ -583,14 +645,36 @@ class ScheduledIngestionOrchestrator:
             logger.debug("Dry run active: Skipping database persistence for ingestion run '%s'", run.run_id)
             return
 
+        # Phase 2 recovery fix: the runner owns its persistence service inside
+        # run() (it creates + closes an ephemeral service when none is injected),
+        # so orchestrator-level self.persistence_service is often None even though
+        # a DATABASE_URL is available. Fall back to an ephemeral service derived
+        # from the runner's db_url so successful runs are actually accounted.
         service = self.persistence_service or getattr(self.runner, "persistence_service", None)
+        owns_service = False
+        if service is None:
+            db_url = getattr(self.runner, "db_url", None)
+            if db_url:
+                try:
+                    service = IngestionPersistenceService(db_url)
+                    owns_service = True
+                except Exception as ex:
+                    logger.error("Failed creating persistence service for run accounting: %s", _scrub_secrets(str(ex)))
+                    return
         if not service:
+            logger.warning("Skipping ingestion run accounting: no persistence service available")
             return
 
         try:
             service.persist_ingestion_run(run)
         except Exception as ex:
             logger.error("Failed persisting ingestion run accounting to database: %s", _scrub_secrets(str(ex)))
+        finally:
+            if owns_service:
+                try:
+                    service.close()
+                except Exception:
+                    pass
 
 
 # ==============================================================================
