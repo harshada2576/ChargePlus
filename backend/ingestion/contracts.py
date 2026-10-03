@@ -33,6 +33,11 @@ from backend.ingestion.constants import (
 )
 
 
+class CandidateLookupError(RuntimeError):
+    """Raised when querying the database for existing canonical candidate stations fails."""
+    pass
+
+
 class RawSourceRecord(BaseModel):
     """Layer 1 — Verbatim Raw Source Record.
     
