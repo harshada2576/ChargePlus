@@ -208,24 +208,41 @@ class OpenChargeMapAdapter(BaseSourceAdapter):
             raise ValueError(f"Station {station_id} missing valid numerical Latitude/Longitude coordinates")
 
         # Name extraction & cleaning
+        # NOTE: city/state/country fallbacks below are Mumbai-pilot operational
+        # defaults required by the NOT NULL DB contract, NOT source truth. Each
+        # fallback is flagged in extra_metadata (*_inferred) so India-wide mode
+        # never mistakes a default for a genuine source value (missing != known).
         raw_title = addr.get("Title") or payload.get("GeneralComments") or ""
         clean_name = re.sub(r"\s+", " ", str(raw_title)).strip()
+        name_synthesized = False
         if not clean_name:
             clean_name = f"OCM Charging Station {station_id}"
+            name_synthesized = True
 
         # Address components
         address_line = addr.get("AddressLine1")
         locality = addr.get("AddressLine2")
-        city = addr.get("Town") or "Mumbai"
-        state = addr.get("StateOrProvince") or "Maharashtra"
+        raw_town = addr.get("Town")
+        raw_state = addr.get("StateOrProvince")
+        city = raw_town.strip() if isinstance(raw_town, str) and raw_town.strip() else "Mumbai"
+        city_inferred = not (isinstance(raw_town, str) and raw_town.strip())
+        state = raw_state.strip() if isinstance(raw_state, str) and raw_state.strip() else "Maharashtra"
+        state_inferred = not (isinstance(raw_state, str) and raw_state.strip())
         postal_code = str(addr.get("Postcode")).strip() if addr.get("Postcode") is not None else None
 
         # Country normalization
         country_obj = addr.get("Country")
+        country_inferred = False
         if isinstance(country_obj, dict):
-            country_name = country_obj.get("Title") or country_obj.get("ISOCode") or "India"
+            raw_country = country_obj.get("Title") or country_obj.get("ISOCode")
+            if isinstance(raw_country, str) and raw_country.strip():
+                country_name = raw_country.strip()
+            else:
+                country_name = "India"
+                country_inferred = True
         else:
             country_name = "India"
+            country_inferred = True
 
         # ----------------------------------------------------------------------
         # 2. Operator & Network
@@ -254,12 +271,18 @@ class OpenChargeMapAdapter(BaseSourceAdapter):
         if usage_id in OCM_PRIVATE_USAGE_IDS:
             is_public = False
             access_type = "Private / Restricted"
+            access_inferred = False
         elif usage_id in OCM_PUBLIC_USAGE_IDS:
             is_public = True
             access_type = "Public"
+            access_inferred = False
         else:
+            # Conservative pilot fallback: assume public discoverability (DB default
+            # true) but leave access_type unknown rather than asserting "Public".
+            # Flagged explicitly so missing usage is never mistaken for source truth.
             is_public = True
-            access_type = "Public"
+            access_type = None
+            access_inferred = True
 
         # Contact & URL
         phone = addr.get("ContactTelephone1") or addr.get("ContactEmail")
@@ -413,6 +436,14 @@ class OpenChargeMapAdapter(BaseSourceAdapter):
             "date_last_status_update": payload.get("DateLastStatusUpdate"),
             "date_created": payload.get("DateCreated"),
             "submission_status_type_id": payload.get("SubmissionStatusTypeID"),
+            # Explicit fallback provenance: True means the canonical value is a
+            # pilot default, NOT a genuine source value. Downstream must treat
+            # missing as missing, never as confirmed geography/access.
+            "city_inferred": city_inferred,
+            "state_inferred": state_inferred,
+            "country_inferred": country_inferred,
+            "access_inferred": access_inferred,
+            "name_synthesized": name_synthesized,
         }
 
         return NormalizedStationRecord(
