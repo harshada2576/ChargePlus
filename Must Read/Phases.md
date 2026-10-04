@@ -76,7 +76,7 @@ We will also perform a conceptual check, not just a code check.
 
 ### Steps
 - 3.1 Replace hardcoded station dataset — COMPLETE / LOCKED
-- 3.2 Connect Explore/map  
+- 3.2 Connect Explore/map — NEXT / READY TO START  
 - 3.3 Connect search/filter  
 - 3.4 Connect station detail  
 - 3.5 Connect navigation handoff  
@@ -172,10 +172,10 @@ We will also perform a conceptual check, not just a code check.
 
 ## Current status
 
-- **Current Phase**: Phase 2/6 — Real Data Ingestion & Data Quality
-- **Remaining Phases**: 4 (Phase 3: Connect Locked Frontend, Phase 4: Warehouse, Analytics & Data Quality, Phase 5: Data Mining, Forecasting & Recommendations, Phase 6: Production & Public Beta)
-- **Current Step**: Step 2.9 COMPLETE / LOCKED — Ready for Step 2.10
-- **Remaining Steps in Phase 2**: 2 (Steps 2.10 and 2.11)
+- **Current Phase**: Phase 3/6 — Connect the Locked Frontend
+- **Remaining Phases**: 3 (Phase 4: Warehouse, Analytics & Data Quality, Phase 5: Data Mining, Forecasting & Recommendations, Phase 6: Production & Public Beta)
+- **Current Step**: Step 3.1 COMPLETE / LOCKED — Ready for Step 3.2 (Connect Explore/map)
+- **Remaining Steps in Phase 3**: 11 (Steps 3.2 through 3.13)
 
 ### What is complete:
 - **Phase 1 — Foundation & Real Database (Steps 1.1–1.10) — COMPLETE & SIGNED OFF**:
@@ -190,7 +190,7 @@ We will also perform a conceptual check, not just a code check.
   - 1.9 Establish environment variables/secrets — COMPLETE (AUDITED + CONFIGURED)
   - 1.10 Verify database with a clean test flow — COMPLETE (AUDITED + LIVE VERIFIED + PHASE 1 SIGN-OFF)
 
-- **Phase 2 — Real Data Ingestion (Steps 2.1 & 2.2) — IN PROGRESS**:
+- **Phase 2 — Real Data Ingestion & Data Quality (Steps 2.1–2.12) — COMPLETE & LIVE VERIFIED**:
   - 2.1 Define canonical station/connector input contract — COMPLETE
     - Canonical 6-layer contract defined (`RawSourceRecord`, `NormalizedStationRecord`, `NormalizedConnectorRecord`, `NormalizedObservationRecord`)
     - Pydantic models with strict validation rules and contract versioning (`1.0.0`) in `backend/ingestion/`
@@ -311,142 +311,46 @@ We will also perform a conceptual check, not just a code check.
     - 22 product capability matrix entries with AVAILABLE_NOW / PARTIALLY_SUPPORTED / NOT_CURRENTLY_SUPPORTABLE ratings backed by measured evidence.
     - 64 comprehensive unit tests in `tests/test_mumbai_coverage_audit.py`; all 348 tests passing across 10 test suites in `tests/`.
     - Complete documentation in `docs/step_2_11_mumbai_coverage_and_data_quality_audit.md`.
-    - **PHASE 2 COMPLETE — READY FOR PHASE 3**
+  - 2.12 Recovery hardening & final Phase 2 closure — COMPLETE & LIVE VERIFIED
+    - Reconciled documentation and cleaned repository state.
+    - Preserved unknown-power connector semantics as SQL/TypeScript `NULL` without casting to float or converting to 0 (`20260926000003_step_2_12_connector_unknown_power.sql`).
+    - Implemented fail-closed candidate lookup safety with `CandidateLookupError` classified as `TRANSIENT` to prevent duplicate station generation.
+    - Consolidated `ingestion_runs` accounting ownership solely to `IngestionRunner` to eliminate duplicate run tracking.
+    - Live Supabase database verified with 8 canonical stations, 5 connectors (3 unknown-power preserved), 8 source links, 0 fabricated facts, 3 ingestion runs.
+    - 19 regression unit tests in `tests/test_phase2_12_recovery_hardening.py`; 376/376 cumulative pytest tests passing.
+    - Complete documentation in `docs/step_2_12_recovery_hardening_and_final_closure.md`.
+    - **PHASE 2 VERIFIED COMPLETE & SIGNED OFF — READY FOR PHASE 3**
 
 ### Concept check (All Verified)
-- Are stations real? Yes (canonical station table, 2 OCM-sourced stations in live DB).
+- Are stations real? Yes (canonical station table, 8 genuine stations in live DB under `open_charge_map`).
 - Are source records traceable? Yes (station_source_link with payload hash, source_station_id, retrieval timestamps).
-- Are stale values distinguished from current observations? Yes (FreshnessEngine enforces STALE ≠ UNAVAILABLE; single obs correctly classified STALE not unavailable).
+- Are stale values distinguished from current observations? Yes (FreshnessEngine enforces STALE ≠ UNAVAILABLE; observations correctly classified STALE not unavailable).
 - Are duplicates controlled? Yes (Step 2.7 decides; Step 2.8 persists; FK constraints prevent broken provenance).
-- Are we accidentally treating operational status as connector availability? No — explicitly tested and confirmed in Step 2.11.
+- Are we accidentally treating operational status as connector availability? No — explicitly tested and confirmed in Step 2.11 and Step 3.1 (Rule 5).
 
+- **Phase 3 — Connect the Locked Frontend (Steps 3.1–3.13) — IN PROGRESS**:
+  - 3.1 Replace hardcoded station dataset — COMPLETE / LOCKED
+    - Security prerequisite resolved: MapLibre popup HTML strings sanitized via `escapeHtml()`.
+    - Replaced 330-line hardcoded fake seed array in `src/data/stations.ts` with real canonical stations snapshot matching live PostgreSQL database records.
+    - Authored domain adapter `src/data/stationAdapter.ts` mapping `public.v_station_current_state` and `public.v_station_connectors` to domain entities.
+    - Implemented live async loaders `fetchStations()` and `fetchStationById(id)` querying Supabase views with public anon key.
+    - Preserved unknown connector power as `null` (not 0), missing price as `null` (not free), unknown status as `unknown` (Rule 5: static operational != live availability), unknown connector quantity as `null` (not 1), unknown availability as `null`, address/area honest fallbacks, and cold-start reviews as `[]`.
+    - Updated `src/data/types.ts` (`Connector.powerKw: number | null`, `Connector.total: number | null`, `Connector.available: number | null`) and UI components (`StationCard`, `StationPreviewSheet`, `StationDetail`) to render honest states.
+    - Connected `src/app/station/[id]/page.tsx` to `fetchStationById(id)` with `notFound()` and dynamic generation.
+    - 8 unit tests in `tests/test_station_adapter.mjs`; all 376 pytest tests, tsc, eslint, and next build passing cleanly.
+    - Complete documentation in `docs/step_3_1_replace_hardcoded_station_dataset.md`.
 
----
-
-# Phase 3 — Connect the Locked Frontend
-**Goal:** turn the completed UI into a real product without redesigning it.
-
-### Steps
-- 3.1 Replace hardcoded station dataset — COMPLETE / LOCKED
-  - Security prerequisite resolved: MapLibre popup HTML strings sanitized via `escapeHtml()`.
-  - Replaced 330-line hardcoded fake seed array in `src/data/stations.ts` with real canonical stations snapshot matching live PostgreSQL database records.
-  - Authored domain adapter `src/data/stationAdapter.ts` mapping `public.v_station_current_state` and `public.v_station_connectors` to domain entities.
-  - Implemented live async loaders `fetchStations()` and `fetchStationById(id)` querying Supabase views with public anon key.
-  - Preserved unknown connector power as `null` (not 0), missing price as `null` (not free), unknown status as `unknown` (Rule 5: static operational != live availability), and cold-start reviews as `[]`.
-  - Updated `src/data/types.ts` (`Connector.powerKw: number | null`) and UI components (`StationCard`, `StationPreviewSheet`, `StationDetail`) to render `"—"` when power is unknown.
-  - Connected `src/app/station/[id]/page.tsx` to `fetchStationById(id)` with `notFound()` and dynamic generation.
-  - 8 unit tests in `tests/test_station_adapter.mjs`; all 376 pytest tests, tsc, eslint, and next build passing cleanly.
-- 3.2 Connect Explore/map  
-- 3.3 Connect search/filter  
-- 3.4 Connect station detail  
-- 3.5 Connect navigation handoff  
-- 3.6 Connect auth/OTP  
-- 3.7 Connect profiles  
-- 3.8 Connect favorites  
-- 3.9 Connect reports  
-- 3.10 Connect reviews  
-- 3.11 Connect alerts  
-- 3.12 Connect admin data views  
-- 3.13 Test loading/empty/error states against real data
-
-### Concept check
-- Does the UI say only what the data supports?
-- Are unknown fields handled honestly?
-- Is login requested only when needed?
-- Does the existing UX remain intact?
-
----
-
-# Phase 4 — Warehouse, Analytics & Data Quality
-**Goal:** satisfy the data-warehouse requirement using ChargePlus's real product data.
-
-### Steps
-4.1 Build dimensions  
-4.2 Build observation/report facts  
-4.3 Build daily/hourly aggregates where justified  
-4.4 Create ETL/ELT jobs in Python  
-4.5 Add data-quality checks  
-4.6 Create OLAP queries  
-4.7 Build analytics/admin views  
-4.8 Validate historical consistency
-
-### Concept check
-- Are fact grains explicit?
-- Are dimensions reusable?
-- Are aggregates derived from real observations?
-- Can every analytical number be traced back to underlying records?
-
----
-
-# Phase 5 — Data Mining, Forecasting & Recommendations
-**Goal:** add intelligence only after enough real data exists.
-
-### Steps
-5.1 Measure data maturity  
-5.2 Establish baseline  
-5.3 Feature engineering  
-5.4 Train simple model  
-5.5 Evaluate MAE/RMSE and appropriate metrics  
-5.6 Compare against baseline  
-5.7 Produce station busy-time estimates  
-5.8 Produce congestion/availability intelligence where supported  
-5.9 Build explainable recommendation scoring  
-5.10 Connect recommendations/alerts to frontend  
-5.11 Document limitations
-
-### Concept check
-- Is there enough data?
-- Does ML beat or meaningfully complement the baseline?
-- Are predictions clearly distinguished from observations?
-- Are recommendations explainable?
-- Are we avoiding fake confidence?
-
----
-
-# Phase 6 — Production & Public Beta
-**Goal:** make ChargePlus safe and stable for real users.
-
-### Steps
-6.1 Production deployment  
-6.2 Domain/configuration  
-6.3 Security review  
-6.4 RLS review  
-6.5 Rate limiting/abuse controls  
-6.6 Error monitoring/logging  
-6.7 Ingestion monitoring  
-6.8 ML/forecast monitoring  
-6.9 Performance testing  
-6.10 Mobile/browser compatibility  
-6.11 Data-quality review  
-6.12 Public beta checklist  
-6.13 Final documentation
-
-### Concept check
-- Could a real user misunderstand stale data as live?
-- Could one user corrupt shared station knowledge?
-- Are failures visible?
-- Are secrets protected?
-- Can the system be maintained?
-
----
-
-## Current status
-
-**PHASE 2 RECOVERY — PARTIAL, LIVE INGESTION BLOCKED (2026-09-26)**
-
-- **Current Phase**: Phase 2/6 — Real Data Ingestion & Data Quality (Recovery, NOT Phase 3)
-- **Remaining Phases**: 4 (Phase 3: Connect Locked Frontend, Phase 4: Warehouse, Analytics & Data Quality, Phase 5: Data Mining, Forecasting & Recommendations, Phase 6: Production & Public Beta)
-- **Current Step**: Phase 2 recovery wired; live OCM ingestion blocked by missing `OPENCHARGEMAP_API_KEY`.
-- **Remaining Steps in Phase 2**: 1 (live OCM dry-run + limited write + `ingestion_runs` verification)
-
-### What is complete:
-- **Phase 1 — Foundation & Real Database (Steps 1.1–1.10) — COMPLETE & SIGNED OFF**
-- **Phase 2 libraries (Steps 2.1–2.11) — BUILT; runtime composition NOW WIRED**
-  - runner.run() composes adapter -> 2.5 normalization -> 2.6 validation gate -> candidate retrieval -> 2.4 resolution (inside 2.7) -> 2.7 dedup -> 2.8 canonical persistence (incl. observations) -> 2.9 freshness (read-only) -> 2.10 run accounting.
-  - Fixture residue (`open_charge_map_test`, 2 stations) remediated; live DB clean (1 source `open_charge_map`, 0 stations, 0 pollution, no fake replacements).
-  - `public.ingestion_runs` grants hardened (SELECT-only for anon/authenticated).
-  - Historical Step 2.11 audit report describes pre-recovery fixture state; re-run required after live ingestion.
+### Concept check (Phase 3 Step 3.1 Verified)
+- Does the UI say only what the data supports? Yes (unknown power is null, missing price is null, unknown availability is null).
+- Are unknown fields handled honestly? Yes (Rule 5 enforced, no fake ₹0 or 0 kW or assumed availability).
+- Is login requested only when needed? Yes (public browsing preserved, zero auth barriers for map and station detail).
+- Does the existing UX remain intact? Yes (design tokens, layout, cards, sheets, and views strictly preserved).
 
 ### What we are doing next:
-- **Obtain `OPENCHARGEMAP_API_KEY`, then `--dry-run --limit 10`, review, then one real `--limit 10` write; verify source links (genuine OCM IDs), UUID identity, provenance/hash, observations only from genuine telemetry, analytics alignment, and `ingestion_runs`. Phase 3 remains NOT READY until then.**
+- **Phase 3 Step 3.2 — Connect Explore/map**:
+  - Wire `src/app/explore/ExploreClient.tsx` to live station data via `fetchStations()`.
+  - Provide resilient loading, empty, and error fallback states while preserving the locked visual design and tokens.
+  - Ensure `src/components/MapLibreMap.tsx` correctly handles live station coordinates, clustering, dynamic selection, and sanitized popups.
+  - Ensure distance calculations and sorting remain accurate with real GPS / Mumbai center coordinates.
+  - Verify with comprehensive test coverage, build gates, and live Supabase queries.
 
