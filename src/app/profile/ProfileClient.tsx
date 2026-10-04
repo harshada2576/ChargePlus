@@ -22,8 +22,9 @@ import { cx } from "@/lib/util";
 
 export function ProfileClient() {
   const { t, lang, setLang } = useI18n();
-  const { user, isAuthed, signOut, savedIds, reviews, refreshProfile } = useSession();
+  const { user, isAuthed, signOut, savedIds, refreshProfile } = useSession();
   const [reportCount, setReportCount] = useState<number | null>(null);
+  const [reviewCount, setReviewCount] = useState<number | null>(null);
 
   // Server-truth report count. Unknown (failed query) renders as "—".
   // No synchronous reset here: when logged out this branch isn't rendered,
@@ -33,14 +34,18 @@ export function ProfileClient() {
     if (!user) return;
     void (async () => {
       try {
-        const { count, error } = await supabase
-          .from("user_reports")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id);
+        const [{ count: repCount, error: repError }, { count: revCount, error: revError }] =
+          await Promise.all([
+            supabase.from("user_reports").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+            supabase.from("reviews").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+          ]);
         if (!active) return;
-        setReportCount(error ? null : (count ?? 0));
+        setReportCount(repError ? null : (repCount ?? 0));
+        setReviewCount(revError ? null : (revCount ?? 0));
       } catch {
-        if (active) setReportCount(null);
+        if (!active) return;
+        setReportCount(null);
+        setReviewCount(null);
       }
     })();
     return () => {
@@ -187,7 +192,7 @@ export function ProfileClient() {
       <section className="mt-4 overflow-hidden rounded-[20px] border border-ink-100 bg-white shadow-card">
         <Row href="/saved" icon={<SavedIcon size={18} />} label={t("profile.saved")} value={String(savedIds.size)} />
         <Row href="/reports" icon={<InboxIcon size={18} />} label={t("profile.reports")} value={reportCount == null ? "—" : String(reportCount)} />
-        <Row href="/reviews" icon={<InfoIcon size={18} />} label={t("profile.reviews")} value={String(reviews.length)} />
+        <Row href="/reviews" icon={<InfoIcon size={18} />} label={t("profile.reviews")} value={reviewCount == null ? "—" : String(reviewCount)} />
         <Row href="/alerts" icon={<BellIcon size={18} />} label={t("profile.alerts")} value={null} />
         <Row href="/help" icon={<InfoIcon size={18} />} label={t("profile.help")} value={null} />
       </section>
