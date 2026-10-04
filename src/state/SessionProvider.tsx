@@ -11,6 +11,7 @@ import {
 import type { ReactNode } from "react";
 import type { Alert, UserReport } from "@/data/types";
 import { supabase } from "@/lib/supabase";
+import { fetchProfile } from "@/lib/profiles";
 
 const SAVED_KEY = "chargeplus:saved";
 const ALERTS_KEY = "chargeplus:alerts";
@@ -30,6 +31,8 @@ type Ctx = {
   isAdmin: boolean;
   user: AuthUser | null;
   signOut: () => void;
+  /** Re-read the canonical profile (e.g. after editing the display name). */
+  refreshProfile: () => void;
   setMockRole: (role: "user" | "admin") => void;
 
   savedIds: Set<string>;
@@ -128,12 +131,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         const u = data.session?.user;
         setUser(u ? toAuthUser(u.id, u.email, u.phone) : null);
         setHydrated(true);
+        if (u) void applyCanonicalProfile(u.id);
       })
       .catch(() => {
         if (!active) return;
         setUser(null);
         setHydrated(true);
       });
+
+    // Canonical profile (display name + server-truth role) overlays the session.
+    async function applyCanonicalProfile(userId: string) {
+      try {
+        const profile = await fetchProfile(supabase, userId);
+        if (!active || !profile) return;
+        setUser((prev) =>
+          prev && prev.id === userId
+            ? { ...prev, name: profile.displayName ?? prev.name, role: profile.role }
+            : prev
+        );
+      } catch {}
+    }
 
     const {
       data: { subscription },
@@ -143,6 +160,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (u) {
         setUser(toAuthUser(u.id, u.email, u.phone));
         void ensureProfileRow(u.id);
+        void applyCanonicalProfile(u.id);
       } else {
         // Sign-out: drop in-memory prototype state so the next device user
         // never sees the previous user's saves, alerts, reports, or reviews.
@@ -163,6 +181,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(() => {
     // Server session ends here; local cleanup follows via onAuthStateChange.
     void supabase.auth.signOut().catch(() => {});
+  }, []);
+
+  const refreshProfile = useCallback(() => {
+    void supabase.auth.getUser().then(async ({ data }) => {
+      const u = data.user;
+      if (!u) return;
+      try {
+        const profile = await fetchProfile(supabase, u.id);
+        if (!profile) return;
+        setUser((prev) =>
+          prev && prev.id === u.id
+            ? { ...prev, name: profile.displayName ?? prev.name, role: profile.role }
+            : prev
+        );
+      } catch {}
+    });
   }, []);
 
   const isSaved = useCallback((id: string) => savedIds.has(id), [savedIds]);
@@ -236,6 +270,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       isAdmin: user?.role === "admin",
       user,
       signOut,
+      refreshProfile,
       setMockRole,
       savedIds: hydrated ? savedIds : new Set<string>(),
       toggleSaved,
@@ -247,7 +282,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       reviews: hydrated ? reviews : [],
       addReview,
     }),
-    [user, hydrated, savedIds, alerts, reports, reviews, signOut, setMockRole, toggleSaved, isSaved, setAlertEnabled, addReport, addReview]
+    [user, hydrated, savedIds, alerts, reports, reviews, signOut, refreshProfile, setMockRole, toggleSaved, isSaved, setAlertEnabled, addReport, addReview]
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
