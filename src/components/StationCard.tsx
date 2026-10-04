@@ -7,6 +7,7 @@ import {
   getMaxPowerKw,
   getTotalChargers,
 } from "@/data/stations";
+import { stationDetailHref } from "@/data/exploreQuery";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/state/SessionProvider";
 import { StatusBadge } from "./StatusBadge";
@@ -44,7 +45,7 @@ export function StationCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Link
-            href={`/station/${station.id}`}
+            href={stationDetailHref(station.id)}
             className="line-clamp-2 text-[15.5px] font-semibold text-ink-900 hover:underline"
           >
             {station.name}
@@ -117,7 +118,7 @@ export function StationCard({
             </span>
           </div>
         </div>
-        <Link href={`/station/${station.id}`}>
+        <Link href={stationDetailHref(station.id)}>
           <Button variant="primary" size="sm">
             {t("common.viewStation")}
           </Button>
