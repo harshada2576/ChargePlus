@@ -20,7 +20,7 @@ import {
 import { Link } from "@/i18n/Link";
 
 export function AdminDashboard() {
-  const { isAdmin, user } = useSession();
+  const { isAdmin, user, authReady } = useSession();
   const [activeTab, setActiveTab] = useState<string>("all");
   const [selectedStationFilter, setSelectedStationFilter] = useState<string>("all");
   const [stations, setStations] = useState<Station[]>([]);
@@ -97,7 +97,16 @@ export function AdminDashboard() {
     }
   }
 
-  // Gate check: If user does not have admin role, display restriction gate
+  // Gate check: If user does not have admin role, display restriction gate.
+  // authReady waits for the session; the canonical role overlay lands just
+  // after, so a real admin may briefly see the gate before it self-corrects.
+  if (!authReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4 py-16">
+        <p className="font-mono text-xs text-slate-400">Loading console…</p>
+      </div>
+    );
+  }
   if (!isAdmin) {
     return (
       <div className="flex min-h-screen items-center justify-center px-4 py-16">
