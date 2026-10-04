@@ -13,7 +13,7 @@ import { Link } from "@/i18n/Link";
 
 export function SavedClient() {
   const { t } = useI18n();
-  const { savedIds, isAuthed } = useSession();
+  const { savedIds, isAuthed, authReady } = useSession();
   const [stations, setStations] = useState<Station[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +55,14 @@ export function SavedClient() {
   // canonical record (removed station) is omitted, never fabricated.
   const byId = new Map(stations.map((s) => [s.id, s]));
   const list = [...savedIds].map((id) => byId.get(id)).filter((s): s is Station => !!s);
+
+  if (!authReady) {
+    return (
+      <div className="mx-auto max-w-screen-md px-4 py-10 sm:px-6">
+        <p className="text-center text-[13.5px] text-ink-600">{t("common.loading")}</p>
+      </div>
+    );
+  }
 
   if (!isAuthed) {
     return (
