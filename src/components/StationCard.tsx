@@ -7,8 +7,11 @@ import {
   getMaxPowerKw,
   getTotalChargers,
 } from "@/data/stations";
+import { stationDetailHref } from "@/data/exploreQuery";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/state/SessionProvider";
+import { useToast } from "@/components/Toast";
+import { useRouter } from "next/navigation";
 import { StatusBadge } from "./StatusBadge";
 import { Button } from "./Button";
 import { HeartIcon, HeartFilledIcon, BoltIcon } from "./Icon";
@@ -26,7 +29,15 @@ export function StationCard({
 }) {
   const { t } = useI18n();
   const { toggleSaved, isSaved } = useSession();
+  const { show: showToast } = useToast();
+  const router = useRouter();
   const saved = isSaved(station.id);
+
+  async function handleToggleSaved() {
+    const res = await toggleSaved(station.id);
+    if (res === "login-required") router.push("/login");
+    else if (res === "error") showToast(t("errors.network.body"));
+  }
 
   const dist = userLocation
     ? distanceKm(userLocation, { lat: station.lat, lng: station.lng })
@@ -44,7 +55,7 @@ export function StationCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Link
-            href={`/station/${station.id}`}
+            href={stationDetailHref(station.id)}
             className="line-clamp-2 text-[15.5px] font-semibold text-ink-900 hover:underline"
           >
             {station.name}
@@ -56,7 +67,7 @@ export function StationCard({
         <button
           type="button"
           aria-label={saved ? t("common.remove") : t("common.save")}
-          onClick={() => toggleSaved(station.id)}
+          onClick={handleToggleSaved}
           className={cx(
             "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors",
             saved
@@ -80,10 +91,10 @@ export function StationCard({
       <div className="mt-3 flex items-center gap-3 text-[13px] text-ink-700">
         <div className="inline-flex items-center gap-1.5">
           <BoltIcon size={14} className="text-coral-600" />
-          <span>{maxKw} kW</span>
+          <span>{maxKw > 0 ? `${maxKw} kW` : "—"}</span>
         </div>
         <span className="text-ink-300">•</span>
-        <span>{t("station.chargerCount", { n: chargers })}</span>
+        <span>{chargers != null ? t("station.chargerCount", { n: chargers }) : "—"}</span>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -117,7 +128,7 @@ export function StationCard({
             </span>
           </div>
         </div>
-        <Link href={`/station/${station.id}`}>
+        <Link href={stationDetailHref(station.id)}>
           <Button variant="primary" size="sm">
             {t("common.viewStation")}
           </Button>

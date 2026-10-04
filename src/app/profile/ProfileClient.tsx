@@ -1,9 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/state/SessionProvider";
 import { SUPPORTED_LANGUAGES } from "@/i18n/dictionaries";
 import type { LanguageCode } from "@/i18n/types";
+import { supabase } from "@/lib/supabase";
+import { updateDisplayName } from "@/lib/profiles";
 import { BrandMark } from "@/components/BrandMark";
 import {
   ChevronRightIcon,
@@ -19,7 +22,63 @@ import { cx } from "@/lib/util";
 
 export function ProfileClient() {
   const { t, lang, setLang } = useI18n();
-  const { user, isAuthed, signOut, savedIds, reports, reviews } = useSession();
+  const { user, isAuthed, signOut, savedIds, refreshProfile, authReady } = useSession();
+  const [reportCount, setReportCount] = useState<number | null>(null);
+  const [reviewCount, setReviewCount] = useState<number | null>(null);
+
+  // Server-truth report count. Unknown (failed query) renders as "—".
+  // No synchronous reset here: when logged out this branch isn't rendered,
+  // and the effect refetches on every sign-in.
+  useEffect(() => {
+    let active = true;
+    if (!user) return;
+    void (async () => {
+      try {
+        const [{ count: repCount, error: repError }, { count: revCount, error: revError }] =
+          await Promise.all([
+            supabase.from("user_reports").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+            supabase.from("reviews").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+          ]);
+        if (!active) return;
+        setReportCount(repError ? null : (repCount ?? 0));
+        setReviewCount(revError ? null : (revCount ?? 0));
+      } catch {
+        if (!active) return;
+        setReportCount(null);
+        setReviewCount(null);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [user]);
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState("");
+  const [savingName, setSavingName] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+
+  async function saveName() {
+    if (!user || savingName) return;
+    setSavingName(true);
+    setNameError(null);
+    try {
+      await updateDisplayName(supabase, user.id, draftName);
+      refreshProfile();
+      setEditingName(false);
+    } catch (err) {
+      setNameError(err instanceof Error ? err.message : "Could not save. Try again.");
+    } finally {
+      setSavingName(false);
+    }
+  }
+
+  if (!authReady) {
+    return (
+      <div className="mx-auto max-w-screen-md px-4 py-10 sm:px-6">
+        <p className="text-center text-[13.5px] text-ink-600">{t("common.loading")}</p>
+      </div>
+    );
+  }
 
   if (!isAuthed) {
     return (
@@ -57,9 +116,58 @@ export function ProfileClient() {
             <UserIcon size={22} />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-[15px] font-semibold text-ink-900">
-              {user?.name || user?.contact || "ChargePlus driver"}
-            </p>
+            {editingName ? (
+              <div>
+                <label className="block">
+                  <span className="sr-only">{t("profile.name")}</span>
+                  <input
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    maxLength={120}
+                    placeholder={user?.name || user?.contact}
+                    className="h-10 w-full rounded-[12px] border border-ink-200 bg-white px-3 text-[14px] text-ink-900 placeholder:text-ink-400 focus-visible:border-coral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-600/30"
+                  />
+                </label>
+                {nameError && (
+                  <p className="mt-1.5 text-[12px] text-status-broken">{nameError}</p>
+                )}
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={saveName}
+                    disabled={savingName}
+                    className="inline-flex h-9 items-center rounded-full bg-coral-600 px-4 text-[13px] font-medium text-white hover:bg-coral-700 disabled:bg-coral-300"
+                  >
+                    {t("common.save")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingName(false);
+                      setNameError(null);
+                    }}
+                    className="inline-flex h-9 items-center rounded-full border border-ink-200 bg-white px-4 text-[13px] font-medium text-ink-700 hover:bg-ink-50"
+                  >
+                    {t("common.cancel")}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setDraftName(user?.name && user.name !== user.contact ? user.name : "");
+                  setNameError(null);
+                  setEditingName(true);
+                }}
+                className="block min-w-0 text-left"
+                aria-label={t("profile.name")}
+              >
+                <p className="truncate text-[15px] font-semibold text-ink-900">
+                  {user?.name || user?.contact || "ChargePlus driver"}
+                </p>
+              </button>
+            )}
             <p className="truncate text-[12.5px] text-ink-600">
               {user?.kind === "email" ? user?.contact : `+${(user?.contact || "").replace(/^\+/, "")}`}
             </p>
@@ -91,8 +199,8 @@ export function ProfileClient() {
 
       <section className="mt-4 overflow-hidden rounded-[20px] border border-ink-100 bg-white shadow-card">
         <Row href="/saved" icon={<SavedIcon size={18} />} label={t("profile.saved")} value={String(savedIds.size)} />
-        <Row href="/reports" icon={<InboxIcon size={18} />} label={t("profile.reports")} value={String(reports.length)} />
-        <Row href="/reviews" icon={<InfoIcon size={18} />} label={t("profile.reviews")} value={String(reviews.length)} />
+        <Row href="/reports" icon={<InboxIcon size={18} />} label={t("profile.reports")} value={reportCount == null ? "—" : String(reportCount)} />
+        <Row href="/reviews" icon={<InfoIcon size={18} />} label={t("profile.reviews")} value={reviewCount == null ? "—" : String(reviewCount)} />
         <Row href="/alerts" icon={<BellIcon size={18} />} label={t("profile.alerts")} value={null} />
         <Row href="/help" icon={<InfoIcon size={18} />} label={t("profile.help")} value={null} />
       </section>

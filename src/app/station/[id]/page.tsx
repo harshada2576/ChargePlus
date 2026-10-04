@@ -1,4 +1,6 @@
-import { STATIONS, getStation } from "@/data/stations";
+import { fetchStationById, fetchStations } from "@/data/stations";
+import { listApprovedReviews } from "@/lib/reviews";
+import { supabase } from "@/lib/supabase";
 import { StationDetail } from "./StationDetail";
 import { notFound } from "next/navigation";
 
@@ -6,11 +8,15 @@ export const dynamic = "force-dynamic";
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const station = getStation(id);
+  const station = await fetchStationById(id);
   if (!station) return notFound();
-  return <StationDetail station={station} />;
+  // Approved public reviews only (sanitized view); failures leave the
+  // section honestly empty rather than blocking the canonical record.
+  const reviews = await listApprovedReviews(supabase, station.id).catch(() => []);
+  return <StationDetail station={station} reviews={reviews} />;
 }
 
-export function generateStaticParams() {
-  return STATIONS.map((s) => ({ id: s.id }));
+export async function generateStaticParams() {
+  const stations = await fetchStations();
+  return stations.map((s) => ({ id: s.id }));
 }

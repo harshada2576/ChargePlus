@@ -18,3 +18,41 @@ export function minutesToFriendly(minutes: number | null | undefined): {
 export function delay(ms: number) {
   return new Promise<void>((res) => setTimeout(res, ms));
 }
+
+/** Safely escape untrusted text content before inserting into HTML strings. */
+export function escapeHtml(str: string | null | undefined): string {
+  if (str == null) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/** Validate geographic coordinates, rejecting non-numbers, NaN, Null Island (0,0), and out-of-range coordinates. */
+export function isValidCoordinate(lat: unknown, lng: unknown): boolean {
+  if (typeof lat !== "number" || typeof lng !== "number") return false;
+  if (isNaN(lat) || isNaN(lng)) return false;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return false;
+  if (lat === 0 && lng === 0) return false;
+  return true;
+}
+
+/**
+ * Pure external-map URL builder. Returns null when coordinates are invalid so
+ * callers never navigate to a fabricated location. Safe protocols only
+ * (https / geo); the place name is encoded, coordinates are validated numbers.
+ */
+export function externalMapUrl(
+  kind: "google" | "apple" | "geo",
+  s: { lat: number; lng: number; name: string }
+): string | null {
+  if (!isValidCoordinate(s.lat, s.lng)) return null;
+  const { lat, lng } = s;
+  if (kind === "google")
+    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+  if (kind === "apple") return `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
+  return `geo:${lat},${lng}?q=${encodeURIComponent(s.name)}`;
+}
+

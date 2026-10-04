@@ -1,16 +1,112 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSession } from "@/state/SessionProvider";
-import { STATIONS } from "@/data/stations";
+import { fetchStations } from "@/data/stations";
+import type { Station } from "@/data/types";
+import { supabase } from "@/lib/supabase";
+import { isValidCoordinate } from "@/lib/util";
+import {
+  countApprovedReviews,
+  listIngestionRuns,
+  listPendingReports,
+  listPendingReviews,
+  moderateReport,
+  moderateReview,
+  type IngestionRun,
+  type PendingReport,
+  type PendingReview,
+} from "@/lib/admin";
 import { Link } from "@/i18n/Link";
 
 export function AdminDashboard() {
-  const { isAdmin, user, setMockRole, reports, reviews } = useSession();
+  const { isAdmin, user, authReady } = useSession();
   const [activeTab, setActiveTab] = useState<string>("all");
   const [selectedStationFilter, setSelectedStationFilter] = useState<string>("all");
+  const [stations, setStations] = useState<Station[]>([]);
+  const [pendingReports, setPendingReports] = useState<PendingReport[]>([]);
+  const [pendingReviews, setPendingReviews] = useState<PendingReview[]>([]);
+  const [runs, setRuns] = useState<IngestionRun[]>([]);
+  const [approvedCount, setApprovedCount] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [nonce, setNonce] = useState(0);
+  const [modPending, setModPending] = useState<Set<string>>(new Set());
 
-  // Gate check: If user does not have admin role, display restriction gate
+  const reload = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    setNonce((n) => n + 1);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    // Console data requires the server-truth admin role; RLS enforces it
+    // again on every query below. Non-admins keep the restriction gate.
+    if (!isAdmin) return;
+    Promise.all([
+      fetchStations(),
+      listPendingReports(supabase),
+      listPendingReviews(supabase),
+      listIngestionRuns(supabase),
+      countApprovedReviews(supabase),
+    ])
+      .then(([all, reports, reviews, ingestion, approved]) => {
+        if (!active) return;
+        setStations(all);
+        setPendingReports(reports);
+        setPendingReviews(reviews);
+        setRuns(ingestion);
+        setApprovedCount(approved);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : "Console data failed to load");
+        setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isAdmin, nonce]);
+
+  async function handleModerate(
+    kind: "report" | "review",
+    id: string,
+    approved: boolean
+  ) {
+    if (!user || modPending.has(id)) return;
+    setModPending((prev) => new Set(prev).add(id));
+    try {
+      if (kind === "report") {
+        await moderateReport(supabase, { id, approved, moderatorId: user.id });
+        setPendingReports((prev) => prev.filter((r) => r.id !== id));
+      } else {
+        await moderateReview(supabase, { id, approved, moderatorId: user.id });
+        setPendingReviews((prev) => prev.filter((r) => r.id !== id));
+      }
+    } catch {
+      // Row stays queued; the error surfaces in the queue header below.
+      setError("A moderation action failed. Retry it from the queue.");
+    } finally {
+      setModPending((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  }
+
+  // Gate check: If user does not have admin role, display restriction gate.
+  // authReady waits for the session; the canonical role overlay lands just
+  // after, so a real admin may briefly see the gate before it self-corrects.
+  if (!authReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4 py-16">
+        <p className="font-mono text-xs text-slate-400">Loading console…</p>
+      </div>
+    );
+  }
   if (!isAdmin) {
     return (
       <div className="flex min-h-screen items-center justify-center px-4 py-16">
@@ -45,12 +141,6 @@ export function AdminDashboard() {
           </div>
 
           <div className="mt-6 flex flex-col gap-3">
-            <button
-              onClick={() => setMockRole("admin")}
-              className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-coral-600 px-4 text-sm font-semibold text-white shadow-lg transition hover:bg-coral-500 focus:outline-none focus:ring-2 focus:ring-coral-400/40"
-            >
-              Simulate Admin Login (Test Auth)
-            </button>
             <Link
               href="/"
               className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-800 px-4 text-sm font-medium text-slate-300 transition hover:bg-slate-700"
@@ -64,8 +154,18 @@ export function AdminDashboard() {
   }
 
   const filteredStations = selectedStationFilter === "all"
-    ? STATIONS
-    : STATIONS.filter((s) => s.status === selectedStationFilter);
+    ? stations
+    : stations.filter((s) => s.status === selectedStationFilter);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen pb-16">
+        <main className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
+          <p className="font-mono text-xs text-slate-400">Loading console data…</p>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-16">
@@ -94,11 +194,11 @@ export function AdminDashboard() {
               <span>Role: admin_operator</span>
             </div>
             <button
-              onClick={() => setMockRole("user")}
+              onClick={reload}
               className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-300 hover:bg-slate-800 transition"
-              title="Test role authorization gate"
+              title="Reload console data"
             >
-              Revoke Role
+              Reload
             </button>
             <Link
               href="/"
@@ -111,15 +211,20 @@ export function AdminDashboard() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
-        {/* KPI Strip */}
+        {/* KPI Strip — every value is measured; unmeasured phases show unavailable */}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-          <KpiCard label="Network Stations" value={String(STATIONS.length)} sub="32 Online" status="good" />
-          <KpiCard label="Pending Reports" value={String(reports.length)} sub="Driver submissions" status={reports.length > 0 ? "warn" : "good"} />
-          <KpiCard label="Reviews Moderated" value={String(reviews.length)} sub="Community feedback" status="neutral" />
-          <KpiCard label="Info Quality Score" value="89.4%" sub="High confidence" status="good" />
-          <KpiCard label="Active Ingestors" value="4 / 4" sub="Lag < 3 min" status="good" />
-          <KpiCard label="Model Latency" value="42 ms" sub="P95 inference" status="good" />
+          <KpiCard label="Network Stations" value={String(stations.length)} sub={`${stations.filter((s) => s.status === "available").length} Available`} status="good" />
+          <KpiCard label="Pending Reports" value={String(pendingReports.length)} sub="Awaiting moderation" status={pendingReports.length > 0 ? "warn" : "good"} />
+          <KpiCard label="Reviews Approved" value={approvedCount == null ? "—" : String(approvedCount)} sub="Published to drivers" status="neutral" />
+          <KpiCard label="Info Quality Score" value="—" sub="Phase 4 analytics" status="neutral" />
+          <KpiCard label="Latest Ingestion" value={runs[0]?.state ?? "—"} sub={runs[0] ? `${runs[0].sourceName} · ${runs[0].scope}` : "No runs recorded"} status={runs[0]?.state === "FAILED" ? "warn" : "neutral"} />
+          <KpiCard label="Model Status" value="—" sub="No model deployed" status="neutral" />
         </section>
+        {error && (
+          <p className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 font-mono text-xs text-red-300">
+            {error}
+          </p>
+        )}
 
         {/* Console Sections Grid covering all 7 Spec §56 areas */}
         <div className="mt-8 space-y-8">
@@ -140,7 +245,7 @@ export function AdminDashboard() {
 
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono text-slate-400">Status:</span>
-                {(["all", "available", "busy", "broken"] as const).map((st) => (
+                {(["all", "available", "busy", "broken", "unknown"] as const).map((st) => (
                   <button
                     key={st}
                     onClick={() => setSelectedStationFilter(st)}
@@ -182,7 +287,9 @@ export function AdminDashboard() {
                             ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
                             : s.status === "busy"
                             ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                            : "bg-red-500/15 text-red-400 border border-red-500/30"
+                            : s.status === "broken"
+                            ? "bg-red-500/15 text-red-400 border border-red-500/30"
+                            : "bg-slate-500/15 text-slate-400 border border-slate-500/30"
                         }`}>
                           {s.status}
                         </span>
@@ -191,7 +298,9 @@ export function AdminDashboard() {
                         {s.connectors.map((c) => c.type).join(", ")}
                       </td>
                       <td className="px-4 py-3 text-right text-slate-500">
-                        {s.lat.toFixed(4)}, {s.lng.toFixed(4)}
+                        {isValidCoordinate(s.lat, s.lng)
+                          ? `${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}`
+                          : "—"}
                       </td>
                     </tr>
                   ))}
@@ -214,29 +323,37 @@ export function AdminDashboard() {
                 Driver-submitted status updates and crowd queue reports pending verification.
               </p>
 
-              {reports.length === 0 ? (
+              {pendingReports.length === 0 ? (
                 <div className="mt-4 rounded-xl border border-dashed border-slate-800 bg-slate-950/40 p-6 text-center">
                   <p className="text-xs font-mono text-slate-500">
                     No pending unmoderated reports in queue.
                   </p>
                   <p className="mt-1 text-[11px] text-slate-600">
-                    Submit reports from the driver station view to test the moderation pipeline.
+                    Driver reports enter moderation as pending after server submission.
                   </p>
                 </div>
               ) : (
                 <ul className="mt-4 space-y-2.5">
-                  {reports.map((r) => (
+                  {pendingReports.map((r) => (
                     <li key={r.id} className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-mono text-slate-300 font-medium">Station ID: {r.stationId}</span>
-                        <span className="font-mono text-slate-500">{r.queue ? `Queue: ${r.queue}` : "Reported"}</span>
+                        <span className="font-mono text-slate-500">{r.queue && r.queue !== "none" ? `Queue: ${r.queue}` : r.status}</span>
                       </div>
                       {r.note && <p className="mt-1.5 text-xs text-slate-300 italic">“{r.note}”</p>}
                       <div className="mt-2 flex items-center justify-end gap-2">
-                        <button className="rounded bg-emerald-600/20 px-2 py-1 text-[11px] font-medium text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30">
+                        <button
+                          onClick={() => handleModerate("report", r.id, true)}
+                          disabled={modPending.has(r.id)}
+                          className="rounded bg-emerald-600/20 px-2 py-1 text-[11px] font-medium text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 disabled:opacity-50"
+                        >
                           Approve
                         </button>
-                        <button className="rounded bg-red-600/20 px-2 py-1 text-[11px] font-medium text-red-400 hover:bg-red-600/30 border border-red-500/30">
+                        <button
+                          onClick={() => handleModerate("report", r.id, false)}
+                          disabled={modPending.has(r.id)}
+                          className="rounded bg-red-600/20 px-2 py-1 text-[11px] font-medium text-red-400 hover:bg-red-600/30 border border-red-500/30 disabled:opacity-50"
+                        >
                           Dismiss
                         </button>
                       </div>
@@ -258,29 +375,37 @@ export function AdminDashboard() {
                 Driver commentary, accessibility issues, and ratings quality control.
               </p>
 
-              {reviews.length === 0 ? (
+              {pendingReviews.length === 0 ? (
                 <div className="mt-4 rounded-xl border border-dashed border-slate-800 bg-slate-950/40 p-6 text-center">
                   <p className="text-xs font-mono text-slate-500">
-                    All reviews verified. No flagged commentary.
+                    No pending reviews in queue.
                   </p>
                   <p className="mt-1 text-[11px] text-slate-600">
-                    Driver reviews appear here for sentiment and spam validation.
+                    Driver reviews enter moderation as pending after server submission.
                   </p>
                 </div>
               ) : (
                 <ul className="mt-4 space-y-2.5">
-                  {reviews.map((rv) => (
+                  {pendingReviews.map((rv) => (
                     <li key={rv.id} className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-mono text-slate-300">Station ID: {rv.stationId}</span>
                         <span className="text-amber-400">{"★".repeat(rv.rating)}</span>
                       </div>
-                      <p className="mt-1.5 text-xs text-slate-300">{rv.comment}</p>
+                      {rv.comment && <p className="mt-1.5 text-xs text-slate-300">{rv.comment}</p>}
                       <div className="mt-2 flex items-center justify-end gap-2">
-                        <button className="rounded bg-emerald-600/20 px-2 py-1 text-[11px] font-medium text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30">
+                        <button
+                          onClick={() => handleModerate("review", rv.id, true)}
+                          disabled={modPending.has(rv.id)}
+                          className="rounded bg-emerald-600/20 px-2 py-1 text-[11px] font-medium text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 disabled:opacity-50"
+                        >
                           Publish
                         </button>
-                        <button className="rounded bg-slate-800 px-2 py-1 text-[11px] font-medium text-slate-400 hover:bg-slate-700">
+                        <button
+                          onClick={() => handleModerate("review", rv.id, false)}
+                          disabled={modPending.has(rv.id)}
+                          className="rounded bg-slate-800 px-2 py-1 text-[11px] font-medium text-slate-400 hover:bg-slate-700 disabled:opacity-50"
+                        >
                           Hide
                         </button>
                       </div>
@@ -316,7 +441,7 @@ export function AdminDashboard() {
                 </div>
                 <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-xs font-mono">
                   <span className="text-slate-300">Conflicting Reports</span>
-                  <span className="text-slate-400">0 anomalies detected</span>
+                  <span className="text-slate-400">Not evaluated</span>
                 </div>
               </div>
             </section>
@@ -330,14 +455,25 @@ export function AdminDashboard() {
                 <h2 className="text-lg font-bold text-white">Ingestion Health</h2>
               </div>
               <p className="mt-1 text-xs text-slate-400">
-                Status of upstream adapters (OCM, Government registry, and meteorological feeds).
+                Recorded ingestion runs from the operations pipeline (public.ingestion_runs).
               </p>
 
               <div className="mt-4 space-y-2.5">
-                <IngestionRow name="OCM Source Adapter" status="Healthy" lag="1.8 min" rate="12 rec/s" />
-                <IngestionRow name="Government Registry Feed" status="Healthy" lag="11.4 min" rate="4 rec/s" />
-                <IngestionRow name="Meteorological Weather Adapter" status="Healthy" lag="4.2 min" rate="1 rec/s" />
-                <IngestionRow name="Future Network Adapter" status="Standby" lag="—" rate="0 rec/s" />
+                {runs.length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-slate-800 bg-slate-950/40 p-4 text-center font-mono text-xs text-slate-500">
+                    No ingestion runs recorded.
+                  </p>
+                ) : (
+                  runs.map((run) => (
+                    <IngestionRow
+                      key={run.id}
+                      name={`${run.sourceName} · ${run.scope}`}
+                      status={run.state === "SUCCEEDED" ? "Healthy" : run.state === "FAILED" ? "Failed" : run.state}
+                      lag={run.durationSeconds != null ? `${run.durationSeconds}s run` : "—"}
+                      rate={`${run.recordsAccepted} accepted / ${run.recordsFetched} fetched`}
+                    />
+                  ))
+                )}
               </div>
             </section>
           </div>
@@ -359,21 +495,24 @@ export function AdminDashboard() {
               <div className="mt-4 grid grid-cols-2 gap-3 text-xs font-mono">
                 <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
                   <p className="text-slate-500">Model Version</p>
-                  <p className="mt-1 font-bold text-slate-200">v2.4-gbm-mumbai</p>
+                  <p className="mt-1 font-bold text-slate-200">None deployed</p>
                 </div>
                 <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
                   <p className="text-slate-500">Inference Acc</p>
-                  <p className="mt-1 font-bold text-emerald-400">94.2% ROC-AUC</p>
+                  <p className="mt-1 font-bold text-slate-400">—</p>
                 </div>
                 <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
                   <p className="text-slate-500">Drift Deviation</p>
-                  <p className="mt-1 font-bold text-slate-200">0.012 (Nominal)</p>
+                  <p className="mt-1 font-bold text-slate-400">—</p>
                 </div>
                 <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
                   <p className="text-slate-500">Next Retrain</p>
-                  <p className="mt-1 font-bold text-slate-200">03:00 IST (Daily)</p>
+                  <p className="mt-1 font-bold text-slate-400">—</p>
                 </div>
               </div>
+              <p className="mt-2 text-[11px] text-slate-600">
+                Forecasting ships in Phase 5; no model is deployed or measured.
+              </p>
             </section>
 
             {/* Section 7: System Health */}
@@ -391,15 +530,15 @@ export function AdminDashboard() {
               <div className="mt-4 space-y-2.5 font-mono text-xs">
                 <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/50 p-3">
                   <span className="text-slate-300">PostgreSQL Pool (Drizzle)</span>
-                  <span className="text-emerald-400">12 / 20 Active Connections</span>
+                  <span className="text-slate-500">Not monitored</span>
                 </div>
                 <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/50 p-3">
                   <span className="text-slate-300">OpenFreeMap Vector CDN</span>
-                  <span className="text-emerald-400">28 ms (Edge Cloudflare)</span>
+                  <span className="text-slate-500">Not monitored</span>
                 </div>
                 <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/50 p-3">
                   <span className="text-slate-300">Application Uptime</span>
-                  <span className="text-slate-200">99.98% (Last 30 Days)</span>
+                  <span className="text-slate-500">Not monitored</span>
                 </div>
               </div>
             </section>

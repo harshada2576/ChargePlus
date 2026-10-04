@@ -32,7 +32,7 @@ Every entry should include:
 
 ## Current project state
 
-**PHASE 2 VERIFIED COMPLETE — READY FOR PHASE 3 (2026-10-03)**
+**PHASE 3 VERIFIED COMPLETE — READY FOR PHASE 4 (2026-10-04)**
 
 - **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF.
 - **Phase 2 (Real Data Ingestion & Data Quality, Steps 2.1–2.12)**: COMPLETE & LIVE VERIFIED.
@@ -58,10 +58,16 @@ Every entry should include:
     - Next.js Build: Clean (`next build`, 26/26 routes generated)
     - Live Bounded Dry-Run: Succeeded (8 fetched, 0 writes, 8 linked)
     - Live Bounded Run-Once: Succeeded (Run ID `208d837a-f9ac-4bca-880c-96c6a57b8e04`, exactly 1 row persisted, 3 unknown-power connectors preserved)
-- **Next Phase**: Phase 3 — Connect the Locked Frontend.
-- **Next Step**: Step 3.1 — Replace hardcoded station dataset with real Supabase data.
-- **Precondition for Step 3.2**: Resolve MapLibre popup HTML injection sanitization before connecting live DB coordinates/names to map popups.
-- **Production Database**: Live; `public.connectors.power_kw` and `analytics.dim_connector.power_kw` nullable with `CHECK (power_kw IS NULL OR power_kw > 0)` and `NULLS NOT DISTINCT` unique index; 8 stations, 5 connectors, 0 observations, 1 source (`open_charge_map`), 0 test pollution.
+- **Phase**: Phase 3/6 — Connect the Locked Frontend.
+- **Current Step**: Phase 3 COMPLETE — all Steps 3.1 through 3.13 verified and locked.
+- **Remaining Steps in Phase 3**: 0 (all Steps 3.1 through 3.13 verified complete and locked).
+- **Remaining Phases**: Phase 4 (Warehouse & Analytics), Phase 5 (ML & Queue Prediction), Phase 6 (Production & Operationalization).
+- **Current Baseline Status**:
+  - Live Supabase: 8 canonical stations, 5 connectors, 8 source links, 0 fabricated observations, 3 ingestion runs.
+  - Hardcoded fake stations replaced with real Supabase data layer (`src/data/stationAdapter.ts`, `src/data/stations.ts`).
+  - Connector unknown power preserved as `null` in types and components.
+  - MapLibre popup HTML injection sanitized via `escapeHtml`.
+  - Next Step: Phase 4 — Warehouse, Analytics & Data Quality (first documented step; not begun).
 
 
 ### Historical Progress Log
@@ -540,5 +546,152 @@ Every entry should include:
   - Zero fabricated telemetry or synthetic pricing: VERIFIED.
 - Blockers / waiting on: None. Precondition for Step 3.2: MapLibre popup HTML injection sanitization before connecting live DB coordinates/names.
 - Next step: Phase 3, Step 3.1 — Replace hardcoded station dataset with real Supabase data.
+
+### 03 Oct 2026 — Phase 3 Step 3.1 Replace Hardcoded Station Dataset & Data-Honesty Audit
+- Phase / Step: Phase 3/6 — Step 3.1 (Replace hardcoded station dataset with real Supabase data & Data-Honesty Audit)
+- What we built/changed:
+  1. Security Hardening (MapLibre Popup HTML Injection):
+     - Added `escapeHtml()` utility in `src/lib/util.ts` to sanitize all untrusted text content before HTML insertion.
+     - Updated `src/components/MapLibreMap.tsx` to escape `station.name`, `station.operator`, `station.area` and URL-encode `station.id` in MapLibre popup DOM strings.
+  2. Data Contract & Domain Model Alignment:
+     - Updated `src/data/types.ts`:
+       - `Connector.powerKw: number | null` (preserving uninvented power as SQL/TypeScript `null`).
+       - `Connector.total: number | null` (preserving unknown connector quantity as `null`, never defaulting to 1).
+       - `Connector.available: number | null` (preserving unobserved connector availability as `null`, never defaulting to total or 0).
+       - `ConnectorType` includes `"Unknown"` (never defaulting unrecognized types to `"CCS2"`).
+  3. Supabase View Domain Adapter (`src/data/stationAdapter.ts`) Data-Honesty Corrections:
+     - Corrected connector quantity: missing `total_quantity` preserves `total: null` (never fabricated as 1).
+     - Corrected connector availability: `available: null` unless explicit observation telemetry exists (never derived from station status).
+     - Corrected connector type: missing or unrecognized types map to `"Unknown"` (never `"CCS2"`).
+     - Corrected address derivation: missing address components return `"Address unavailable"` (never constructed as `"${name}, Mumbai, Maharashtra"`).
+     - Corrected area derivation: missing locality/city/state returns `"Area unknown"` (never defaulted to `"Mumbai"`).
+     - Corrected operator derivation: missing operator returns `"Unknown Operator"` (never `"Independent"`).
+     - Preserved pricing as `null` when unobserved, hours as `unknown`, and busy windows as `[]`.
+  4. Data Access Layer Replacement (`src/data/stations.ts`):
+     - Completely replaced the 330-line hardcoded `seed` array (17 dummy stations) with canonical stations snapshot matching verified live database records.
+     - Implemented live async loaders `fetchStations(): Promise<Station[]>` and `fetchStationById(id: string): Promise<Station | null>` querying Supabase views `v_station_current_state` and `v_station_connectors`.
+     - Updated `getTotalChargers(s)` and `getAvailableChargers(s)` to return `number | null` without claiming unsupported counts.
+     - Maintained backward compatibility for synchronous utilities (`getStation`, `distanceKm`, `formatDistance`, `getMaxPowerKw`, `MUMBAI_CENTER`).
+     - Replaced fabricated review generation with `REVIEWS: Review[] = []` (cold-start honest state).
+  5. Honest UI Rendering:
+     - Updated `src/components/StationCard.tsx`: renders `"—"` when connector power is unknown or 0, and `"—"` when charger count is null.
+     - Updated `src/components/StationPreviewSheet.tsx`: guards charger count when null.
+     - Updated `src/app/station/[id]/StationDetail.tsx`: renders `"—"` when connector power is null, handles null availability and null total count honestly via `t("station.availabilityUnavailable")`.
+     - Updated `src/app/explore/ExploreClient.tsx`: safely handles nullable `getTotalChargers` and `getAvailableChargers`.
+  6. Station Route Integration:
+     - Updated `src/app/station/[id]/page.tsx` to load station details via `await fetchStationById(id)` with `notFound()` handling and dynamic generation.
+  7. Test Suite:
+     - Created `tests/test_station_adapter.mjs` (8 comprehensive unit tests covering status derivation, pricing derivation, hour formatting, power nullability, missing quantity, missing connector availability, missing location, and HTML escaping).
+- Current state: STEP 3.1 VERIFIED COMPLETE & AUDITED — READY FOR STEP 3.2.
+- Conceptual verification:
+  - Are stations real? Yes (8 canonical stations matching live Supabase records).
+  - Are unknown fields handled honestly? Yes (unknown power is `null`, unknown quantity is `null`, unknown availability is `null`, unknown status is `unknown`, unknown price is `null`, unknown location is `Area unknown`).
+  - Is operational status conflated with availability? No (Rule 5 strictly enforced).
+  - Is MapLibre popup secure from markup injection? Yes (`escapeHtml` applied to all text attributes).
+  - Are reviews fabricated? No (0 fake reviews, honest empty state).
+- Blockers / waiting on: None.
+- Next step: Phase 3, Step 3.2 — Connect Explore/map.
+
+### 04 Oct 2026 — Phase 3 Step 3.2 Connect Explore/map
+- Phase / Step: Phase 3/6 — Step 3.2
+- What we built/changed: Wired Explore/map to canonical loaders (fetchStations, injectable client); new src/data/exploreQuery.ts (filter/sort/GeoJSON/selection/load-state, explicit unknown-data policy); honest loading/error-with-retry/empty states; coordinate validation (parseStationCoord, isValidCoordinate); popup escaping preserved; 13 Explore/map tests plus loader hooks.
+- Current state: STEP 3.2 VERIFIED COMPLETE — Explore list and map share one canonical collection; no mock fallback in path; live anon check: 8 stations, 3 null-power and 5 null-availability connectors preserved; typecheck/lint/build clean; pytest 376 passed.
+- Conceptual verification: list/map/selection/preview navigate by canonical id; unknown never classified as available/busy/free/CCS2/1-charger; invalid coords produce no markers; error is distinct from empty; spec-doc offline-fallback line deliberately not implemented (dishonest).
+- Blockers / waiting on: None.
+### 04 Oct 2026 — Phase 3 Step 3.3 Connect search/filter
+- Phase / Step: Phase 3/6 — Step 3.3
+- What we built/changed: Fixed roadmap arithmetic (11 steps remain, 3.3-3.13); visibleSelection clears selection predictably when filtered out; stale map popup cleanup; FiltersPanel reset uses canonical defaults, dead syncOpen removed; documented per-filter unknown-data semantics and timezone limitation; 21 focused search/filter tests.
+- Current state: STEP 3.3 VERIFIED COMPLETE — search/filters/sort/counts/map/list/selection run on one canonical collection; typecheck/lint/build clean; node suites 43 passed (22 existing + 21 new); pytest 376 passed; live anon check: 8 stations, search preserves ids.
+- Conceptual verification: unknown never matches as available/free/fast/known-count/specific-type/open; invalid coords never become markers; empty filter result is distinct from query failure; no fabrication in path (closed-world test).
+- Blockers / waiting on: None.
+- Next step: Phase 3, Step 3.4 — Connect station detail.
+
+### 04 Oct 2026 — Phase 3 Step 3.4 Connect station detail
+- Phase / Step: Phase 3/6 — Step 3.4
+- What we built/changed: fetchStationById returns null for malformed UUIDs without querying; new station error.tsx boundary (query failure shows retry card, no-match shows notFound); detail hides navigation/map on invalid coords; externalMapUrl pure helper; fixed review-button label, formatMinutesAgo arithmetic, isFree check; 18 detail tests.
+- Current state: STEP 3.4 VERIFIED COMPLETE — record/404/error distinct; all fields honest; node 61 passed; tsc/lint/build clean; pytest 376 passed; live anon check passed with zero writes.
+- Conceptual verification: no fabricated fallback reachable (closed-world + throw-on-error + malformed-null tests); unknown stays unknown across identity/connectors/pricing/hours/freshness/reviews; prototype save/report/review stay local and explicit.
+- Blockers / waiting on: None.
+- Next step: Phase 3, Step 3.5 — Connect navigation handoff.
+
+### 04 Oct 2026 — Phase 3 Step 3.5 Connect navigation handoff
+- Phase / Step: Phase 3/6 — Step 3.5
+- What we built/changed: stationDetailHref encodes IDs and is used by card/preview links; single-source navigation.ts consumed by BottomNav/SiteHeader; no dead links found; return-to-Explore reset documented; nested card structure and prototype toasts deferred explicitly; 15 navigation tests incl. filesystem route inventory.
+- Current state: STEP 3.5 VERIFIED COMPLETE — list/map/preview/detail/return preserve canonical IDs; node 76 passed; tsc/lint/build clean; pytest 376 passed; live identity check passed with zero writes.
+- Conceptual verification: identity by canonical id only (never names/indexes); failure distinct from absence; URLs encoded; external links guarded; no prototype data in journey (closed-world test).
+- Blockers / waiting on: None.
+- Next step: Phase 3, Step 3.6 — Connect auth/OTP.
+
+### 04 Oct 2026 — Phase 3 Step 3.6 Connect auth/OTP
+- Phase / Step: Phase 3/6 — Step 3.6
+- What we built/changed: Real Supabase OTP (src/lib/auth.ts); provider-backed session in SessionProvider with profile-row ensure and leak-free sign-out; mock signIn/AUTH_KEY removed; phone SMS flagged as dashboard-dependent.
+- Current state: STEP 3.6 COMPLETE — 9/9 auth tests pass; typecheck/lint clean; live OTP delivery unverified (would create auth rows; externally dependent).
+- Conceptual verification: passwordless preserved; phone retained with explicit dependency; no fake success; grants/RLS untouched.
+- Blockers / waiting on: SMS provider dashboard config (for phone delivery); a test contact for end-to-end OTP verification.
+- Next step: Phase 3, Step 3.7 — Connect profiles.
+
+### 04 Oct 2026 — Phase 3 Step 3.7 Connect profiles
+- Phase / Step: Phase 3/6 — Step 3.7
+- What we built/changed: Canonical profile helpers with CHECK-parity validation and role read-only mapping; session overlays server name/role with refreshProfile; inline display-name editor reusing locked styles and existing i18n keys.
+- Current state: STEP 3.7 COMPLETE — 6/6 profile tests pass; typecheck/lint clean; live writes await authenticated-user availability.
+- Conceptual verification: identity from Auth session only; role escalation impossible (grants + RLS + whitelist); unknown display name stays null.
+- Blockers / waiting on: Same OTP-delivery dependency as Step 3.6 for live write verification.
+- Next step: Phase 3, Step 3.8 — Connect favorites.
+
+### 04 Oct 2026 — Phase 3 Step 3.8 Connect favorites
+- Phase / Step: Phase 3/6 — Step 3.8
+- What we built/changed: Server-persisted favorites (lib + session + card/sheet/detail gates + Saved page on canonical join); localStorage saves removed; duplicate-safe PK semantics; orphan ids omitted.
+- Current state: STEP 3.8 COMPLETE — 5/5 favorites tests pass; typecheck/lint clean; live writes await authenticated-user availability.
+- Conceptual verification: ownership server-enforced (auth.uid + PK); empty distinct from error; sign-out leak closed.
+- Blockers / waiting on: Same OTP-delivery dependency for live write verification.
+- Next step: Phase 3, Step 3.9 — Connect reports.
+
+### 04 Oct 2026 — Phase 3 Step 3.9 Connect reports
+- Phase / Step: Phase 3/6 — Step 3.9
+- What we built/changed: Server-persisted user_reports (validation-first lib, real form submit, own-reports page on canonical join, server profile count); fixed hardcoded Mumbai fallback; provider local reports retained only for the admin prototype queue until 3.12.
+- Current state: STEP 3.9 COMPLETE — 4/4 reports tests pass; typecheck/lint clean; live writes await authenticated-user availability.
+- Conceptual verification: append-only observations, moderation server-side, reports never become station facts; RLS ownership inspected.
+- Blockers / waiting on: Same OTP-delivery dependency for live write verification.
+- Next step: Phase 3, Step 3.10 — Connect reviews.
+
+### 04 Oct 2026 — Phase 3 Step 3.10 Connect reviews
+- Phase / Step: Phase 3/6 — Step 3.10
+- What we built/changed: Server-persisted reviews (validation-first lib with insert-then-own-update, sanitized approved view, own list with status); detail renders approved reviews from a server prop; Reviews page on server rows with canonical join; fixed Mumbai fallback; server profile review count.
+- Current state: STEP 3.10 COMPLETE — 6/6 reviews tests pass; typecheck/lint clean; live writes await authenticated-user availability.
+- Conceptual verification: feedback never becomes availability/station facts; moderation server-side; unique-per-user enforced; public feed carries no user ids.
+- Blockers / waiting on: Same OTP-delivery dependency for live write verification.
+- Next step: Phase 3, Step 3.11 — Connect alerts.
+
+### 04 Oct 2026 — Phase 3 Step 3.11 Connect alerts
+- Phase / Step: Phase 3/6 — Step 3.11
+- What we built/changed: Server-persisted watch conditions (explicit UI-to-canonical type mapping, list-then-write setAlert, serialized toggles, server favorites plus canonical join, hardcoded fallback removed); delivery explicitly out of scope.
+- Current state: STEP 3.11 COMPLETE — 6/6 alerts tests pass; typecheck/lint clean; no schema migration; live writes await authenticated-user availability.
+- Conceptual verification: preferences persisted, delivery never claimed; ownership server-enforced; no duplicate-prone paths.
+- Blockers / waiting on: Same OTP-delivery dependency for live write verification.
+- Next step: Phase 3, Step 3.12 — Connect admin data views.
+
+### 04 Oct 2026 — Phase 3 Step 3.12 Connect admin data views
+- Phase / Step: Phase 3/6 — Step 3.12
+- What we built/changed: Console on real data (canonical stations, live moderation queues with wired actions, real ingestion runs, measured KPIs, honest unavailable states); removed fake login, fabricated metrics/feeds/model/system figures, dead buttons, and mock privilege plus dead prototype stores from the provider.
+- Current state: STEP 3.12 COMPLETE — 5/5 admin tests pass; node suites 117/117; typecheck/lint clean; live admin view needs a real admin role.
+- Conceptual verification: privilege only from profiles.role via RLS; moderation records identity; unmeasured phases show unavailable, never invented.
+- Blockers / waiting on: A real admin-role account for live console verification.
+- Next step: Phase 3, Step 3.13 — Test loading/empty/error states against real data.
+
+### 04 Oct 2026 — Phase 3 Step 3.13 States audit
+- Phase / Step: Phase 3/6 — Step 3.13
+- What we built/changed: authReady session-readiness flag; all gated surfaces (Saved, Alerts, Reports, Reviews, Profile, Admin) show loading until ready instead of flashing logged-out UI; full audit matrix recorded; admin role-overlay transient documented.
+- Current state: STEP 3.13 COMPLETE — node suites 117/117; tsc/lint/build clean; pytest 376 passed; live anon checks passed.
+- Conceptual verification: every surface distinguishes loading/error/empty/ready; failure never masquerades as empty; no new pure logic needed dedicated tests.
+- Blockers / waiting on: None for 3.13.
+- Next step: Phase 3 final end-to-end audit and closure decision.
+
+### 04 Oct 2026 — Phase 3 closure audit
+- Phase / Step: Phase 3/6 — closure
+- What we built/changed: Full end-to-end audit (journey, data flow, auth/session, persistence/ownership, RLS, states, a11y, regression, repo/Git); closure report; roadmap reconciled to Phase 3 complete.
+- Current state: PHASE 3 VERIFIED COMPLETE — node 117/117 (0 skipped), tsc/eslint/build clean, pytest 376/376, live anon journey true, zero migrations, clean tree.
+- Conceptual verification: architecture layers intact; anon/auth boundary at RLS; unknown/error/empty semantics preserved; prototypes visibly prototypes; no lowered bars — environmental write-verification limits documented as residual risks.
+- Blockers / waiting on: Dashboard SMS config + test contact + admin-role account for live authenticated verification (external, precisely scoped).
+- Next step: Phase 4 — Warehouse, Analytics & Data Quality (not begun).
 
 
