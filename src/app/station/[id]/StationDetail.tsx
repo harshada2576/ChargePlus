@@ -7,7 +7,6 @@ import {
   getMaxPowerKw,
   getReviewsForStation,
   getTotalChargers,
-  REVIEWS,
 } from "@/data/stations";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/state/SessionProvider";
@@ -25,7 +24,7 @@ import {
   AlertTriangleIcon,
 } from "@/components/Icon";
 import { Link } from "@/i18n/Link";
-import { cx } from "@/lib/util";
+import { cx, externalMapUrl, isValidCoordinate } from "@/lib/util";
 import { StationReportForm } from "@/components/StationReportForm";
 import { StationReviewForm } from "@/components/StationReviewForm";
 import { MapLibreMap } from "@/components/MapLibreMap";
@@ -42,6 +41,9 @@ export function StationDetail({ station }: { station: Station }) {
 
   const saved = isSaved(station.id);
   const reviews = getReviewsForStation(station.id);
+  // Directions (in-app sheet and external map links) require real coordinates.
+  // Without them the actions are omitted; area/address text still renders.
+  const hasCoords = isValidCoordinate(station.lat, station.lng);
 
   function handleSave() {
     if (!isAuthed) {
@@ -110,17 +112,19 @@ export function StationDetail({ station }: { station: Station }) {
         </header>
 
         {/* Navigate CTA */}
-        <div className="mt-5">
-          <Button
-            block
-            size="lg"
-            variant="primary"
-            iconLeft={<NavIcon size={18} />}
-            onClick={() => setNavOpen(true)}
-          >
-            {t("station.navigate")}
-          </Button>
-        </div>
+        {hasCoords && (
+          <div className="mt-5">
+            <Button
+              block
+              size="lg"
+              variant="primary"
+              iconLeft={<NavIcon size={18} />}
+              onClick={() => setNavOpen(true)}
+            >
+              {t("station.navigate")}
+            </Button>
+          </div>
+        )}
 
         {/* Location Mini-Map */}
         <section className="mt-6 overflow-hidden rounded-[20px] border border-ink-100 bg-white p-4 shadow-card">
@@ -129,22 +133,26 @@ export function StationDetail({ station }: { station: Station }) {
               <h2 className="text-[15px] font-semibold text-ink-900">{station.area}</h2>
               <p className="truncate text-[12.5px] text-ink-600">{station.address}</p>
             </div>
-            <button
-              onClick={() => setNavOpen(true)}
-              className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-coral-700 hover:underline"
-            >
-              <NavIcon size={14} />
-              {t("station.navigate")}
-            </button>
+            {hasCoords && (
+              <button
+                onClick={() => setNavOpen(true)}
+                className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-coral-700 hover:underline"
+              >
+                <NavIcon size={14} />
+                {t("station.navigate")}
+              </button>
+            )}
           </div>
-          <div className="h-44 w-full overflow-hidden rounded-[14px]">
-            <MapLibreMap
-              stations={[station]}
-              singleStation={station}
-              showControls={false}
-              interactive={true}
-            />
-          </div>
+          {hasCoords && (
+            <div className="h-44 w-full overflow-hidden rounded-[14px]">
+              <MapLibreMap
+                stations={[station]}
+                singleStation={station}
+                showControls={false}
+                interactive={true}
+              />
+            </div>
+          )}
         </section>
 
         {/* Charging now */}
@@ -205,13 +213,13 @@ export function StationDetail({ station }: { station: Station }) {
         <section className="mt-4 rounded-[20px] border border-ink-100 bg-white p-5 shadow-card">
           <h2 className="text-[15px] font-semibold text-ink-900">{t("station.price")}</h2>
           <p className="mt-2 text-[20px] font-semibold text-ink-900">
-            {station.isFree
+            {station.isFree === true
               ? "Free"
               : station.pricePerKwh == null
               ? t("station.priceUnavailable")
               : t("station.perKwh", { price: station.pricePerKwh })}
           </p>
-          {station.isFree && (
+          {station.isFree === true && (
             <p className="mt-1 text-[12.5px] text-ink-600">Public charging — please park considerately.</p>
           )}
         </section>
@@ -252,7 +260,7 @@ export function StationDetail({ station }: { station: Station }) {
           <div className="flex items-center justify-between">
             <h2 className="text-[15px] font-semibold text-ink-900">{t("station.reviews.title")}</h2>
             <Button variant="secondary" size="sm" onClick={handleReview}>
-              {t("common.save")}
+              {t("station.review.submit")}
             </Button>
           </div>
           {reviews.length === 0 ? (
@@ -291,27 +299,29 @@ export function StationDetail({ station }: { station: Station }) {
       </div>
 
       {/* Navigate sheet */}
-      <BottomSheet
-        open={navOpen}
-        onClose={() => setNavOpen(false)}
-        title={t("station.navigateWith")}
-        placement="bottom"
-      >
-        <ul className="space-y-2">
-          <NavApp
-            label={t("station.navigate.google")}
-            onClick={() => openExternalMap("google", station)}
-          />
-          <NavApp
-            label={t("station.navigate.apple")}
-            onClick={() => openExternalMap("apple", station)}
-          />
-          <NavApp
-            label={t("station.navigate.other")}
-            onClick={() => openExternalMap("geo", station)}
-          />
-        </ul>
-      </BottomSheet>
+      {hasCoords && (
+        <BottomSheet
+          open={navOpen}
+          onClose={() => setNavOpen(false)}
+          title={t("station.navigateWith")}
+          placement="bottom"
+        >
+          <ul className="space-y-2">
+            <NavApp
+              label={t("station.navigate.google")}
+              onClick={() => openExternalMap("google", station)}
+            />
+            <NavApp
+              label={t("station.navigate.apple")}
+              onClick={() => openExternalMap("apple", station)}
+            />
+            <NavApp
+              label={t("station.navigate.other")}
+              onClick={() => openExternalMap("geo", station)}
+            />
+          </ul>
+        </BottomSheet>
+      )}
 
       {/* Report */}
       <BottomSheet
@@ -379,16 +389,14 @@ function NavApp({ label, onClick }: { label: string; onClick: () => void }) {
 }
 
 function formatMinutesAgo(min: number): string {
-  if (min < 60) return `${Math.round(min / 60)} min ago`;
+  if (min < 1) return "just now";
+  if (min < 60) return `${Math.round(min)} min ago`;
   if (min < 60 * 24) return `${Math.round(min / 60)} hr ago`;
   return `${Math.round(min / (60 * 24))} d ago`;
 }
 
 function openExternalMap(kind: "google" | "apple" | "geo", s: Station) {
-  const { lat, lng } = s;
-  let url = "";
-  if (kind === "google") url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
-  else if (kind === "apple") url = `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
-  else url = `geo:${lat},${lng}?q=${encodeURIComponent(s.name)}`;
+  const url = externalMapUrl(kind, s);
+  if (!url) return;
   window.open(url, "_blank", "noopener,noreferrer");
 }
