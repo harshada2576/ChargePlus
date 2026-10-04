@@ -77,7 +77,7 @@ We will also perform a conceptual check, not just a code check.
 ### Steps
 - 3.1 Replace hardcoded station dataset — COMPLETE / LOCKED
 - 3.2 Connect Explore/map — COMPLETE / LOCKED
-- 3.3 Connect search/filter — NEXT / READY TO START
+- 3.3 Connect search/filter — COMPLETE / LOCKED
 - 3.4 Connect station detail  
 - 3.5 Connect navigation handoff  
 - 3.6 Connect auth/OTP  
@@ -174,8 +174,8 @@ We will also perform a conceptual check, not just a code check.
 
 - **Current Phase**: Phase 3/6 — Connect the Locked Frontend
 - **Remaining Phases**: 3 (Phase 4: Warehouse, Analytics & Data Quality, Phase 5: Data Mining, Forecasting & Recommendations, Phase 6: Production & Public Beta)
-- **Current Step**: Step 3.2 COMPLETE / LOCKED — Ready for Step 3.3 (Connect search/filter)
-- **Remaining Steps in Phase 3**: 10 (Steps 3.3 through 3.13)
+- **Current Step**: Step 3.3 COMPLETE / LOCKED — Ready for Step 3.4 (Connect station detail)
+- **Remaining Steps in Phase 3**: 10 (Steps 3.4 through 3.13)
 
 ### What is complete:
 - **Phase 1 — Foundation & Real Database (Steps 1.1–1.10) — COMPLETE & SIGNED OFF**:
@@ -345,6 +345,13 @@ We will also perform a conceptual check, not just a code check.
     - `src/components/MapLibreMap.tsx` handles live coordinates, clustering, bidirectional selection, and sanitized popups; distance sorting via honest `distanceKm`.
     - 13 Explore/map tests plus adapter tests; tsc/eslint/build clean; pytest 376 passed; live anon check: 8 stations preserved.
     - Complete documentation in `docs/step_3_2_implementation_report.md`.
+  - 3.3 Connect search/filter — COMPLETE / LOCKED
+    - Corrected remaining-step arithmetic to 11 (Steps 3.3–3.13); roadmap untouched.
+    - Search runs on canonical name/operator/area/address (trimmed, case-insensitive); per-filter unknown-data semantics documented and tested.
+    - `visibleSelection` clears highlight/popup/preview when a station leaves results; raw id retained so reset restores without refetch.
+    - Stale map popup cleanup; `FiltersPanel.reset` uses canonical defaults; dead `syncOpen` removed.
+    - 21 focused search/filter tests; node suites 43 passed; tsc/eslint/build clean; pytest 376 passed; live anon check: 8 stations, ids preserved.
+    - Complete documentation in `docs/step_3_3_implementation_report.md`.
 
 ### Concept check (Phase 3 Step 3.1 Verified)
 - Does the UI say only what the data supports? Yes (unknown power is null, missing price is null, unknown availability is null).
@@ -353,8 +360,8 @@ We will also perform a conceptual check, not just a code check.
 - Does the existing UX remain intact? Yes (design tokens, layout, cards, sheets, and views strictly preserved).
 
 ### What we are doing next:
-- **Phase 3 Step 3.3 — Connect search/filter**:
-  - Build on the Step 3.2 canonical Explore foundation (`filterAndSortStations`, honest unknown-data policy).
-  - Wire the search entry point and filter panel end-to-end against live station records without redesigning the locked UX.
+- **Phase 3 Step 3.4 — Connect station detail**:
+  - Build on the Steps 3.2–3.3 canonical foundation (`fetchStationById`, `notFound()`).
+  - Verify detail rendering stays honest for unknown power/pricing/availability/hours.
   - Verify with focused tests, build gates, and live Supabase queries.
 
