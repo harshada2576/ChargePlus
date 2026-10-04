@@ -26,8 +26,13 @@ export const DEFAULT_EXPLORE_FILTERS: FiltersState = {
  * - maxPrice: unknown pricePerKwh is excluded (cannot prove it is under the cap).
  * - minPowerKw / fastCharging: unknown-only power (getMaxPowerKw === 0 from nulls) does not meet a positive kW threshold.
  * - minChargers: unknown quantity (null) is excluded; never treated as 1 charger.
- * - connectorTypes: Unknown connector types do not match CCS2/Type 2/etc.
- * - openNow: hours.kind === "unknown" does not match.
+ *   A station with zero connector records has known-zero chargers (0) and matches
+ *   only a zero threshold (i.e. the filter off); a station whose connectors all have
+ *   unknown quantity is excluded from any positive threshold.
+ * - connectorTypes: Unknown connector types do not match CCS2/Type 2/etc. Selecting a
+ *   specific connector type therefore excludes unknown-type stations.
+ * - openNow: hours.kind === "unknown" does not match. Hours are evaluated in the
+ *   device-local timezone; station-local timezone is not modeled (limitation).
  * - lessBusy: empty busyWindows (cold start) does not match.
  * - distanceKm: invalid/missing coordinates yield Infinity and fail a finite radius check.
  */
@@ -191,6 +196,20 @@ export function resolveSelectedStation(
 ): Station | null {
   if (!selectedId) return null;
   return filtered.find((s) => s.id === selectedId) ?? all.find((s) => s.id === selectedId) ?? null;
+}
+
+/**
+ * Visible selection for list/map/preview. When search/filters remove the selected
+ * station from the visible set, the visible selection clears (no stale highlight,
+ * marker popup, or preview) while the raw selectedId is retained so clearing the
+ * search/filter restores it. Pure derivation — no state mutation, no refetch.
+ */
+export function visibleSelection(
+  selectedId: string | null,
+  filtered: readonly Station[]
+): string | null {
+  if (!selectedId) return null;
+  return filtered.some((s) => s.id === selectedId) ? selectedId : null;
 }
 
 export function stationDetailHref(id: string): string {
