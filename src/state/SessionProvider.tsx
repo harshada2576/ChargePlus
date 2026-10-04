@@ -10,13 +10,14 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import type { Alert, UserReport } from "@/data/types";
+import { supabase } from "@/lib/supabase";
 
 const SAVED_KEY = "chargeplus:saved";
 const ALERTS_KEY = "chargeplus:alerts";
 const REPORTS_KEY = "chargeplus:reports";
-const AUTH_KEY = "chargeplus:auth";
 
 export type AuthUser = {
+  /** Supabase Auth user id (auth.uid()). Never client-invented. */
   id: string;
   contact: string;
   kind: "phone" | "email";
@@ -28,7 +29,6 @@ type Ctx = {
   isAuthed: boolean;
   isAdmin: boolean;
   user: AuthUser | null;
-  signIn: (contact: string, kind: "phone" | "email", name?: string) => void;
   signOut: () => void;
   setMockRole: (role: "user" | "admin") => void;
 
@@ -47,6 +47,32 @@ type Ctx = {
 };
 
 const SessionContext = createContext<Ctx | null>(null);
+
+function toAuthUser(id: string, email?: string | null, phone?: string | null): AuthUser | null {
+  if (email) return { id, contact: email, kind: "email" };
+  if (phone) return { id, contact: phone, kind: "phone" };
+  return null;
+}
+
+/** Ensure the canonical profiles row exists for a freshly authenticated user. */
+async function ensureProfileRow(userId: string): Promise<void> {
+  try {
+    const { data, error } = await supabase.from("profiles").select("id").eq("id", userId).maybeSingle();
+    if (error || data) return;
+    await supabase.from("profiles").insert({ id: userId });
+  } catch {
+    // Profile sync is best-effort here; server writes surface their own errors.
+  }
+}
+
+function clearLocalPrototypeStores() {
+  try {
+    localStorage.removeItem(SAVED_KEY);
+    localStorage.removeItem(ALERTS_KEY);
+    localStorage.removeItem(REPORTS_KEY);
+    localStorage.removeItem(`${REPORTS_KEY}:reviews`);
+  } catch {}
+}
 
 function loadSet(key: string): Set<string> {
   try {
@@ -84,25 +110,59 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    let active = true;
+    // Prototype stores stay local until their steps; auth is real Supabase Auth.
+    // Synchronous state seeding stays out of the effect body (lint + perf).
     queueMicrotask(() => {
-      setUser(loadJSON<AuthUser | null>(AUTH_KEY, null));
+      if (!active) return;
       setSavedIds(loadSet(SAVED_KEY));
       setAlerts(loadJSON<Alert[]>(ALERTS_KEY, []));
       setReports(loadJSON<UserReport[]>(REPORTS_KEY, []));
       setReviews(loadJSON<typeof reviews>(`${REPORTS_KEY}:reviews`, []));
-      setHydrated(true);
     });
-  }, []);
 
-  const signIn = useCallback((contact: string, kind: "phone" | "email", name?: string) => {
-    const u: AuthUser = { id: `u-${Date.now()}`, contact, kind, name };
-    setUser(u);
-    saveJSON(AUTH_KEY, u);
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!active) return;
+        const u = data.session?.user;
+        setUser(u ? toAuthUser(u.id, u.email, u.phone) : null);
+        setHydrated(true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setUser(null);
+        setHydrated(true);
+      });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!active) return;
+      const u = session?.user;
+      if (u) {
+        setUser(toAuthUser(u.id, u.email, u.phone));
+        void ensureProfileRow(u.id);
+      } else {
+        // Sign-out: drop in-memory prototype state so the next device user
+        // never sees the previous user's saves, alerts, reports, or reviews.
+        setUser(null);
+        setSavedIds(new Set());
+        setAlerts([]);
+        setReports([]);
+        setReviews([]);
+        clearLocalPrototypeStores();
+      }
+    });
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = useCallback(() => {
-    setUser(null);
-    try { localStorage.removeItem(AUTH_KEY); } catch {}
+    // Server session ends here; local cleanup follows via onAuthStateChange.
+    void supabase.auth.signOut().catch(() => {});
   }, []);
 
   const isSaved = useCallback((id: string) => savedIds.has(id), [savedIds]);
@@ -158,12 +218,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // Prototype-only admin impersonation for the locked Admin console UI.
+  // Removed in Step 3.12 (real role comes from public.profiles via RLS).
+  // In-memory only: never persisted, never trusted for authorization.
   const setMockRole = useCallback((role: "user" | "admin") => {
     setUser((prev) => {
       const updated: AuthUser = prev
         ? { ...prev, role }
         : { id: "u-mock-admin", contact: "admin@chargeplus.in", kind: "email", name: "Admin Operator", role };
-      saveJSON(AUTH_KEY, updated);
       return updated;
     });
   }, []);
@@ -173,7 +235,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       isAuthed: !!user,
       isAdmin: user?.role === "admin",
       user,
-      signIn,
       signOut,
       setMockRole,
       savedIds: hydrated ? savedIds : new Set<string>(),
@@ -186,7 +247,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       reviews: hydrated ? reviews : [],
       addReview,
     }),
-    [user, hydrated, savedIds, alerts, reports, reviews, signIn, signOut, setMockRole, toggleSaved, isSaved, setAlertEnabled, addReport, addReview]
+    [user, hydrated, savedIds, alerts, reports, reviews, signOut, setMockRole, toggleSaved, isSaved, setAlertEnabled, addReport, addReview]
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
