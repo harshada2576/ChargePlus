@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/state/SessionProvider";
 import { SUPPORTED_LANGUAGES } from "@/i18n/dictionaries";
@@ -22,7 +22,31 @@ import { cx } from "@/lib/util";
 
 export function ProfileClient() {
   const { t, lang, setLang } = useI18n();
-  const { user, isAuthed, signOut, savedIds, reports, reviews, refreshProfile } = useSession();
+  const { user, isAuthed, signOut, savedIds, reviews, refreshProfile } = useSession();
+  const [reportCount, setReportCount] = useState<number | null>(null);
+
+  // Server-truth report count. Unknown (failed query) renders as "—".
+  // No synchronous reset here: when logged out this branch isn't rendered,
+  // and the effect refetches on every sign-in.
+  useEffect(() => {
+    let active = true;
+    if (!user) return;
+    void (async () => {
+      try {
+        const { count, error } = await supabase
+          .from("user_reports")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id);
+        if (!active) return;
+        setReportCount(error ? null : (count ?? 0));
+      } catch {
+        if (active) setReportCount(null);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [user]);
   const [editingName, setEditingName] = useState(false);
   const [draftName, setDraftName] = useState("");
   const [savingName, setSavingName] = useState(false);
@@ -162,7 +186,7 @@ export function ProfileClient() {
 
       <section className="mt-4 overflow-hidden rounded-[20px] border border-ink-100 bg-white shadow-card">
         <Row href="/saved" icon={<SavedIcon size={18} />} label={t("profile.saved")} value={String(savedIds.size)} />
-        <Row href="/reports" icon={<InboxIcon size={18} />} label={t("profile.reports")} value={String(reports.length)} />
+        <Row href="/reports" icon={<InboxIcon size={18} />} label={t("profile.reports")} value={reportCount == null ? "—" : String(reportCount)} />
         <Row href="/reviews" icon={<InfoIcon size={18} />} label={t("profile.reviews")} value={String(reviews.length)} />
         <Row href="/alerts" icon={<BellIcon size={18} />} label={t("profile.alerts")} value={null} />
         <Row href="/help" icon={<InfoIcon size={18} />} label={t("profile.help")} value={null} />
