@@ -76,8 +76,8 @@ We will also perform a conceptual check, not just a code check.
 
 ### Steps
 - 3.1 Replace hardcoded station dataset — COMPLETE / LOCKED
-- 3.2 Connect Explore/map — NEXT / READY TO START  
-- 3.3 Connect search/filter  
+- 3.2 Connect Explore/map — COMPLETE / LOCKED
+- 3.3 Connect search/filter — NEXT / READY TO START
 - 3.4 Connect station detail  
 - 3.5 Connect navigation handoff  
 - 3.6 Connect auth/OTP  
@@ -174,8 +174,8 @@ We will also perform a conceptual check, not just a code check.
 
 - **Current Phase**: Phase 3/6 — Connect the Locked Frontend
 - **Remaining Phases**: 3 (Phase 4: Warehouse, Analytics & Data Quality, Phase 5: Data Mining, Forecasting & Recommendations, Phase 6: Production & Public Beta)
-- **Current Step**: Step 3.1 COMPLETE / LOCKED — Ready for Step 3.2 (Connect Explore/map)
-- **Remaining Steps in Phase 3**: 11 (Steps 3.2 through 3.13)
+- **Current Step**: Step 3.2 COMPLETE / LOCKED — Ready for Step 3.3 (Connect search/filter)
+- **Remaining Steps in Phase 3**: 10 (Steps 3.3 through 3.13)
 
 ### What is complete:
 - **Phase 1 — Foundation & Real Database (Steps 1.1–1.10) — COMPLETE & SIGNED OFF**:
@@ -339,6 +339,12 @@ We will also perform a conceptual check, not just a code check.
     - Connected `src/app/station/[id]/page.tsx` to `fetchStationById(id)` with `notFound()` and dynamic generation.
     - 8 unit tests in `tests/test_station_adapter.mjs`; all 376 pytest tests, tsc, eslint, and next build passing cleanly.
     - Complete documentation in `docs/step_3_1_replace_hardcoded_station_dataset.md`.
+  - 3.2 Connect Explore/map — COMPLETE / LOCKED
+    - Wired `src/app/explore/ExploreClient.tsx` to live station data via `fetchStations()` (injectable client, honest loading/error-with-retry/empty states, unmount guard).
+    - Added `src/data/exploreQuery.ts` (filter/sort/GeoJSON/selection/load-state with explicit unknown-data policy; invalid coords never become markers).
+    - `src/components/MapLibreMap.tsx` handles live coordinates, clustering, bidirectional selection, and sanitized popups; distance sorting via honest `distanceKm`.
+    - 13 Explore/map tests plus adapter tests; tsc/eslint/build clean; pytest 376 passed; live anon check: 8 stations preserved.
+    - Complete documentation in `docs/step_3_2_implementation_report.md`.
 
 ### Concept check (Phase 3 Step 3.1 Verified)
 - Does the UI say only what the data supports? Yes (unknown power is null, missing price is null, unknown availability is null).
@@ -347,10 +353,8 @@ We will also perform a conceptual check, not just a code check.
 - Does the existing UX remain intact? Yes (design tokens, layout, cards, sheets, and views strictly preserved).
 
 ### What we are doing next:
-- **Phase 3 Step 3.2 — Connect Explore/map**:
-  - Wire `src/app/explore/ExploreClient.tsx` to live station data via `fetchStations()`.
-  - Provide resilient loading, empty, and error fallback states while preserving the locked visual design and tokens.
-  - Ensure `src/components/MapLibreMap.tsx` correctly handles live station coordinates, clustering, dynamic selection, and sanitized popups.
-  - Ensure distance calculations and sorting remain accurate with real GPS / Mumbai center coordinates.
-  - Verify with comprehensive test coverage, build gates, and live Supabase queries.
+- **Phase 3 Step 3.3 — Connect search/filter**:
+  - Build on the Step 3.2 canonical Explore foundation (`filterAndSortStations`, honest unknown-data policy).
+  - Wire the search entry point and filter panel end-to-end against live station records without redesigning the locked UX.
+  - Verify with focused tests, build gates, and live Supabase queries.
 
