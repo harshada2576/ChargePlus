@@ -25,6 +25,8 @@ export type AuthUser = {
 type Ctx = {
   isAuthed: boolean;
   isAdmin: boolean;
+  /** True once the initial session check resolved (gates wait for this). */
+  authReady: boolean;
   user: AuthUser | null;
   signOut: () => void;
   /** Re-read the canonical profile (e.g. after editing the display name). */
@@ -184,6 +186,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     () => ({
       isAuthed: !!user,
       isAdmin: user?.role === "admin",
+      authReady: hydrated,
       user,
       signOut,
       refreshProfile,
