@@ -210,68 +210,80 @@ export const STATIONS: Station[] = CANONICAL_STATIONS;
 export const REVIEWS: Review[] = [];
 
 /**
+ * Minimal query surface used by the canonical loaders.
+ * The production default is the Supabase anon client; tests inject a mock.
+ */
+export type StationDbClient = {
+  from: (table: string) => any;
+};
+
+/**
  * Fetch all stations and their connectors live from Supabase views.
  * Preserves unknown power as null, unknown connector availability as null,
  * and avoids conflating operational status with availability.
+ * Throws on query failure — never falls back to CANONICAL_STATIONS.
  */
-export async function fetchStations(): Promise<Station[]> {
-  try {
-    const [stationsRes, connectorsRes] = await Promise.all([
-      supabase.from("v_station_current_state").select("*"),
-      supabase.from("v_station_connectors").select("*"),
-    ]);
+export async function fetchStations(
+  client: StationDbClient = supabase
+): Promise<Station[]> {
+  const [stationsRes, connectorsRes] = await Promise.all([
+    client.from("v_station_current_state").select("*"),
+    client.from("v_station_connectors").select("*"),
+  ]);
 
-    if (stationsRes.error) {
-      console.error("fetchStations error:", stationsRes.error);
-      return CANONICAL_STATIONS;
-    }
-
-    const rawStations: DbStationRow[] = (stationsRes.data as DbStationRow[]) || [];
-    const rawConnectors: DbConnectorRow[] = (connectorsRes.data as DbConnectorRow[]) || [];
-
-    const connsByStation = new Map<string, DbConnectorRow[]>();
-    for (const c of rawConnectors) {
-      const list = connsByStation.get(c.station_id) ?? [];
-      list.push(c);
-      connsByStation.set(c.station_id, list);
-    }
-
-    return rawStations.map((st) =>
-      mapDbStationToStation(st, connsByStation.get(st.id) ?? [])
-    );
-  } catch (err) {
-    console.error("fetchStations unhandled error:", err);
-    return CANONICAL_STATIONS;
+  if (stationsRes.error) {
+    console.error("fetchStations error:", stationsRes.error);
+    throw new Error(`fetchStations error: ${stationsRes.error.message}`);
   }
+  if (connectorsRes.error) {
+    console.error("fetchStations connectors error:", connectorsRes.error);
+    throw new Error(`fetchStations error: ${connectorsRes.error.message}`);
+  }
+
+  const rawStations: DbStationRow[] = (stationsRes.data as DbStationRow[]) || [];
+  const rawConnectors: DbConnectorRow[] = (connectorsRes.data as DbConnectorRow[]) || [];
+
+  const connsByStation = new Map<string, DbConnectorRow[]>();
+  for (const c of rawConnectors) {
+    const list = connsByStation.get(c.station_id) ?? [];
+    list.push(c);
+    connsByStation.set(c.station_id, list);
+  }
+
+  return rawStations.map((st) =>
+    mapDbStationToStation(st, connsByStation.get(st.id) ?? [])
+  );
 }
 
 /**
  * Fetch a single station by UUID and its child connectors live from Supabase views.
  */
-export async function fetchStationById(id: string): Promise<Station | null> {
-  try {
-    const [stationRes, connectorsRes] = await Promise.all([
-      supabase.from("v_station_current_state").select("*").eq("id", id).maybeSingle(),
-      supabase.from("v_station_connectors").select("*").eq("station_id", id),
-    ]);
+export async function fetchStationById(
+  id: string,
+  client: StationDbClient = supabase
+): Promise<Station | null> {
+  const [stationRes, connectorsRes] = await Promise.all([
+    client.from("v_station_current_state").select("*").eq("id", id).maybeSingle(),
+    client.from("v_station_connectors").select("*").eq("station_id", id),
+  ]);
 
-    if (stationRes.error) {
-      console.error("fetchStationById query error:", stationRes.error);
-      return CANONICAL_STATIONS.find((s) => s.id === id) ?? null;
-    }
-
-    if (!stationRes.data) {
-      return null;
-    }
-
-    const rawStation = stationRes.data as DbStationRow;
-    const rawConnectors = (connectorsRes.data as DbConnectorRow[]) || [];
-
-    return mapDbStationToStation(rawStation, rawConnectors);
-  } catch (err) {
-    console.error("fetchStationById unhandled error:", err);
-    return CANONICAL_STATIONS.find((s) => s.id === id) ?? null;
+  if (stationRes.error) {
+    console.error("fetchStationById query error:", stationRes.error);
+    throw new Error(`fetchStationById error: ${stationRes.error.message}`);
   }
+  if (connectorsRes.error) {
+    console.error("fetchStationById connectors error:", connectorsRes.error);
+    throw new Error(`fetchStationById error: ${connectorsRes.error.message}`);
+  }
+
+  if (!stationRes.data) {
+    return null;
+  }
+
+  const rawStation = stationRes.data as DbStationRow;
+  const rawConnectors = (connectorsRes.data as DbConnectorRow[]) || [];
+
+  return mapDbStationToStation(rawStation, rawConnectors);
 }
 
 /**
@@ -290,9 +302,17 @@ export function getReviewsForStation(id: string): Review[] {
 
 /** Haversine distance in km */
 export function distanceKm(
-  a: { lat: number; lng: number },
-  b: { lat: number; lng: number }
+  a: { lat: number; lng: number } | null | undefined,
+  b: { lat: number; lng: number } | null | undefined
 ): number {
+  if (
+    !a || !b ||
+    typeof a.lat !== "number" || typeof a.lng !== "number" ||
+    typeof b.lat !== "number" || typeof b.lng !== "number" ||
+    isNaN(a.lat) || isNaN(a.lng) || isNaN(b.lat) || isNaN(b.lng)
+  ) {
+    return Number.POSITIVE_INFINITY;
+  }
   const R = 6371;
   const dLat = (b.lat - a.lat) * ARGS;
   const dLng = (b.lng - a.lng) * ARGS;
