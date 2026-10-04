@@ -59,7 +59,7 @@ Every entry should include:
     - Live Bounded Dry-Run: Succeeded (8 fetched, 0 writes, 8 linked)
     - Live Bounded Run-Once: Succeeded (Run ID `208d837a-f9ac-4bca-880c-96c6a57b8e04`, exactly 1 row persisted, 3 unknown-power connectors preserved)
 - **Phase**: Phase 3/6 — Connect the Locked Frontend.
-- **Current Step**: Step 3.9 — Connect reports — COMPLETE / LOCKED.
+- **Current Step**: Step 3.10 — Connect reviews — COMPLETE / LOCKED.
 - **Remaining Steps in Phase 3**: 9 steps (Steps 3.5 through 3.13: navigation handoff, auth/OTP, profiles, favorites, reports, reviews, alerts, admin data views, loading/empty/error states).
 - **Remaining Phases**: Phase 4 (Warehouse & Analytics), Phase 5 (ML & Queue Prediction), Phase 6 (Production & Operationalization).
 - **Current Baseline Status**:
@@ -67,7 +67,7 @@ Every entry should include:
   - Hardcoded fake stations replaced with real Supabase data layer (`src/data/stationAdapter.ts`, `src/data/stations.ts`).
   - Connector unknown power preserved as `null` in types and components.
   - MapLibre popup HTML injection sanitized via `escapeHtml`.
-  - Next Step: Step 3.10 — Connect reviews.
+  - Next Step: Step 3.11 — Connect alerts.
 
 
 ### Historical Progress Log
@@ -654,5 +654,13 @@ Every entry should include:
 - Conceptual verification: append-only observations, moderation server-side, reports never become station facts; RLS ownership inspected.
 - Blockers / waiting on: Same OTP-delivery dependency for live write verification.
 - Next step: Phase 3, Step 3.10 — Connect reviews.
+
+### 04 Oct 2026 — Phase 3 Step 3.10 Connect reviews
+- Phase / Step: Phase 3/6 — Step 3.10
+- What we built/changed: Server-persisted reviews (validation-first lib with insert-then-own-update, sanitized approved view, own list with status); detail renders approved reviews from a server prop; Reviews page on server rows with canonical join; fixed Mumbai fallback; server profile review count.
+- Current state: STEP 3.10 COMPLETE — 6/6 reviews tests pass; typecheck/lint clean; live writes await authenticated-user availability.
+- Conceptual verification: feedback never becomes availability/station facts; moderation server-side; unique-per-user enforced; public feed carries no user ids.
+- Blockers / waiting on: Same OTP-delivery dependency for live write verification.
+- Next step: Phase 3, Step 3.11 — Connect alerts.
 
 
