@@ -10,6 +10,8 @@ import {
 import { stationDetailHref } from "@/data/exploreQuery";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/state/SessionProvider";
+import { useToast } from "@/components/Toast";
+import { useRouter } from "next/navigation";
 import { StatusBadge } from "./StatusBadge";
 import { Button } from "./Button";
 import { HeartIcon, HeartFilledIcon, BoltIcon } from "./Icon";
@@ -27,7 +29,15 @@ export function StationCard({
 }) {
   const { t } = useI18n();
   const { toggleSaved, isSaved } = useSession();
+  const { show: showToast } = useToast();
+  const router = useRouter();
   const saved = isSaved(station.id);
+
+  async function handleToggleSaved() {
+    const res = await toggleSaved(station.id);
+    if (res === "login-required") router.push("/login");
+    else if (res === "error") showToast(t("errors.network.body"));
+  }
 
   const dist = userLocation
     ? distanceKm(userLocation, { lat: station.lat, lng: station.lng })
@@ -57,7 +67,7 @@ export function StationCard({
         <button
           type="button"
           aria-label={saved ? t("common.remove") : t("common.save")}
-          onClick={() => toggleSaved(station.id)}
+          onClick={handleToggleSaved}
           className={cx(
             "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors",
             saved
