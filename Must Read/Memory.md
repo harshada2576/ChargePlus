@@ -59,7 +59,7 @@ Every entry should include:
     - Live Bounded Dry-Run: Succeeded (8 fetched, 0 writes, 8 linked)
     - Live Bounded Run-Once: Succeeded (Run ID `208d837a-f9ac-4bca-880c-96c6a57b8e04`, exactly 1 row persisted, 3 unknown-power connectors preserved)
 - **Phase**: Phase 3/6 — Connect the Locked Frontend.
-- **Current Step**: Step 3.6 — Connect auth/OTP — COMPLETE / LOCKED.
+- **Current Step**: Step 3.7 — Connect profiles — COMPLETE / LOCKED.
 - **Remaining Steps in Phase 3**: 9 steps (Steps 3.5 through 3.13: navigation handoff, auth/OTP, profiles, favorites, reports, reviews, alerts, admin data views, loading/empty/error states).
 - **Remaining Phases**: Phase 4 (Warehouse & Analytics), Phase 5 (ML & Queue Prediction), Phase 6 (Production & Operationalization).
 - **Current Baseline Status**:
@@ -67,7 +67,7 @@ Every entry should include:
   - Hardcoded fake stations replaced with real Supabase data layer (`src/data/stationAdapter.ts`, `src/data/stations.ts`).
   - Connector unknown power preserved as `null` in types and components.
   - MapLibre popup HTML injection sanitized via `escapeHtml`.
-  - Next Step: Step 3.7 — Connect profiles.
+  - Next Step: Step 3.8 — Connect favorites.
 
 
 ### Historical Progress Log
@@ -630,5 +630,13 @@ Every entry should include:
 - Conceptual verification: passwordless preserved; phone retained with explicit dependency; no fake success; grants/RLS untouched.
 - Blockers / waiting on: SMS provider dashboard config (for phone delivery); a test contact for end-to-end OTP verification.
 - Next step: Phase 3, Step 3.7 — Connect profiles.
+
+### 04 Oct 2026 — Phase 3 Step 3.7 Connect profiles
+- Phase / Step: Phase 3/6 — Step 3.7
+- What we built/changed: Canonical profile helpers with CHECK-parity validation and role read-only mapping; session overlays server name/role with refreshProfile; inline display-name editor reusing locked styles and existing i18n keys.
+- Current state: STEP 3.7 COMPLETE — 6/6 profile tests pass; typecheck/lint clean; live writes await authenticated-user availability.
+- Conceptual verification: identity from Auth session only; role escalation impossible (grants + RLS + whitelist); unknown display name stays null.
+- Blockers / waiting on: Same OTP-delivery dependency as Step 3.6 for live write verification.
+- Next step: Phase 3, Step 3.8 — Connect favorites.
 
 
