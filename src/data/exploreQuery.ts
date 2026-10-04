@@ -213,7 +213,7 @@ export function visibleSelection(
 }
 
 export function stationDetailHref(id: string): string {
-  return `/station/${id}`;
+  return `/station/${encodeURIComponent(id)}`;
 }
 
 export type ExploreLoadState = "loading" | "error" | "empty" | "ready";
