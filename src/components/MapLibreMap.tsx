@@ -5,8 +5,9 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Station } from "@/data/types";
 import { MUMBAI_CENTER } from "@/data/stations";
+import { toStationGeoJSON } from "@/data/exploreQuery";
 import { PlusIcon, MinusIcon, CompassIcon, PinIcon } from "./Icon";
-import { cx, escapeHtml } from "@/lib/util";
+import { cx, escapeHtml, isValidCoordinate } from "@/lib/util";
 
 export type MapLibreMapProps = {
   stations: Station[];
@@ -24,6 +25,8 @@ export type MapLibreMapProps = {
 
 // MapLibre compatible no-key OpenFreeMap style (as specified in srs.md line 516)
 const TILE_STYLE_URL = "https://tiles.openfreemap.org/styles/bright";
+
+export { isValidCoordinate } from "@/lib/util";
 
 export function MapLibreMap({
   stations,
@@ -53,9 +56,10 @@ export function MapLibreMap({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    const center: [number, number] = singleStation
-      ? [singleStation.lng, singleStation.lat]
-      : initialCenter || [MUMBAI_CENTER.lng, MUMBAI_CENTER.lat];
+    const center: [number, number] =
+      singleStation && isValidCoordinate(singleStation.lat, singleStation.lng)
+        ? [singleStation.lng, singleStation.lat]
+        : initialCenter || [MUMBAI_CENTER.lng, MUMBAI_CENTER.lat];
     const zoom = singleStation ? 15 : (initialZoom ?? 11);
 
     const map = new maplibregl.Map({
@@ -76,29 +80,9 @@ export function MapLibreMap({
     );
 
     map.on("load", () => {
-      // Build GeoJSON features for all stations
+      // Build GeoJSON features for valid stations
       const featureStations = singleStation ? [singleStation] : stationsRef.current;
-      const geojson: GeoJSON.FeatureCollection = {
-        type: "FeatureCollection",
-        features: featureStations.map((s) => ({
-          type: "Feature",
-          id: s.id,
-          properties: {
-            id: s.id,
-            name: s.name,
-            operator: s.operator,
-            area: s.area,
-            status: s.status,
-            pricePerKwh: s.pricePerKwh,
-            isFree: s.isFree,
-            rating: s.rating,
-          },
-          geometry: {
-            type: "Point",
-            coordinates: [s.lng, s.lat],
-          },
-        })),
-      };
+      const geojson = toStationGeoJSON(featureStations);
 
       // Add clustered GeoJSON source
       map.addSource("stations", {
@@ -267,27 +251,7 @@ export function MapLibreMap({
     if (!source) return;
 
     const featureStations = singleStation ? [singleStation] : stations;
-    const geojson: GeoJSON.FeatureCollection = {
-      type: "FeatureCollection",
-      features: featureStations.map((s) => ({
-        type: "Feature",
-        id: s.id,
-        properties: {
-          id: s.id,
-          name: s.name,
-          operator: s.operator,
-          area: s.area,
-          status: s.status,
-          pricePerKwh: s.pricePerKwh,
-          isFree: s.isFree,
-          rating: s.rating,
-        },
-        geometry: {
-          type: "Point",
-          coordinates: [s.lng, s.lat],
-        },
-      })),
-    };
+    const geojson = toStationGeoJSON(featureStations);
 
     source.setData(geojson);
   }, [stations, singleStation]);
@@ -349,7 +313,7 @@ export function MapLibreMap({
     }
 
     const st = stations.find((s) => s.id === selectedId);
-    if (!st) return;
+    if (!st || !isValidCoordinate(st.lat, st.lng)) return;
 
     map.easeTo({
       center: [st.lng, st.lat],
@@ -379,11 +343,12 @@ export function MapLibreMap({
         ? "Broken"
         : "Unknown";
 
-    const priceText = st.isFree
-      ? "Free"
-      : st.pricePerKwh != null
-      ? `₹${st.pricePerKwh}/kWh`
-      : "—";
+    const priceText =
+      st.isFree === true
+        ? "Free"
+        : st.pricePerKwh != null
+        ? `₹${st.pricePerKwh}/kWh`
+        : "—";
 
     const popupNode = document.createElement("div");
     popupNode.className = "p-2 text-ink-900 font-sans";
@@ -426,7 +391,7 @@ export function MapLibreMap({
 
   const handleRecenter = useCallback(() => {
     if (!mapRef.current) return;
-    if (singleStation) {
+    if (singleStation && isValidCoordinate(singleStation.lat, singleStation.lng)) {
       mapRef.current.flyTo({
         center: [singleStation.lng, singleStation.lat],
         zoom: 15,
