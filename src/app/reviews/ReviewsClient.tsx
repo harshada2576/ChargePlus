@@ -15,7 +15,7 @@ import { AuthPrompt } from "../saved/SavedClient";
 
 export function ReviewsClient() {
   const { t } = useI18n();
-  const { user, isAuthed } = useSession();
+  const { user, isAuthed, authReady } = useSession();
   const [reviews, setReviews] = useState<OwnReview[]>([]);
   const [stations, setStations] = useState<Station[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +48,14 @@ export function ReviewsClient() {
       active = false;
     };
   }, [user, nonce]);
+
+  if (!authReady) {
+    return (
+      <div className="mx-auto max-w-screen-md px-4 py-10 sm:px-6">
+        <p className="text-center text-[13.5px] text-ink-600">{t("common.loading")}</p>
+      </div>
+    );
+  }
 
   if (!isAuthed) {
     return (
