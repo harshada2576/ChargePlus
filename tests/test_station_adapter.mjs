@@ -9,6 +9,7 @@ import {
   mapDbConnectorToConnector,
   mapDbStationToStation,
   normalizeConnectorType,
+  parseStationCoord,
 } from "../src/data/stationAdapter.ts";
 import { escapeHtml } from "../src/lib/util.ts";
 
@@ -193,4 +194,12 @@ test("escapeHtml sanitizes untrusted markup to prevent HTML injection", () => {
   assert.equal(escapeHtml("Tom & Jerry's \"Charger\""), 'Tom &amp; Jerry&#039;s &quot;Charger&quot;');
   assert.equal(escapeHtml(null), "");
   assert.equal(escapeHtml(undefined), "");
+});
+
+test("parseStationCoord does not coerce missing values to 0", () => {
+  assert.equal(Number.isNaN(parseStationCoord(null)), true);
+  assert.equal(Number.isNaN(parseStationCoord(undefined)), true);
+  assert.equal(Number.isNaN(parseStationCoord("")), true);
+  assert.equal(parseStationCoord(19.076), 19.076);
+  assert.equal(parseStationCoord("72.877"), 72.877);
 });
