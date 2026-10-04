@@ -32,7 +32,7 @@ Every entry should include:
 
 ## Current project state
 
-**PHASE 3 STEP 3.2 VERIFIED COMPLETE — READY FOR STEP 3.3 (2026-10-04)**
+**PHASE 3 STEP 3.3 VERIFIED COMPLETE — READY FOR STEP 3.4 (2026-10-04)**
 
 - **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF.
 - **Phase 2 (Real Data Ingestion & Data Quality, Steps 2.1–2.12)**: COMPLETE & LIVE VERIFIED.
@@ -59,15 +59,15 @@ Every entry should include:
     - Live Bounded Dry-Run: Succeeded (8 fetched, 0 writes, 8 linked)
     - Live Bounded Run-Once: Succeeded (Run ID `208d837a-f9ac-4bca-880c-96c6a57b8e04`, exactly 1 row persisted, 3 unknown-power connectors preserved)
 - **Phase**: Phase 3/6 — Connect the Locked Frontend.
-- **Current Step**: Step 3.2 — Connect Explore/map — COMPLETE / LOCKED.
-- **Remaining Steps in Phase 3**: 10 steps (Steps 3.3 through 3.13: search/filter, station detail, navigation handoff, auth/OTP, profiles, favorites, reports, reviews, alerts, admin data views, loading/empty/error states).
+- **Current Step**: Step 3.3 — Connect search/filter — COMPLETE / LOCKED.
+- **Remaining Steps in Phase 3**: 11 steps (Steps 3.3 through 3.13: search/filter, station detail, navigation handoff, auth/OTP, profiles, favorites, reports, reviews, alerts, admin data views, loading/empty/error states).
 - **Remaining Phases**: Phase 4 (Warehouse & Analytics), Phase 5 (ML & Queue Prediction), Phase 6 (Production & Operationalization).
 - **Current Baseline Status**:
   - Live Supabase: 8 canonical stations, 5 connectors, 8 source links, 0 fabricated observations, 3 ingestion runs.
   - Hardcoded fake stations replaced with real Supabase data layer (`src/data/stationAdapter.ts`, `src/data/stations.ts`).
   - Connector unknown power preserved as `null` in types and components.
   - MapLibre popup HTML injection sanitized via `escapeHtml`.
-  - Next Step: Step 3.3 — Connect search/filter.
+  - Next Step: Step 3.4 — Connect station detail.
 
 
 ### Historical Progress Log
@@ -599,6 +599,12 @@ Every entry should include:
 - Current state: STEP 3.2 VERIFIED COMPLETE — Explore list and map share one canonical collection; no mock fallback in path; live anon check: 8 stations, 3 null-power and 5 null-availability connectors preserved; typecheck/lint/build clean; pytest 376 passed.
 - Conceptual verification: list/map/selection/preview navigate by canonical id; unknown never classified as available/busy/free/CCS2/1-charger; invalid coords produce no markers; error is distinct from empty; spec-doc offline-fallback line deliberately not implemented (dishonest).
 - Blockers / waiting on: None.
-- Next step: Phase 3, Step 3.3 — Connect search/filter.
+### 04 Oct 2026 — Phase 3 Step 3.3 Connect search/filter
+- Phase / Step: Phase 3/6 — Step 3.3
+- What we built/changed: Fixed roadmap arithmetic (11 steps remain, 3.3-3.13); visibleSelection clears selection predictably when filtered out; stale map popup cleanup; FiltersPanel reset uses canonical defaults, dead syncOpen removed; documented per-filter unknown-data semantics and timezone limitation; 21 focused search/filter tests.
+- Current state: STEP 3.3 VERIFIED COMPLETE — search/filters/sort/counts/map/list/selection run on one canonical collection; typecheck/lint/build clean; node suites 43 passed (22 existing + 21 new); pytest 376 passed; live anon check: 8 stations, search preserves ids.
+- Conceptual verification: unknown never matches as available/free/fast/known-count/specific-type/open; invalid coords never become markers; empty filter result is distinct from query failure; no fabrication in path (closed-world test).
+- Blockers / waiting on: None.
+- Next step: Phase 3, Step 3.4 — Connect station detail.
 
 
