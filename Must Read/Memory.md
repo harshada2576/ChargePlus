@@ -59,7 +59,7 @@ Every entry should include:
     - Live Bounded Dry-Run: Succeeded (8 fetched, 0 writes, 8 linked)
     - Live Bounded Run-Once: Succeeded (Run ID `208d837a-f9ac-4bca-880c-96c6a57b8e04`, exactly 1 row persisted, 3 unknown-power connectors preserved)
 - **Phase**: Phase 3/6 — Connect the Locked Frontend.
-- **Current Step**: Step 3.12 — Connect admin data views — COMPLETE / LOCKED.
+- **Current Step**: Step 3.13 — Test loading/empty/error states — COMPLETE / LOCKED.
 - **Remaining Steps in Phase 3**: 9 steps (Steps 3.5 through 3.13: navigation handoff, auth/OTP, profiles, favorites, reports, reviews, alerts, admin data views, loading/empty/error states).
 - **Remaining Phases**: Phase 4 (Warehouse & Analytics), Phase 5 (ML & Queue Prediction), Phase 6 (Production & Operationalization).
 - **Current Baseline Status**:
@@ -67,7 +67,7 @@ Every entry should include:
   - Hardcoded fake stations replaced with real Supabase data layer (`src/data/stationAdapter.ts`, `src/data/stations.ts`).
   - Connector unknown power preserved as `null` in types and components.
   - MapLibre popup HTML injection sanitized via `escapeHtml`.
-  - Next Step: Step 3.13 — Test loading/empty/error states against real data.
+  - Next Step: Phase 3 final end-to-end audit and closure decision.
 
 
 ### Historical Progress Log
@@ -678,5 +678,13 @@ Every entry should include:
 - Conceptual verification: privilege only from profiles.role via RLS; moderation records identity; unmeasured phases show unavailable, never invented.
 - Blockers / waiting on: A real admin-role account for live console verification.
 - Next step: Phase 3, Step 3.13 — Test loading/empty/error states against real data.
+
+### 04 Oct 2026 — Phase 3 Step 3.13 States audit
+- Phase / Step: Phase 3/6 — Step 3.13
+- What we built/changed: authReady session-readiness flag; all gated surfaces (Saved, Alerts, Reports, Reviews, Profile, Admin) show loading until ready instead of flashing logged-out UI; full audit matrix recorded; admin role-overlay transient documented.
+- Current state: STEP 3.13 COMPLETE — node suites 117/117; tsc/lint/build clean; pytest 376 passed; live anon checks passed.
+- Conceptual verification: every surface distinguishes loading/error/empty/ready; failure never masquerades as empty; no new pure logic needed dedicated tests.
+- Blockers / waiting on: None for 3.13.
+- Next step: Phase 3 final end-to-end audit and closure decision.
 
 
