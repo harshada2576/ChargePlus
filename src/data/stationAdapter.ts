@@ -15,8 +15,8 @@ export type DbStationRow = {
   state?: string | null;
   postal_code?: string | null;
   country?: string | null;
-  latitude: number | string;
-  longitude: number | string;
+  latitude: number | string | null;
+  longitude: number | string | null;
   geom?: string | null;
   is_24_hours?: boolean | null;
   opening_time?: string | null;
@@ -235,6 +235,16 @@ export function mapDbConnectorToConnector(
   };
 }
 
+/**
+ * Parse a coordinate without coercing missing values to 0.
+ * Number(null) === 0 would place a station on the Equator/Prime Meridian.
+ */
+export function parseStationCoord(value: unknown): number {
+  if (value == null || value === "") return Number.NaN;
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n : Number.NaN;
+}
+
 export function mapDbStationToStation(
   row: DbStationRow,
   connectors: DbConnectorRow[] = []
@@ -266,8 +276,8 @@ export function mapDbStationToStation(
     operator,
     area,
     address,
-    lat: Number(row.latitude),
-    lng: Number(row.longitude),
+    lat: parseStationCoord(row.latitude),
+    lng: parseStationCoord(row.longitude),
     status,
     minutesSinceUpdate,
     connectors: mappedConnectors,
