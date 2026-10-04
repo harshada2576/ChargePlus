@@ -32,7 +32,7 @@ Every entry should include:
 
 ## Current project state
 
-**PHASE 3 STEP 3.1 VERIFIED COMPLETE & AUDITED — READY FOR STEP 3.2 (2026-10-03)**
+**PHASE 3 STEP 3.2 VERIFIED COMPLETE — READY FOR STEP 3.3 (2026-10-04)**
 
 - **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF.
 - **Phase 2 (Real Data Ingestion & Data Quality, Steps 2.1–2.12)**: COMPLETE & LIVE VERIFIED.
@@ -59,15 +59,15 @@ Every entry should include:
     - Live Bounded Dry-Run: Succeeded (8 fetched, 0 writes, 8 linked)
     - Live Bounded Run-Once: Succeeded (Run ID `208d837a-f9ac-4bca-880c-96c6a57b8e04`, exactly 1 row persisted, 3 unknown-power connectors preserved)
 - **Phase**: Phase 3/6 — Connect the Locked Frontend.
-- **Current Step**: Step 3.1 — Replace hardcoded station dataset — COMPLETE / LOCKED.
-- **Remaining Steps in Phase 3**: 11 steps (Steps 3.2 through 3.13: Explore/map, search/filter, station detail, navigation handoff, auth/OTP, profiles, favorites, reports, reviews, alerts, admin data views, loading/empty/error states).
+- **Current Step**: Step 3.2 — Connect Explore/map — COMPLETE / LOCKED.
+- **Remaining Steps in Phase 3**: 10 steps (Steps 3.3 through 3.13: search/filter, station detail, navigation handoff, auth/OTP, profiles, favorites, reports, reviews, alerts, admin data views, loading/empty/error states).
 - **Remaining Phases**: Phase 4 (Warehouse & Analytics), Phase 5 (ML & Queue Prediction), Phase 6 (Production & Operationalization).
 - **Current Baseline Status**:
   - Live Supabase: 8 canonical stations, 5 connectors, 8 source links, 0 fabricated observations, 3 ingestion runs.
   - Hardcoded fake stations replaced with real Supabase data layer (`src/data/stationAdapter.ts`, `src/data/stations.ts`).
   - Connector unknown power preserved as `null` in types and components.
   - MapLibre popup HTML injection sanitized via `escapeHtml`.
-  - Next Step: Step 3.2 — Connect Explore/map.
+  - Next Step: Step 3.3 — Connect search/filter.
 
 
 ### Historical Progress Log
@@ -592,5 +592,13 @@ Every entry should include:
   - Are reviews fabricated? No (0 fake reviews, honest empty state).
 - Blockers / waiting on: None.
 - Next step: Phase 3, Step 3.2 — Connect Explore/map.
+
+### 04 Oct 2026 — Phase 3 Step 3.2 Connect Explore/map
+- Phase / Step: Phase 3/6 — Step 3.2
+- What we built/changed: Wired Explore/map to canonical loaders (fetchStations, injectable client); new src/data/exploreQuery.ts (filter/sort/GeoJSON/selection/load-state, explicit unknown-data policy); honest loading/error-with-retry/empty states; coordinate validation (parseStationCoord, isValidCoordinate); popup escaping preserved; 13 Explore/map tests plus loader hooks.
+- Current state: STEP 3.2 VERIFIED COMPLETE — Explore list and map share one canonical collection; no mock fallback in path; live anon check: 8 stations, 3 null-power and 5 null-availability connectors preserved; typecheck/lint/build clean; pytest 376 passed.
+- Conceptual verification: list/map/selection/preview navigate by canonical id; unknown never classified as available/busy/free/CCS2/1-charger; invalid coords produce no markers; error is distinct from empty; spec-doc offline-fallback line deliberately not implemented (dishonest).
+- Blockers / waiting on: None.
+- Next step: Phase 3, Step 3.3 — Connect search/filter.
 
 
