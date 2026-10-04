@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/state/SessionProvider";
 import { SUPPORTED_LANGUAGES } from "@/i18n/dictionaries";
 import type { LanguageCode } from "@/i18n/types";
+import { supabase } from "@/lib/supabase";
+import { updateDisplayName } from "@/lib/profiles";
 import { BrandMark } from "@/components/BrandMark";
 import {
   ChevronRightIcon,
@@ -19,7 +22,26 @@ import { cx } from "@/lib/util";
 
 export function ProfileClient() {
   const { t, lang, setLang } = useI18n();
-  const { user, isAuthed, signOut, savedIds, reports, reviews } = useSession();
+  const { user, isAuthed, signOut, savedIds, reports, reviews, refreshProfile } = useSession();
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState("");
+  const [savingName, setSavingName] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+
+  async function saveName() {
+    if (!user || savingName) return;
+    setSavingName(true);
+    setNameError(null);
+    try {
+      await updateDisplayName(supabase, user.id, draftName);
+      refreshProfile();
+      setEditingName(false);
+    } catch (err) {
+      setNameError(err instanceof Error ? err.message : "Could not save. Try again.");
+    } finally {
+      setSavingName(false);
+    }
+  }
 
   if (!isAuthed) {
     return (
@@ -57,9 +79,58 @@ export function ProfileClient() {
             <UserIcon size={22} />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-[15px] font-semibold text-ink-900">
-              {user?.name || user?.contact || "ChargePlus driver"}
-            </p>
+            {editingName ? (
+              <div>
+                <label className="block">
+                  <span className="sr-only">{t("profile.name")}</span>
+                  <input
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    maxLength={120}
+                    placeholder={user?.name || user?.contact}
+                    className="h-10 w-full rounded-[12px] border border-ink-200 bg-white px-3 text-[14px] text-ink-900 placeholder:text-ink-400 focus-visible:border-coral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-600/30"
+                  />
+                </label>
+                {nameError && (
+                  <p className="mt-1.5 text-[12px] text-status-broken">{nameError}</p>
+                )}
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={saveName}
+                    disabled={savingName}
+                    className="inline-flex h-9 items-center rounded-full bg-coral-600 px-4 text-[13px] font-medium text-white hover:bg-coral-700 disabled:bg-coral-300"
+                  >
+                    {t("common.save")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingName(false);
+                      setNameError(null);
+                    }}
+                    className="inline-flex h-9 items-center rounded-full border border-ink-200 bg-white px-4 text-[13px] font-medium text-ink-700 hover:bg-ink-50"
+                  >
+                    {t("common.cancel")}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setDraftName(user?.name && user.name !== user.contact ? user.name : "");
+                  setNameError(null);
+                  setEditingName(true);
+                }}
+                className="block min-w-0 text-left"
+                aria-label={t("profile.name")}
+              >
+                <p className="truncate text-[15px] font-semibold text-ink-900">
+                  {user?.name || user?.contact || "ChargePlus driver"}
+                </p>
+              </button>
+            )}
             <p className="truncate text-[12.5px] text-ink-600">
               {user?.kind === "email" ? user?.contact : `+${(user?.contact || "").replace(/^\+/, "")}`}
             </p>
