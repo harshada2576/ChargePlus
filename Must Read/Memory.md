@@ -59,7 +59,7 @@ Every entry should include:
     - Live Bounded Dry-Run: Succeeded (8 fetched, 0 writes, 8 linked)
     - Live Bounded Run-Once: Succeeded (Run ID `208d837a-f9ac-4bca-880c-96c6a57b8e04`, exactly 1 row persisted, 3 unknown-power connectors preserved)
 - **Phase**: Phase 3/6 — Connect the Locked Frontend.
-- **Current Step**: Step 3.8 — Connect favorites — COMPLETE / LOCKED.
+- **Current Step**: Step 3.9 — Connect reports — COMPLETE / LOCKED.
 - **Remaining Steps in Phase 3**: 9 steps (Steps 3.5 through 3.13: navigation handoff, auth/OTP, profiles, favorites, reports, reviews, alerts, admin data views, loading/empty/error states).
 - **Remaining Phases**: Phase 4 (Warehouse & Analytics), Phase 5 (ML & Queue Prediction), Phase 6 (Production & Operationalization).
 - **Current Baseline Status**:
@@ -67,7 +67,7 @@ Every entry should include:
   - Hardcoded fake stations replaced with real Supabase data layer (`src/data/stationAdapter.ts`, `src/data/stations.ts`).
   - Connector unknown power preserved as `null` in types and components.
   - MapLibre popup HTML injection sanitized via `escapeHtml`.
-  - Next Step: Step 3.9 — Connect reports.
+  - Next Step: Step 3.10 — Connect reviews.
 
 
 ### Historical Progress Log
@@ -646,5 +646,13 @@ Every entry should include:
 - Conceptual verification: ownership server-enforced (auth.uid + PK); empty distinct from error; sign-out leak closed.
 - Blockers / waiting on: Same OTP-delivery dependency for live write verification.
 - Next step: Phase 3, Step 3.9 — Connect reports.
+
+### 04 Oct 2026 — Phase 3 Step 3.9 Connect reports
+- Phase / Step: Phase 3/6 — Step 3.9
+- What we built/changed: Server-persisted user_reports (validation-first lib, real form submit, own-reports page on canonical join, server profile count); fixed hardcoded Mumbai fallback; provider local reports retained only for the admin prototype queue until 3.12.
+- Current state: STEP 3.9 COMPLETE — 4/4 reports tests pass; typecheck/lint clean; live writes await authenticated-user availability.
+- Conceptual verification: append-only observations, moderation server-side, reports never become station facts; RLS ownership inspected.
+- Blockers / waiting on: Same OTP-delivery dependency for live write verification.
+- Next step: Phase 3, Step 3.10 — Connect reviews.
 
 
