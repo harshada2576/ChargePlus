@@ -14,6 +14,7 @@ import {
   getMaxPowerKw,
   getTotalChargers,
 } from "@/data/stations";
+import { stationDetailHref } from "@/data/exploreQuery";
 
 export function StationPreviewSheet({
   station,
@@ -98,7 +99,7 @@ export function StationPreviewSheet({
       </div>
 
       <div className="mt-5">
-        <Link href={`/station/${station.id}`} onClick={onClose} className="block">
+        <Link href={stationDetailHref(station.id)} onClick={onClose} className="block">
           <Button block size="lg" variant="primary">
             {t("common.viewStation")}
           </Button>
