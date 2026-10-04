@@ -22,7 +22,7 @@ import { cx } from "@/lib/util";
 
 export function ProfileClient() {
   const { t, lang, setLang } = useI18n();
-  const { user, isAuthed, signOut, savedIds, refreshProfile } = useSession();
+  const { user, isAuthed, signOut, savedIds, refreshProfile, authReady } = useSession();
   const [reportCount, setReportCount] = useState<number | null>(null);
   const [reviewCount, setReviewCount] = useState<number | null>(null);
 
@@ -70,6 +70,14 @@ export function ProfileClient() {
     } finally {
       setSavingName(false);
     }
+  }
+
+  if (!authReady) {
+    return (
+      <div className="mx-auto max-w-screen-md px-4 py-10 sm:px-6">
+        <p className="text-center text-[13.5px] text-ink-600">{t("common.loading")}</p>
+      </div>
+    );
   }
 
   if (!isAuthed) {
