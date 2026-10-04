@@ -7,6 +7,7 @@ import {
   DEFAULT_EXPLORE_FILTERS,
   filterAndSortStations,
   resolveSelectedStation,
+  visibleSelection,
 } from "@/data/exploreQuery";
 import type {
   FiltersState,
@@ -116,9 +117,17 @@ export function ExploreClient() {
     [stations, query, filters, sort, userLoc]
   );
 
+  // Visible selection clears predictably when search/filters remove the station
+  // from results (no stale highlight, popup, or preview); the raw selectedId is
+  // retained so resetting search/filters restores it without refetching.
+  const visibleSelectedId = useMemo(
+    () => visibleSelection(selectedId, filtered),
+    [selectedId, filtered]
+  );
+
   const selectedStation = useMemo(
-    () => resolveSelectedStation(selectedId, filtered, stations),
-    [filtered, stations, selectedId]
+    () => resolveSelectedStation(visibleSelectedId, filtered, stations),
+    [filtered, stations, visibleSelectedId]
   );
 
   const activeChips = useMemo(() => buildChips(filters, setFilters, t), [filters, t]);
@@ -189,7 +198,7 @@ export function ExploreClient() {
           <div className="h-[44vh] min-h-[320px] lg:h-[calc(100vh-9rem)] lg:min-h-[560px] lg:max-h-[760px]">
             <MapLibreMap
               stations={filtered}
-              selectedId={selectedId}
+              selectedId={visibleSelectedId}
               onSelect={(id) => setSelectedId(id)}
               userLocation={userLoc}
             />
@@ -333,12 +342,12 @@ export function ExploreClient() {
                   key={s.id}
                   onClick={() => setSelectedId(s.id)}
                   className="block w-full text-left"
-                  aria-pressed={selectedId === s.id}
+                  aria-pressed={visibleSelectedId === s.id}
                 >
                   <div
                     className={cx(
                       "rounded-[18px]",
-                      selectedId === s.id && "ring-2 ring-coral-600 ring-offset-2 ring-offset-ink-50"
+                      visibleSelectedId === s.id && "ring-2 ring-coral-600 ring-offset-2 ring-offset-ink-50"
                     )}
                   >
                     <StationCard station={s} userLocation={userLoc} />
