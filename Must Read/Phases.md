@@ -80,7 +80,7 @@ We will also perform a conceptual check, not just a code check.
 - 3.3 Connect search/filter — COMPLETE / LOCKED
 - 3.4 Connect station detail — COMPLETE / LOCKED
 - 3.5 Connect navigation handoff — COMPLETE / LOCKED
-- 3.6 Connect auth/OTP — NEXT / READY TO START
+- 3.6 Connect auth/OTP — COMPLETE / LOCKED
 - 3.5 Connect navigation handoff  
 - 3.6 Connect auth/OTP  
 - 3.7 Connect profiles  
@@ -176,8 +176,8 @@ We will also perform a conceptual check, not just a code check.
 
 - **Current Phase**: Phase 3/6 — Connect the Locked Frontend
 - **Remaining Phases**: 3 (Phase 4: Warehouse, Analytics & Data Quality, Phase 5: Data Mining, Forecasting & Recommendations, Phase 6: Production & Public Beta)
-- **Current Step**: Step 3.5 COMPLETE / LOCKED — Ready for Step 3.6 (Connect auth/OTP)
-- **Remaining Steps in Phase 3**: 8 (Steps 3.6 through 3.13)
+- **Current Step**: Step 3.6 COMPLETE / LOCKED — Ready for Step 3.7 (Connect profiles)
+- **Remaining Steps in Phase 3**: 7 (Steps 3.7 through 3.13)
 
 ### What is complete:
 - **Phase 1 — Foundation & Real Database (Steps 1.1–1.10) — COMPLETE & SIGNED OFF**:
