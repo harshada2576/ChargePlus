@@ -39,3 +39,20 @@ export function isValidCoordinate(lat: unknown, lng: unknown): boolean {
   return true;
 }
 
+/**
+ * Pure external-map URL builder. Returns null when coordinates are invalid so
+ * callers never navigate to a fabricated location. Safe protocols only
+ * (https / geo); the place name is encoded, coordinates are validated numbers.
+ */
+export function externalMapUrl(
+  kind: "google" | "apple" | "geo",
+  s: { lat: number; lng: number; name: string }
+): string | null {
+  if (!isValidCoordinate(s.lat, s.lng)) return null;
+  const { lat, lng } = s;
+  if (kind === "google")
+    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+  if (kind === "apple") return `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
+  return `geo:${lat},${lng}?q=${encodeURIComponent(s.name)}`;
+}
+
