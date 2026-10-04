@@ -209,6 +209,10 @@ export const STATIONS: Station[] = CANONICAL_STATIONS;
 /** Zero fabricated reviews. Empty array represents honest cold-start state. */
 export const REVIEWS: Review[] = [];
 
+/** Canonical station IDs are UUIDs; anything else can never match. */
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Minimal query surface used by the canonical loaders.
  * The production default is the Supabase anon client; tests inject a mock.
@@ -257,11 +261,17 @@ export async function fetchStations(
 
 /**
  * Fetch a single station by UUID and its child connectors live from Supabase views.
+ * A malformed UUID can never match a canonical record, so it returns null
+ * (not-found downstream) instead of issuing a query that the database rejects.
+ * Genuine query failures throw and are handled by the route error boundary.
  */
 export async function fetchStationById(
   id: string,
   client: StationDbClient = supabase
 ): Promise<Station | null> {
+  if (!UUID_RE.test(id)) {
+    return null;
+  }
   const [stationRes, connectorsRes] = await Promise.all([
     client.from("v_station_current_state").select("*").eq("id", id).maybeSingle(),
     client.from("v_station_connectors").select("*").eq("station_id", id),
