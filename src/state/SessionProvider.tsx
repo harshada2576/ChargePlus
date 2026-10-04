@@ -12,8 +12,8 @@ import type { ReactNode } from "react";
 import type { Alert, UserReport } from "@/data/types";
 import { supabase } from "@/lib/supabase";
 import { fetchProfile } from "@/lib/profiles";
+import { addFavorite, listFavorites, removeFavorite } from "@/lib/favorites";
 
-const SAVED_KEY = "chargeplus:saved";
 const ALERTS_KEY = "chargeplus:alerts";
 const REPORTS_KEY = "chargeplus:reports";
 
@@ -36,7 +36,8 @@ type Ctx = {
   setMockRole: (role: "user" | "admin") => void;
 
   savedIds: Set<string>;
-  toggleSaved: (id: string) => void;
+  /** Server-persisted toggle. Unauthenticated callers get "login-required". */
+  toggleSaved: (id: string) => Promise<"saved" | "removed" | "login-required" | "error">;
   isSaved: (id: string) => boolean;
 
   alerts: Alert[];
@@ -70,22 +71,10 @@ async function ensureProfileRow(userId: string): Promise<void> {
 
 function clearLocalPrototypeStores() {
   try {
-    localStorage.removeItem(SAVED_KEY);
     localStorage.removeItem(ALERTS_KEY);
     localStorage.removeItem(REPORTS_KEY);
     localStorage.removeItem(`${REPORTS_KEY}:reviews`);
   } catch {}
-}
-
-function loadSet(key: string): Set<string> {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return new Set();
-    const arr = JSON.parse(raw) as string[];
-    return new Set(arr);
-  } catch {
-    return new Set();
-  }
 }
 
 function loadJSON<T>(key: string, fallback: T): T {
@@ -118,11 +107,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     // Synchronous state seeding stays out of the effect body (lint + perf).
     queueMicrotask(() => {
       if (!active) return;
-      setSavedIds(loadSet(SAVED_KEY));
       setAlerts(loadJSON<Alert[]>(ALERTS_KEY, []));
       setReports(loadJSON<UserReport[]>(REPORTS_KEY, []));
       setReviews(loadJSON<typeof reviews>(`${REPORTS_KEY}:reviews`, []));
     });
+
+    async function reloadFavorites(userId: string | null) {
+      if (!active || !userId) {
+        if (active) setSavedIds(new Set());
+        return;
+      }
+      try {
+        const ids = await listFavorites(supabase, userId);
+        if (active) setSavedIds(new Set(ids));
+      } catch {
+        if (active) setSavedIds(new Set());
+      }
+    }
 
     supabase.auth
       .getSession()
@@ -131,7 +132,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         const u = data.session?.user;
         setUser(u ? toAuthUser(u.id, u.email, u.phone) : null);
         setHydrated(true);
-        if (u) void applyCanonicalProfile(u.id);
+        if (u) {
+          void applyCanonicalProfile(u.id);
+          void reloadFavorites(u.id);
+        } else {
+          setSavedIds(new Set());
+        }
       })
       .catch(() => {
         if (!active) return;
@@ -161,6 +167,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setUser(toAuthUser(u.id, u.email, u.phone));
         void ensureProfileRow(u.id);
         void applyCanonicalProfile(u.id);
+        void reloadFavorites(u.id);
       } else {
         // Sign-out: drop in-memory prototype state so the next device user
         // never sees the previous user's saves, alerts, reports, or reviews.
@@ -201,15 +208,31 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const isSaved = useCallback((id: string) => savedIds.has(id), [savedIds]);
 
-  const toggleSaved = useCallback((id: string) => {
-    setSavedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      saveJSON(SAVED_KEY, [...next]);
-      return next;
-    });
-  }, []);
+  const toggleSaved = useCallback(
+    async (stationId: string): Promise<"saved" | "removed" | "login-required" | "error"> => {
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
+      if (!authUser) return "login-required";
+      try {
+        if (savedIds.has(stationId)) {
+          await removeFavorite(supabase, authUser.id, stationId);
+          setSavedIds((prev) => {
+            const next = new Set(prev);
+            next.delete(stationId);
+            return next;
+          });
+          return "removed";
+        }
+        await addFavorite(supabase, authUser.id, stationId);
+        setSavedIds((prev) => new Set(prev).add(stationId));
+        return "saved";
+      } catch {
+        return "error";
+      }
+    },
+    [savedIds]
+  );
 
   const setAlertEnabled = useCallback(
     (stationId: string, type: Alert["type"], enabled: boolean) => {
