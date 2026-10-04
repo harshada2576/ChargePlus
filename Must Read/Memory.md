@@ -32,7 +32,7 @@ Every entry should include:
 
 ## Current project state
 
-**PHASE 3 STEP 3.3 VERIFIED COMPLETE — READY FOR STEP 3.4 (2026-10-04)**
+**PHASE 3 STEP 3.4 VERIFIED COMPLETE — READY FOR STEP 3.5 (2026-10-04)**
 
 - **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF.
 - **Phase 2 (Real Data Ingestion & Data Quality, Steps 2.1–2.12)**: COMPLETE & LIVE VERIFIED.
@@ -59,7 +59,7 @@ Every entry should include:
     - Live Bounded Dry-Run: Succeeded (8 fetched, 0 writes, 8 linked)
     - Live Bounded Run-Once: Succeeded (Run ID `208d837a-f9ac-4bca-880c-96c6a57b8e04`, exactly 1 row persisted, 3 unknown-power connectors preserved)
 - **Phase**: Phase 3/6 — Connect the Locked Frontend.
-- **Current Step**: Step 3.3 — Connect search/filter — COMPLETE / LOCKED.
+- **Current Step**: Step 3.4 — Connect station detail — COMPLETE / LOCKED.
 - **Remaining Steps in Phase 3**: 11 steps (Steps 3.3 through 3.13: search/filter, station detail, navigation handoff, auth/OTP, profiles, favorites, reports, reviews, alerts, admin data views, loading/empty/error states).
 - **Remaining Phases**: Phase 4 (Warehouse & Analytics), Phase 5 (ML & Queue Prediction), Phase 6 (Production & Operationalization).
 - **Current Baseline Status**:
@@ -67,7 +67,7 @@ Every entry should include:
   - Hardcoded fake stations replaced with real Supabase data layer (`src/data/stationAdapter.ts`, `src/data/stations.ts`).
   - Connector unknown power preserved as `null` in types and components.
   - MapLibre popup HTML injection sanitized via `escapeHtml`.
-  - Next Step: Step 3.4 — Connect station detail.
+  - Next Step: Step 3.5 — Connect navigation handoff.
 
 
 ### Historical Progress Log
@@ -606,5 +606,13 @@ Every entry should include:
 - Conceptual verification: unknown never matches as available/free/fast/known-count/specific-type/open; invalid coords never become markers; empty filter result is distinct from query failure; no fabrication in path (closed-world test).
 - Blockers / waiting on: None.
 - Next step: Phase 3, Step 3.4 — Connect station detail.
+
+### 04 Oct 2026 — Phase 3 Step 3.4 Connect station detail
+- Phase / Step: Phase 3/6 — Step 3.4
+- What we built/changed: fetchStationById returns null for malformed UUIDs without querying; new station error.tsx boundary (query failure shows retry card, no-match shows notFound); detail hides navigation/map on invalid coords; externalMapUrl pure helper; fixed review-button label, formatMinutesAgo arithmetic, isFree check; 18 detail tests.
+- Current state: STEP 3.4 VERIFIED COMPLETE — record/404/error distinct; all fields honest; node 61 passed; tsc/lint/build clean; pytest 376 passed; live anon check passed with zero writes.
+- Conceptual verification: no fabricated fallback reachable (closed-world + throw-on-error + malformed-null tests); unknown stays unknown across identity/connectors/pricing/hours/freshness/reviews; prototype save/report/review stay local and explicit.
+- Blockers / waiting on: None.
+- Next step: Phase 3, Step 3.5 — Connect navigation handoff.
 
 
