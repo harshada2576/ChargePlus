@@ -30,3 +30,12 @@ export function escapeHtml(str: string | null | undefined): string {
     .replace(/'/g, "&#039;");
 }
 
+/** Validate geographic coordinates, rejecting non-numbers, NaN, Null Island (0,0), and out-of-range coordinates. */
+export function isValidCoordinate(lat: unknown, lng: unknown): boolean {
+  if (typeof lat !== "number" || typeof lng !== "number") return false;
+  if (isNaN(lat) || isNaN(lng)) return false;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return false;
+  if (lat === 0 && lng === 0) return false;
+  return true;
+}
+
