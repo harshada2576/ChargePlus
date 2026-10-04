@@ -313,7 +313,15 @@ export function MapLibreMap({
     }
 
     const st = stations.find((s) => s.id === selectedId);
-    if (!st || !isValidCoordinate(st.lat, st.lng)) return;
+    if (!st || !isValidCoordinate(st.lat, st.lng)) {
+      // Selection left the visible set (filtered out or reloaded away):
+      // never leave a stale popup behind.
+      if (popupRef.current) {
+        popupRef.current.remove();
+        popupRef.current = null;
+      }
+      return;
+    }
 
     map.easeTo({
       center: [st.lng, st.lat],
