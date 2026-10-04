@@ -45,12 +45,20 @@ export function StationDetail({ station }: { station: Station }) {
   // Without them the actions are omitted; area/address text still renders.
   const hasCoords = isValidCoordinate(station.lat, station.lng);
 
-  function handleSave() {
+  async function handleSave() {
     if (!isAuthed) {
       setAuthPromptOpen("save");
       return;
     }
-    toggleSaved(station.id);
+    const res = await toggleSaved(station.id);
+    if (res === "login-required") {
+      setAuthPromptOpen("save");
+      return;
+    }
+    if (res === "error") {
+      showToast(t("errors.network.body"));
+      return;
+    }
     showToast(saved ? t("common.removed") : "Station saved");
   }
 
