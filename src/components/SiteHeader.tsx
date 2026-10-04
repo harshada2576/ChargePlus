@@ -7,11 +7,9 @@ import { Link } from "@/i18n/Link";
 import { cx } from "@/lib/util";
 import { usePathname } from "next/navigation";
 
-const navItems = [
-  { key: "explore", href: "/explore" },
-  { key: "saved", href: "/saved" },
-  { key: "alerts", href: "/alerts" },
-] as const;
+import { HEADER_NAV_ITEMS } from "@/data/navigation";
+
+const navItems = HEADER_NAV_ITEMS;
 
 export function SiteHeader() {
   const { t } = useI18n();
