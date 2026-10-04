@@ -59,7 +59,7 @@ Every entry should include:
     - Live Bounded Dry-Run: Succeeded (8 fetched, 0 writes, 8 linked)
     - Live Bounded Run-Once: Succeeded (Run ID `208d837a-f9ac-4bca-880c-96c6a57b8e04`, exactly 1 row persisted, 3 unknown-power connectors preserved)
 - **Phase**: Phase 3/6 — Connect the Locked Frontend.
-- **Current Step**: Step 3.11 — Connect alerts — COMPLETE / LOCKED.
+- **Current Step**: Step 3.12 — Connect admin data views — COMPLETE / LOCKED.
 - **Remaining Steps in Phase 3**: 9 steps (Steps 3.5 through 3.13: navigation handoff, auth/OTP, profiles, favorites, reports, reviews, alerts, admin data views, loading/empty/error states).
 - **Remaining Phases**: Phase 4 (Warehouse & Analytics), Phase 5 (ML & Queue Prediction), Phase 6 (Production & Operationalization).
 - **Current Baseline Status**:
@@ -67,7 +67,7 @@ Every entry should include:
   - Hardcoded fake stations replaced with real Supabase data layer (`src/data/stationAdapter.ts`, `src/data/stations.ts`).
   - Connector unknown power preserved as `null` in types and components.
   - MapLibre popup HTML injection sanitized via `escapeHtml`.
-  - Next Step: Step 3.12 — Connect admin data views.
+  - Next Step: Step 3.13 — Test loading/empty/error states against real data.
 
 
 ### Historical Progress Log
@@ -670,5 +670,13 @@ Every entry should include:
 - Conceptual verification: preferences persisted, delivery never claimed; ownership server-enforced; no duplicate-prone paths.
 - Blockers / waiting on: Same OTP-delivery dependency for live write verification.
 - Next step: Phase 3, Step 3.12 — Connect admin data views.
+
+### 04 Oct 2026 — Phase 3 Step 3.12 Connect admin data views
+- Phase / Step: Phase 3/6 — Step 3.12
+- What we built/changed: Console on real data (canonical stations, live moderation queues with wired actions, real ingestion runs, measured KPIs, honest unavailable states); removed fake login, fabricated metrics/feeds/model/system figures, dead buttons, and mock privilege plus dead prototype stores from the provider.
+- Current state: STEP 3.12 COMPLETE — 5/5 admin tests pass; node suites 117/117; typecheck/lint clean; live admin view needs a real admin role.
+- Conceptual verification: privilege only from profiles.role via RLS; moderation records identity; unmeasured phases show unavailable, never invented.
+- Blockers / waiting on: A real admin-role account for live console verification.
+- Next step: Phase 3, Step 3.13 — Test loading/empty/error states against real data.
 
 
