@@ -79,7 +79,8 @@ We will also perform a conceptual check, not just a code check.
 - 3.2 Connect Explore/map — COMPLETE / LOCKED
 - 3.3 Connect search/filter — COMPLETE / LOCKED
 - 3.4 Connect station detail — COMPLETE / LOCKED
-- 3.5 Connect navigation handoff — NEXT / READY TO START
+- 3.5 Connect navigation handoff — COMPLETE / LOCKED
+- 3.6 Connect auth/OTP — NEXT / READY TO START
 - 3.5 Connect navigation handoff  
 - 3.6 Connect auth/OTP  
 - 3.7 Connect profiles  
@@ -175,8 +176,8 @@ We will also perform a conceptual check, not just a code check.
 
 - **Current Phase**: Phase 3/6 — Connect the Locked Frontend
 - **Remaining Phases**: 3 (Phase 4: Warehouse, Analytics & Data Quality, Phase 5: Data Mining, Forecasting & Recommendations, Phase 6: Production & Public Beta)
-- **Current Step**: Step 3.4 COMPLETE / LOCKED — Ready for Step 3.5 (Connect navigation handoff)
-- **Remaining Steps in Phase 3**: 9 (Steps 3.5 through 3.13)
+- **Current Step**: Step 3.5 COMPLETE / LOCKED — Ready for Step 3.6 (Connect auth/OTP)
+- **Remaining Steps in Phase 3**: 8 (Steps 3.6 through 3.13)
 
 ### What is complete:
 - **Phase 1 — Foundation & Real Database (Steps 1.1–1.10) — COMPLETE & SIGNED OFF**:
@@ -358,6 +359,10 @@ We will also perform a conceptual check, not just a code check.
     - Detail hides navigation and mini-map on invalid coords; `externalMapUrl` pure helper (https/geo only, encoded); fixed review-button label, `formatMinutesAgo`, `isFree` check.
     - 18 focused detail tests; node suites 61 passed; tsc/eslint/build clean; pytest 376 passed; live anon check with zero writes.
     - Complete documentation in `docs/step_3_4_implementation_report.md`.
+  - 3.5 Connect navigation handoff — COMPLETE / LOCKED
+    - Encoded `stationDetailHref` used by card/preview links; single-source `src/data/navigation.ts` consumed by BottomNav/SiteHeader; no dead links found; return-to-Explore reset documented.
+    - 15 navigation tests including a filesystem route inventory; node suites 76 passed; tsc/eslint/build clean; pytest 376 passed; live identity check with zero writes.
+    - Complete documentation in `docs/step_3_5_navigation_handoff_report.md`.
 
 ### Concept check (Phase 3 Step 3.1 Verified)
 - Does the UI say only what the data supports? Yes (unknown power is null, missing price is null, unknown availability is null).
@@ -366,8 +371,8 @@ We will also perform a conceptual check, not just a code check.
 - Does the existing UX remain intact? Yes (design tokens, layout, cards, sheets, and views strictly preserved).
 
 ### What we are doing next:
-- **Phase 3 Step 3.5 — Connect navigation handoff**:
-  - Build on the Step 3.4 evidence-backed detail actions (guarded external-map URLs).
-  - Verify handoff preserves canonical coordinates without fabrication.
+- **Phase 3 Step 3.6 — Connect auth/OTP**:
+  - Wire the existing login/verify/profile surfaces to Supabase Auth without changing the locked UX.
+  - Keep public browsing accessible without login; request login only where needed.
   - Verify with focused tests, build gates, and live Supabase queries.
 
