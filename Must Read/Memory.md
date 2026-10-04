@@ -59,7 +59,7 @@ Every entry should include:
     - Live Bounded Dry-Run: Succeeded (8 fetched, 0 writes, 8 linked)
     - Live Bounded Run-Once: Succeeded (Run ID `208d837a-f9ac-4bca-880c-96c6a57b8e04`, exactly 1 row persisted, 3 unknown-power connectors preserved)
 - **Phase**: Phase 3/6 — Connect the Locked Frontend.
-- **Current Step**: Step 3.7 — Connect profiles — COMPLETE / LOCKED.
+- **Current Step**: Step 3.8 — Connect favorites — COMPLETE / LOCKED.
 - **Remaining Steps in Phase 3**: 9 steps (Steps 3.5 through 3.13: navigation handoff, auth/OTP, profiles, favorites, reports, reviews, alerts, admin data views, loading/empty/error states).
 - **Remaining Phases**: Phase 4 (Warehouse & Analytics), Phase 5 (ML & Queue Prediction), Phase 6 (Production & Operationalization).
 - **Current Baseline Status**:
@@ -67,7 +67,7 @@ Every entry should include:
   - Hardcoded fake stations replaced with real Supabase data layer (`src/data/stationAdapter.ts`, `src/data/stations.ts`).
   - Connector unknown power preserved as `null` in types and components.
   - MapLibre popup HTML injection sanitized via `escapeHtml`.
-  - Next Step: Step 3.8 — Connect favorites.
+  - Next Step: Step 3.9 — Connect reports.
 
 
 ### Historical Progress Log
@@ -638,5 +638,13 @@ Every entry should include:
 - Conceptual verification: identity from Auth session only; role escalation impossible (grants + RLS + whitelist); unknown display name stays null.
 - Blockers / waiting on: Same OTP-delivery dependency as Step 3.6 for live write verification.
 - Next step: Phase 3, Step 3.8 — Connect favorites.
+
+### 04 Oct 2026 — Phase 3 Step 3.8 Connect favorites
+- Phase / Step: Phase 3/6 — Step 3.8
+- What we built/changed: Server-persisted favorites (lib + session + card/sheet/detail gates + Saved page on canonical join); localStorage saves removed; duplicate-safe PK semantics; orphan ids omitted.
+- Current state: STEP 3.8 COMPLETE — 5/5 favorites tests pass; typecheck/lint clean; live writes await authenticated-user availability.
+- Conceptual verification: ownership server-enforced (auth.uid + PK); empty distinct from error; sign-out leak closed.
+- Blockers / waiting on: Same OTP-delivery dependency for live write verification.
+- Next step: Phase 3, Step 3.9 — Connect reports.
 
 
