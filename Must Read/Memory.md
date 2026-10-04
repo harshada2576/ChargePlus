@@ -32,7 +32,7 @@ Every entry should include:
 
 ## Current project state
 
-**PHASE 3 STEP 3.4 VERIFIED COMPLETE — READY FOR STEP 3.5 (2026-10-04)**
+**PHASE 3 STEP 3.5 VERIFIED COMPLETE — READY FOR STEP 3.6 (2026-10-04)**
 
 - **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF.
 - **Phase 2 (Real Data Ingestion & Data Quality, Steps 2.1–2.12)**: COMPLETE & LIVE VERIFIED.
@@ -59,7 +59,7 @@ Every entry should include:
     - Live Bounded Dry-Run: Succeeded (8 fetched, 0 writes, 8 linked)
     - Live Bounded Run-Once: Succeeded (Run ID `208d837a-f9ac-4bca-880c-96c6a57b8e04`, exactly 1 row persisted, 3 unknown-power connectors preserved)
 - **Phase**: Phase 3/6 — Connect the Locked Frontend.
-- **Current Step**: Step 3.4 — Connect station detail — COMPLETE / LOCKED.
+- **Current Step**: Step 3.5 — Connect navigation handoff — COMPLETE / LOCKED.
 - **Remaining Steps in Phase 3**: 9 steps (Steps 3.5 through 3.13: navigation handoff, auth/OTP, profiles, favorites, reports, reviews, alerts, admin data views, loading/empty/error states).
 - **Remaining Phases**: Phase 4 (Warehouse & Analytics), Phase 5 (ML & Queue Prediction), Phase 6 (Production & Operationalization).
 - **Current Baseline Status**:
@@ -67,7 +67,7 @@ Every entry should include:
   - Hardcoded fake stations replaced with real Supabase data layer (`src/data/stationAdapter.ts`, `src/data/stations.ts`).
   - Connector unknown power preserved as `null` in types and components.
   - MapLibre popup HTML injection sanitized via `escapeHtml`.
-  - Next Step: Step 3.5 — Connect navigation handoff.
+  - Next Step: Step 3.6 — Connect auth/OTP.
 
 
 ### Historical Progress Log
@@ -614,5 +614,13 @@ Every entry should include:
 - Conceptual verification: no fabricated fallback reachable (closed-world + throw-on-error + malformed-null tests); unknown stays unknown across identity/connectors/pricing/hours/freshness/reviews; prototype save/report/review stay local and explicit.
 - Blockers / waiting on: None.
 - Next step: Phase 3, Step 3.5 — Connect navigation handoff.
+
+### 04 Oct 2026 — Phase 3 Step 3.5 Connect navigation handoff
+- Phase / Step: Phase 3/6 — Step 3.5
+- What we built/changed: stationDetailHref encodes IDs and is used by card/preview links; single-source navigation.ts consumed by BottomNav/SiteHeader; no dead links found; return-to-Explore reset documented; nested card structure and prototype toasts deferred explicitly; 15 navigation tests incl. filesystem route inventory.
+- Current state: STEP 3.5 VERIFIED COMPLETE — list/map/preview/detail/return preserve canonical IDs; node 76 passed; tsc/lint/build clean; pytest 376 passed; live identity check passed with zero writes.
+- Conceptual verification: identity by canonical id only (never names/indexes); failure distinct from absence; URLs encoded; external links guarded; no prototype data in journey (closed-world test).
+- Blockers / waiting on: None.
+- Next step: Phase 3, Step 3.6 — Connect auth/OTP.
 
 
