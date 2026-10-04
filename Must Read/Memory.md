@@ -59,7 +59,7 @@ Every entry should include:
     - Live Bounded Dry-Run: Succeeded (8 fetched, 0 writes, 8 linked)
     - Live Bounded Run-Once: Succeeded (Run ID `208d837a-f9ac-4bca-880c-96c6a57b8e04`, exactly 1 row persisted, 3 unknown-power connectors preserved)
 - **Phase**: Phase 3/6 — Connect the Locked Frontend.
-- **Current Step**: Step 3.10 — Connect reviews — COMPLETE / LOCKED.
+- **Current Step**: Step 3.11 — Connect alerts — COMPLETE / LOCKED.
 - **Remaining Steps in Phase 3**: 9 steps (Steps 3.5 through 3.13: navigation handoff, auth/OTP, profiles, favorites, reports, reviews, alerts, admin data views, loading/empty/error states).
 - **Remaining Phases**: Phase 4 (Warehouse & Analytics), Phase 5 (ML & Queue Prediction), Phase 6 (Production & Operationalization).
 - **Current Baseline Status**:
@@ -67,7 +67,7 @@ Every entry should include:
   - Hardcoded fake stations replaced with real Supabase data layer (`src/data/stationAdapter.ts`, `src/data/stations.ts`).
   - Connector unknown power preserved as `null` in types and components.
   - MapLibre popup HTML injection sanitized via `escapeHtml`.
-  - Next Step: Step 3.11 — Connect alerts.
+  - Next Step: Step 3.12 — Connect admin data views.
 
 
 ### Historical Progress Log
@@ -662,5 +662,13 @@ Every entry should include:
 - Conceptual verification: feedback never becomes availability/station facts; moderation server-side; unique-per-user enforced; public feed carries no user ids.
 - Blockers / waiting on: Same OTP-delivery dependency for live write verification.
 - Next step: Phase 3, Step 3.11 — Connect alerts.
+
+### 04 Oct 2026 — Phase 3 Step 3.11 Connect alerts
+- Phase / Step: Phase 3/6 — Step 3.11
+- What we built/changed: Server-persisted watch conditions (explicit UI-to-canonical type mapping, list-then-write setAlert, serialized toggles, server favorites plus canonical join, hardcoded fallback removed); delivery explicitly out of scope.
+- Current state: STEP 3.11 COMPLETE — 6/6 alerts tests pass; typecheck/lint clean; no schema migration; live writes await authenticated-user availability.
+- Conceptual verification: preferences persisted, delivery never claimed; ownership server-enforced; no duplicate-prone paths.
+- Blockers / waiting on: Same OTP-delivery dependency for live write verification.
+- Next step: Phase 3, Step 3.12 — Connect admin data views.
 
 
