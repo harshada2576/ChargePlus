@@ -183,8 +183,8 @@ We will also perform a conceptual check, not just a code check.
 
 - **Current Phase**: Phase 3/6 — Connect the Locked Frontend
 - **Remaining Phases**: 3 (Phase 4: Warehouse, Analytics & Data Quality, Phase 5: Data Mining, Forecasting & Recommendations, Phase 6: Production & Public Beta)
-- **Current Step**: Step 3.13 COMPLETE / LOCKED — Ready for Phase 3 final audit
-- **Remaining Steps in Phase 3**: 0 (all Steps 3.1 through 3.13 complete)
+- **Current Step**: Phase 3 COMPLETE — all Steps 3.1 through 3.13 verified and locked
+- **Remaining Steps in Phase 3**: 0 (complete; next is Phase 4)
 
 ### What is complete:
 - **Phase 1 — Foundation & Real Database (Steps 1.1–1.10) — COMPLETE & SIGNED OFF**:
@@ -378,8 +378,7 @@ We will also perform a conceptual check, not just a code check.
 - Does the existing UX remain intact? Yes (design tokens, layout, cards, sheets, and views strictly preserved).
 
 ### What we are doing next:
-- **Phase 3 Step 3.6 — Connect auth/OTP**:
-  - Wire the existing login/verify/profile surfaces to Supabase Auth without changing the locked UX.
-  - Keep public browsing accessible without login; request login only where needed.
-  - Verify with focused tests, build gates, and live Supabase queries.
+- **Phase 4 — Warehouse, Analytics & Data Quality** (not begun):
+  - Phase 3 is verified complete and locked (see `docs/phase_3_closure_report.md`).
+  - Begin at Phase 4's documented first step per the roadmap above.
 
