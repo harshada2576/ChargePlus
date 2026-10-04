@@ -60,7 +60,7 @@ Every entry should include:
     - Live Bounded Run-Once: Succeeded (Run ID `208d837a-f9ac-4bca-880c-96c6a57b8e04`, exactly 1 row persisted, 3 unknown-power connectors preserved)
 - **Phase**: Phase 3/6 — Connect the Locked Frontend.
 - **Current Step**: Step 3.4 — Connect station detail — COMPLETE / LOCKED.
-- **Remaining Steps in Phase 3**: 11 steps (Steps 3.3 through 3.13: search/filter, station detail, navigation handoff, auth/OTP, profiles, favorites, reports, reviews, alerts, admin data views, loading/empty/error states).
+- **Remaining Steps in Phase 3**: 9 steps (Steps 3.5 through 3.13: navigation handoff, auth/OTP, profiles, favorites, reports, reviews, alerts, admin data views, loading/empty/error states).
 - **Remaining Phases**: Phase 4 (Warehouse & Analytics), Phase 5 (ML & Queue Prediction), Phase 6 (Production & Operationalization).
 - **Current Baseline Status**:
   - Live Supabase: 8 canonical stations, 5 connectors, 8 source links, 0 fabricated observations, 3 ingestion runs.
