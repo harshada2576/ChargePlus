@@ -32,7 +32,7 @@ Every entry should include:
 
 ## Current project state
 
-**PHASE 3 STEP 3.5 VERIFIED COMPLETE — READY FOR STEP 3.6 (2026-10-04)**
+**PHASE 3 STEPS 3.6–3.13 IN PROGRESS ON feature/phase-3-complete (2026-10-04)**
 
 - **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF.
 - **Phase 2 (Real Data Ingestion & Data Quality, Steps 2.1–2.12)**: COMPLETE & LIVE VERIFIED.
@@ -59,7 +59,7 @@ Every entry should include:
     - Live Bounded Dry-Run: Succeeded (8 fetched, 0 writes, 8 linked)
     - Live Bounded Run-Once: Succeeded (Run ID `208d837a-f9ac-4bca-880c-96c6a57b8e04`, exactly 1 row persisted, 3 unknown-power connectors preserved)
 - **Phase**: Phase 3/6 — Connect the Locked Frontend.
-- **Current Step**: Step 3.5 — Connect navigation handoff — COMPLETE / LOCKED.
+- **Current Step**: Step 3.6 — Connect auth/OTP — COMPLETE / LOCKED.
 - **Remaining Steps in Phase 3**: 9 steps (Steps 3.5 through 3.13: navigation handoff, auth/OTP, profiles, favorites, reports, reviews, alerts, admin data views, loading/empty/error states).
 - **Remaining Phases**: Phase 4 (Warehouse & Analytics), Phase 5 (ML & Queue Prediction), Phase 6 (Production & Operationalization).
 - **Current Baseline Status**:
@@ -67,7 +67,7 @@ Every entry should include:
   - Hardcoded fake stations replaced with real Supabase data layer (`src/data/stationAdapter.ts`, `src/data/stations.ts`).
   - Connector unknown power preserved as `null` in types and components.
   - MapLibre popup HTML injection sanitized via `escapeHtml`.
-  - Next Step: Step 3.6 — Connect auth/OTP.
+  - Next Step: Step 3.7 — Connect profiles.
 
 
 ### Historical Progress Log
@@ -622,5 +622,13 @@ Every entry should include:
 - Conceptual verification: identity by canonical id only (never names/indexes); failure distinct from absence; URLs encoded; external links guarded; no prototype data in journey (closed-world test).
 - Blockers / waiting on: None.
 - Next step: Phase 3, Step 3.6 — Connect auth/OTP.
+
+### 04 Oct 2026 — Phase 3 Step 3.6 Connect auth/OTP
+- Phase / Step: Phase 3/6 — Step 3.6
+- What we built/changed: Real Supabase OTP (src/lib/auth.ts); provider-backed session in SessionProvider with profile-row ensure and leak-free sign-out; mock signIn/AUTH_KEY removed; phone SMS flagged as dashboard-dependent.
+- Current state: STEP 3.6 COMPLETE — 9/9 auth tests pass; typecheck/lint clean; live OTP delivery unverified (would create auth rows; externally dependent).
+- Conceptual verification: passwordless preserved; phone retained with explicit dependency; no fake success; grants/RLS untouched.
+- Blockers / waiting on: SMS provider dashboard config (for phone delivery); a test contact for end-to-end OTP verification.
+- Next step: Phase 3, Step 3.7 — Connect profiles.
 
 
