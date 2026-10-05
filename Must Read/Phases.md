@@ -172,10 +172,11 @@ We will also perform a conceptual check, not just a code check.
 
 ## Current status
 
-- **Current Phase**: Phase 3/6 — Connect the Locked Frontend
-- **Remaining Phases**: 3 (Phase 4: Warehouse, Analytics & Data Quality, Phase 5: Data Mining, Forecasting & Recommendations, Phase 6: Production & Public Beta)
-- **Current Step**: Phase 3 COMPLETE — all Steps 3.1 through 3.13 verified and locked; pre-Phase-4 remediation gate COMPLETE (`docs/pre_phase4_remediation_gate.md`)
-- **Remaining Steps in Phase 3**: 0 (complete; next is Phase 4)
+- **Current Phase**: Phase 4/6 — Warehouse, Analytics & Data Quality
+- **Remaining Phases**: 2 (Phase 5: Data Mining, Forecasting & Recommendations, Phase 6: Production & Public Beta)
+- **Current Step**: Phase 4 Step 4.1 — Build dimensions (NOT STARTED; branch `feature/phase-4-warehouse`)
+- **Remaining Steps in Phase 3**: 0 (complete; Phase 3 locked on `feature/phase-3-complete` at gate commit)
+- **Gate**: pre-Phase-4 remediation gate COMPLETE (`docs/pre_phase4_remediation_gate.md`, verdict `PHASE 4 READY WITH DOCUMENTED NON-BLOCKING RISKS`)
 
 ### What is complete:
 - **Phase 1 — Foundation & Real Database (Steps 1.1–1.10) — COMPLETE & SIGNED OFF**:

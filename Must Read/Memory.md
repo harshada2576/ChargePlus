@@ -703,4 +703,12 @@ Every entry should include:
 - Blockers / waiting on: linked-project migration apply (R3 repair + 4 new migrations); live OTP/admin/scheduler proofs need dashboard SMS + test identities (environmental, documented non-blocking for Phase 4).
 - Next step: final verification, then Phase 4 first documented step.
 
+### 05 Oct 2026 — Phase 4 branch start
+- Phase / Step: Phase 4/6 — Step 4.1 (not started)
+- What we built/changed: docs cutover only (Phases current-phase → 4/6, this entry, README gate note); gate commit pushed on `feature/phase-3-complete`; new branch `feature/phase-4-warehouse` created from it. No Phase 4 implementation yet.
+- Current state: Phase 3 locked; gate verdict `PHASE 4 READY WITH DOCUMENTED NON-BLOCKING RISKS`; Phase 4 Step 4.1 next.
+- Conceptual verification: roadmap, memory, and gate report agree on phase boundary; history untouched.
+- Blockers / waiting on: linked-project migration apply (R3 repair + 4 new gate migrations) before warehouse ETL leans on the new constraints.
+- Next step: Phase 4 Step 4.1 — Build dimensions.
+
 
