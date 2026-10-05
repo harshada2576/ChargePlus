@@ -695,4 +695,12 @@ Every entry should include:
 - Blockers / waiting on: Dashboard SMS config + test contact + admin-role account for live authenticated verification (external, precisely scoped).
 - Next step: Phase 4 — Warehouse, Analytics & Data Quality (not begun).
 
+### 05 Oct 2026 — Pre-Phase-4 remediation gate
+- Phase / Step: Pre-Phase-4 gate (Phase 4 NOT STARTED)
+- What we built/changed: R3 migration 1_5 renamed to unique version; R4 CCS1 DB vocab + allow-list + 3 regression tests; R5 ingestion_runs admin-only RLS + anon grant revoked; R6 profiles.role trigger guard; R7 alert partial-unique + 23505 recovery + race test; R8 deleted STATIONS/getStation/SavedClient dead branch/supabase-test route, reclassified persist_station as legacy-but-tested; run-state FAILED→PARTIAL alignment + test; advisory-lock fail-closed + 2 tests; reconciled README/Phases/Architecture/data_dictionary/step_1_6 docs; gate report `docs/pre_phase4_remediation_gate.md`.
+- Current state: GATE COMPLETE pending final verification run (pytest/node/tsc/lint/build/dry-run).
+- Conceptual verification: OLTP/OLAP boundary intact; provenance intact; unknown stays unknown; ownership enforced; ingestion remains canonical source.
+- Blockers / waiting on: linked-project migration apply (R3 repair + 4 new migrations); live OTP/admin/scheduler proofs need dashboard SMS + test identities (environmental, documented non-blocking for Phase 4).
+- Next step: final verification, then Phase 4 first documented step.
+
 

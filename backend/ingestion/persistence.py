@@ -50,8 +50,13 @@ import time
 logger = logging.getLogger(__name__)
 
 # Valid connector types supported by public.connectors check constraint
+# (chk_connectors_connector_type, extended with CCS1 in pre-Phase-4 R4).
+# 'Other' is deliberately excluded: it carries no physical information and
+# has no honest DB representation, so Other-typed connectors are skipped +
+# counted while the station shell is preserved.
 ALLOWED_DB_CONNECTOR_TYPES = {
     "CCS2",
+    "CCS1",
     "CHAdeMO",
     "Type 2",
     "Type 1",

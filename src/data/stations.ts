@@ -15,6 +15,10 @@ const ARGS = Math.PI / 180;
  * Canonical station baseline derived from the authoritative PostgreSQL database.
  * No fabricated availability (connector available is null without telemetry),
  * unknown power preserved as null, and factual physical quantities preserved.
+ *
+ * Retained ONLY as a test negative-control (tests/test_explore_map.mjs).
+ * Production code must use fetchStations / fetchStationById (live Supabase
+ * views) — nothing in src/ may import this snapshot.
  */
 export const CANONICAL_STATIONS: Station[] = [
   {
@@ -203,9 +207,6 @@ export const CANONICAL_STATIONS: Station[] = [
   },
 ];
 
-/** Authoritative station export, matching canonical database records */
-export const STATIONS: Station[] = CANONICAL_STATIONS;
-
 /** Zero fabricated reviews. Empty array represents honest cold-start state. */
 export const REVIEWS: Review[] = [];
 
@@ -297,14 +298,8 @@ export async function fetchStationById(
 }
 
 /**
- * Synchronous station lookup from canonical dataset.
- */
-export function getStation(id: string): Station | undefined {
-  return CANONICAL_STATIONS.find((s) => s.id === id);
-}
-
-/**
  * Retrieve reviews for a station (honest zero reviews until Step 3.10).
+ * Retained for test use (tests/test_station_detail.mjs).
  */
 export function getReviewsForStation(id: string): Review[] {
   return REVIEWS.filter((r) => r.stationId === id);

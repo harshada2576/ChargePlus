@@ -64,14 +64,6 @@ export function SavedClient() {
     );
   }
 
-  if (!isAuthed) {
-    return (
-      <div className="mx-auto max-w-screen-md px-4 py-10 sm:px-6">
-        <AuthPrompt title={t("auth.prompt.title")} body={t("auth.prompt.body")} />
-      </div>
-    );
-  }
-
   return (
     <div className="mx-auto max-w-screen-md px-4 pb-10 pt-4 sm:px-6">
       <h1 className="text-[clamp(1.5rem,3vw,2rem)] font-semibold tracking-[-0.01em] text-ink-900">

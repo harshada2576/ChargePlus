@@ -337,9 +337,17 @@ class IngestionConcurrencyLock:
                     logger.warning("PostgreSQL advisory lock busy for '%s' (key=%d)", self.lock_key, self._numeric_key)
                     return False
             except Exception as ex:
-                logger.warning("Failed executing pg_try_advisory_lock for '%s': %s. Falling back to local lock.", self.lock_key, ex)
+                # Fail-closed (pre-Phase-4 fix): a live connection that cannot
+                # execute the advisory lock is flaky infrastructure, not an
+                # offline environment. Downgrading to a process-local lock
+                # would let two processes ingest concurrently and rely solely
+                # on DB uniqueness. Deny instead; the orchestrator records
+                # CANCELLED and the next schedule retries.
+                logger.error("Failed executing pg_try_advisory_lock for '%s': %s. Denying lock (fail-closed).", self.lock_key, ex)
+                return False
 
-        # 2. Fallback to in-memory lock
+        # 2. Fallback to in-memory lock (offline / mock modes with no
+        # connection only — never reached with a live connection).
         with _LOCAL_LOCK_MUTEX:
             if self.lock_key in _LOCAL_LOCK_REGISTRY:
                 logger.warning("Local concurrency lock busy for '%s'", self.lock_key)

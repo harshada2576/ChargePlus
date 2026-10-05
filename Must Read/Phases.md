@@ -88,15 +88,6 @@ We will also perform a conceptual check, not just a code check.
 - 3.11 Connect alerts — COMPLETE / LOCKED
 - 3.12 Connect admin data views — COMPLETE / LOCKED
 - 3.13 Test loading/empty/error states against real data — COMPLETE / LOCKED
-- 3.5 Connect navigation handoff  
-- 3.6 Connect auth/OTP  
-- 3.7 Connect profiles  
-- 3.8 Connect favorites  
-- 3.9 Connect reports  
-- 3.10 Connect reviews  
-- 3.11 Connect alerts  
-- 3.12 Connect admin data views  
-- 3.13 Test loading/empty/error states against real data
 
 ### Concept check
 - Does the UI say only what the data supports?
@@ -183,14 +174,14 @@ We will also perform a conceptual check, not just a code check.
 
 - **Current Phase**: Phase 3/6 — Connect the Locked Frontend
 - **Remaining Phases**: 3 (Phase 4: Warehouse, Analytics & Data Quality, Phase 5: Data Mining, Forecasting & Recommendations, Phase 6: Production & Public Beta)
-- **Current Step**: Phase 3 COMPLETE — all Steps 3.1 through 3.13 verified and locked
+- **Current Step**: Phase 3 COMPLETE — all Steps 3.1 through 3.13 verified and locked; pre-Phase-4 remediation gate COMPLETE (`docs/pre_phase4_remediation_gate.md`)
 - **Remaining Steps in Phase 3**: 0 (complete; next is Phase 4)
 
 ### What is complete:
 - **Phase 1 — Foundation & Real Database (Steps 1.1–1.10) — COMPLETE & SIGNED OFF**:
   - 1.1 Create/configure Supabase project — COMPLETE
   - 1.2 Enable required PostgreSQL/PostGIS capabilities — COMPLETE
-  - 1.3 Create core operational schema (11 public tables) — COMPLETE
+  - 1.3 Create core operational schema (11 public tables + `ingestion_runs` in Step 2.10 = 12) — COMPLETE
   - 1.4 Create analytics schema (12 analytics tables) — COMPLETE
   - 1.5 Create ML metadata schema (6 ml tables) — COMPLETE
   - 1.6 Add indexes (45 explicit) and constraints (28 explicit) — COMPLETE

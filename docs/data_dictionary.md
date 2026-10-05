@@ -16,9 +16,9 @@
 
 | Schema | Role | Tables / Views | Authoritative Migration(s) |
 |---|---|---|---|
-| `public` | Operational OLTP | 11 operational tables (**+ 9 legacy empty tables**)<br>3 views, 2 functions | Step 1.3 `20260918000001_step_1_3_core_operational_schema.sql`<br>Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql`<br>Step 1.7 `20260924000001_step_1_7_rls_security_policies.sql`<br>Step 1.8 `20260925000001_step_1_8_views_functions.sql` |
+| `public` | Operational OLTP | 12 operational tables (11 Step 1.3 + `ingestion_runs` Step 2.10; **+ 9 legacy empty tables**)<br>3 views, 2 functions | Step 1.3 `20260918000001_step_1_3_core_operational_schema.sql`<br>Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql`<br>Step 1.7 `20260924000001_step_1_7_rls_security_policies.sql`<br>Step 1.8 `20260925000001_step_1_8_views_functions.sql`<br>Step 2.10 `20260926000001_step_2_10_ingestion_runs.sql` (+ grants `..._02_...`) |
 | `analytics` | Data warehouse OLAP | 12 (8 dims + 4 facts)<br>1 view | Step 1.4 `20260922000001_step_1_4_analytics_warehouse_schema.sql`<br>Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql`<br>Step 1.7 `20260924000001_step_1_7_rls_security_policies.sql`<br>Step 1.8 `20260925000001_step_1_8_views_functions.sql` |
-| `ml` | ML metadata/control | 6 | Step 1.5 `20260922000001_step_1_5_ml_metadata_schema.sql`<br>Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql`<br>Step 1.7 `20260924000001_step_1_7_rls_security_policies.sql` |
+| `ml` | ML metadata/control | 6 | Step 1.5 `20260922000002_step_1_5_ml_metadata_schema.sql` (renamed pre-Phase-4 R3; was `...22000001...`)<br>Step 1.6 `20260923000001_step_1_6_constraints_indexes.sql`<br>Step 1.7 `20260924000001_step_1_7_rls_security_policies.sql` |
 | `auth` | Supabase-managed authentication | (managed by Supabase) | never modified manually |
 | extensions | `postgis`, `pgcrypto` | — | enabled in Step 1.3 (`CREATE EXTENSION IF NOT EXISTS`) |
 
@@ -100,9 +100,9 @@ Static capacity groups per station (no live state); availability lives in `stati
 |---|---|---|
 | `id` | UUID | PK DEFAULT gen_random_uuid(); part of superkey `uq_connectors_id_station` |
 | `station_id` | UUID | NOT NULL FK → `stations(id)` RESTRICT; part of superkey `uq_connectors_id_station` |
-| `connector_type` | TEXT | NOT NULL CHECK IN (`CCS2`,`CHAdeMO`,`Type 2`,`Type 1`,`GB/T`,`Bharat AC001`,`Bharat DC001`) |
+| `connector_type` | TEXT | NOT NULL CHECK IN (`CCS2`,`CCS1`,`CHAdeMO`,`Type 2`,`Type 1`,`GB/T`,`Bharat AC001`,`Bharat DC001`) — `CCS1` added pre-Phase-4 (R4); `Other` has no honest DB value and stays skipped at persistence |
 | `charging_standard` | TEXT | NULL |
-| `power_kw` | NUMERIC(8,2) | NOT NULL CHECK > 0 |
+| `power_kw` | NUMERIC(8,2) | NULL allowed since Step 2.12 (`CHECK (power_kw IS NULL OR power_kw > 0)`); unknown power preserved as NULL, never 0 |
 | `quantity` | INTEGER | NOT NULL CHECK > 0 |
 | `pricing_type` | TEXT | NULL |
 | `price_per_kwh` / `price_per_session` | NUMERIC(10,2) | NULL CHECK ≥ 0 |
@@ -270,8 +270,8 @@ GRAIN: one row per VERSION of one physical station.
 ## 2.4 `analytics.dim_connector` — SCD Type 1 (initially)
 GRAIN: one row per operational connector (static capacity group).
 
-`connector_key BIGINT identity PK`, `connector_id UUID NOT NULL UNIQUE`, `station_id UUID NOT NULL` (business reference, not a FK), `connector_type`, `charging_standard`, `power_kw > 0`, `quantity > 0`, `pricing_type`, `price_per_kwh/price_per_session ≥ 0`, `currency DEFAULT 'INR'`, `is_fast_charging BOOLEAN NULL`, `created_at`, `updated_at`.  
-**Constraint `chk_dim_connector_type`:** Enforces connector vocabulary parity (`CCS2`, `CHAdeMO`, `Type 2`, `Type 1`, `GB/T`, `Bharat AC001`, `Bharat DC001`).  
+`connector_key BIGINT identity PK`, `connector_id UUID NOT NULL UNIQUE`, `station_id UUID NOT NULL` (business reference, not a FK), `connector_type`, `charging_standard`, `power_kw NULL-or-> 0` (Step 2.12), `quantity > 0`, `pricing_type`, `price_per_kwh/price_per_session ≥ 0`, `currency DEFAULT 'INR'`, `is_fast_charging BOOLEAN NULL`, `created_at`, `updated_at`.  
+**Constraint `chk_dim_connector_type`:** Enforces connector vocabulary parity (`CCS2`, `CCS1` added pre-Phase-4 R4, `CHAdeMO`, `Type 2`, `Type 1`, `GB/T`, `Bharat AC001`, `Bharat DC001`).  
 *Index: `idx_dim_connector_station`.*
 
 ## 2.5 `analytics.dim_date` — static conformed date dimension
@@ -425,7 +425,7 @@ All objects created in Step 1.8 migration `supabase/migrations/20260925000001_st
 - Authoritative Migrations:
   - `supabase/migrations/20260918000001_step_1_3_core_operational_schema.sql`
   - `supabase/migrations/20260922000001_step_1_4_analytics_warehouse_schema.sql`
-  - `supabase/migrations/20260922000001_step_1_5_ml_metadata_schema.sql`
+  - `supabase/migrations/20260922000002_step_1_5_ml_metadata_schema.sql` (renamed pre-Phase-4 R3; was `...22000001...`)
   - `supabase/migrations/20260923000001_step_1_6_constraints_indexes.sql`
   - `supabase/migrations/20260924000001_step_1_7_rls_security_policies.sql`
   - `supabase/migrations/20260925000001_step_1_8_views_functions.sql`
