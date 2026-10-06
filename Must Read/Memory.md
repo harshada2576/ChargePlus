@@ -735,4 +735,12 @@ Every entry should include:
 - Blockers / waiting on: none for Phase 5 start; Step 5.1 must confirm data maturity before any training.
 - Next step: Phase 5 Step 5.1 — Measure data maturity.
 
+### 06 Oct 2026 — Phase 5 Step 5.1 Data maturity gate
+- Phase / Step: Phase 5/6 — Step 5.1
+- What we built/changed: `backend/warehouse/maturity.py` (read-only measurement + `python -m backend.warehouse.maturity --json` CLI reusing Phase 4 v1 gate constants) + `tests/test_maturity.py` (12 tests, strict scripted fake, fixtures isolated).
+- Current state: STEP 5.1 COMPLETE — Python 407 passed, maturity CLI live: warehouse COLD (16/16 stations), 0 temporal events, no trainable targets, no synthetic data.
+- Conceptual verification: static inventory separated from temporal evidence; scheduler runs distinguished from observations; unknowns preserved (pct None on zero denominators); leakage risks documented; thresholds labeled diagnostic.
+- Blockers / waiting on: none for 5.1; Phase 5.2+ blocked on real temporal evidence, not on code.
+- Next step: Phase 5 Step 5.2 — Establish baseline (only meaningful once temporal evidence exists).
+
 
