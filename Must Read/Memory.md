@@ -711,4 +711,12 @@ Every entry should include:
 - Blockers / waiting on: linked-project migration apply (R3 repair + 4 new gate migrations) before warehouse ETL leans on the new constraints.
 - Next step: Phase 4 Step 4.1 — Build dimensions.
 
+### 05 Oct 2026 — Phase 4 Steps 4.6 + 4.7 OLAP proof + admin surface
+- Phase / Step: Phase 4/6 — Steps 4.6, 4.7
+- What we built/changed: 10 canonical OLAP queries (`backend/warehouse/queries.py`, incl. observation_freshness grain fix to station_id); live proof of all 10 + traceability (16 stations, 6 connectors, 0 obs); admin-only `/api/admin/warehouse` route (server-side token + role check, counts-only), `src/lib/warehouse.ts` client, Warehouse Analytics section + Coverage KPI in AdminDashboard with honest loading/error/empty states; 5 OLAP contract tests + 4 warehouse client/route tests.
+- Current state: 4.6 + 4.7 implemented and verified (Python 395, Node 122, tsc/lint/build clean; route denial proven live 401/401; authorized-path UI proof needs an admin session).
+- Conceptual verification: analytics-only reads (one documented ops exception); current vs historical separated; NULLs preserved; sparse states honest; numbers traced; no synthetic data.
+- Blockers / waiting on: admin-session UI proof (environmental); Phase 4.8 historical consistency validation.
+- Next step: Phase 4 Step 4.8 — Validate historical consistency.
+
 

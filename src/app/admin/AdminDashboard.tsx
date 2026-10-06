@@ -17,6 +17,10 @@ import {
   type PendingReport,
   type PendingReview,
 } from "@/lib/admin";
+import {
+  fetchWarehouseSummary,
+  type WarehouseSummary,
+} from "@/lib/warehouse";
 import { Link } from "@/i18n/Link";
 
 export function AdminDashboard() {
@@ -28,6 +32,8 @@ export function AdminDashboard() {
   const [pendingReviews, setPendingReviews] = useState<PendingReview[]>([]);
   const [runs, setRuns] = useState<IngestionRun[]>([]);
   const [approvedCount, setApprovedCount] = useState<number | null>(null);
+  const [warehouse, setWarehouse] = useState<WarehouseSummary | null>(null);
+  const [warehouseError, setWarehouseError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
@@ -64,6 +70,19 @@ export function AdminDashboard() {
         if (!active) return;
         setError(err instanceof Error ? err.message : "Console data failed to load");
         setLoading(false);
+      });
+    // Warehouse analytics loads independently: a warehouse failure must never
+    // blank the operations console. Served by the admin-only server route.
+    fetchWarehouseSummary(supabase)
+      .then((summary) => {
+        if (!active) return;
+        setWarehouse(summary);
+        setWarehouseError(null);
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        setWarehouse(null);
+        setWarehouseError(err instanceof Error ? err.message : "Warehouse analytics failed to load");
       });
     return () => {
       active = false;
@@ -216,7 +235,12 @@ export function AdminDashboard() {
           <KpiCard label="Network Stations" value={String(stations.length)} sub={`${stations.filter((s) => s.status === "available").length} Available`} status="good" />
           <KpiCard label="Pending Reports" value={String(pendingReports.length)} sub="Awaiting moderation" status={pendingReports.length > 0 ? "warn" : "good"} />
           <KpiCard label="Reviews Approved" value={approvedCount == null ? "—" : String(approvedCount)} sub="Published to drivers" status="neutral" />
-          <KpiCard label="Info Quality Score" value="—" sub="Phase 4 analytics" status="neutral" />
+          <KpiCard
+            label="Warehouse Coverage"
+            value={warehouse ? `${warehouse.observedStations}/${warehouse.stationsCurrent}` : "—"}
+            sub={warehouse ? (warehouse.observations > 0 ? "stations observed" : "No observations yet") : "Warehouse loading…"}
+            status="neutral"
+          />
           <KpiCard label="Latest Ingestion" value={runs[0]?.state ?? "—"} sub={runs[0] ? `${runs[0].sourceName} · ${runs[0].scope}` : "No runs recorded"} status={runs[0]?.state === "FAILED" ? "warn" : "neutral"} />
           <KpiCard label="Model Status" value="—" sub="No model deployed" status="neutral" />
         </section>
@@ -478,6 +502,89 @@ export function AdminDashboard() {
             </section>
           </div>
 
+          {/* Warehouse Analytics (Phase 4.7) — counts only, honest empties */}
+          <section id="warehouse-analytics" className="mt-8 rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-xl">
+            <div className="flex items-center gap-2">
+              <span className="rounded bg-sky-500/20 px-2 py-0.5 font-mono text-xs font-semibold text-sky-400 border border-sky-500/30">
+                SUPPLEMENT
+              </span>
+              <h2 className="text-lg font-bold text-white">Warehouse Analytics</h2>
+            </div>
+            <p className="mt-1 text-xs text-slate-400">
+              Dimensional warehouse state (analytics schema), served by the admin-only server route. Cold means
+              little evidence — not a failure.
+            </p>
+
+            <div className="mt-4">
+              {warehouseError ? (
+                <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-center">
+                  <p className="font-mono text-xs text-red-300">{warehouseError}</p>
+                  <button
+                    onClick={reload}
+                    className="mt-2 rounded-lg bg-slate-800 px-3 py-1 font-mono text-xs text-slate-200 hover:bg-slate-700 transition"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : !warehouse ? (
+                <p className="rounded-xl border border-dashed border-slate-800 bg-slate-950/40 p-4 text-center font-mono text-xs text-slate-500">
+                  Loading warehouse analytics…
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 text-xs font-mono sm:grid-cols-3 lg:grid-cols-6">
+                  <WarehouseMetric label="Stations (current)" value={String(warehouse.stationsCurrent)} />
+                  <WarehouseMetric label="Station versions" value={String(warehouse.stationVersions)} />
+                  <WarehouseMetric
+                    label="Connectors"
+                    value={String(warehouse.connectors)}
+                    sub={`${warehouse.connectorsUnknownPower} unknown power`}
+                  />
+                  <WarehouseMetric label="Operators" value={String(warehouse.operators)} />
+                  <WarehouseMetric
+                    label="Observations"
+                    value={String(warehouse.observations)}
+                    sub={warehouse.observations === 0 ? "No observations yet" : `${warehouse.observedStations} stations observed`}
+                  />
+                  <WarehouseMetric
+                    label="Latest observation"
+                    value={warehouse.latestObservedAt ? new Date(warehouse.latestObservedAt).toLocaleString() : "—"}
+                    sub={warehouse.latestObservedAt ? "UTC source time" : "Never observed"}
+                  />
+                  <WarehouseMetric
+                    label="Approved reports"
+                    value={String(warehouse.reports)}
+                    sub={warehouse.reports === 0 ? "No report history yet" : "in warehouse"}
+                  />
+                  <WarehouseMetric
+                    label="Approved reviews"
+                    value={String(warehouse.reviews)}
+                    sub={warehouse.reviews === 0 ? "No review history yet" : "in warehouse"}
+                  />
+                  <WarehouseMetric
+                    label="Daily cells"
+                    value={String(warehouse.dailyRows)}
+                    sub={warehouse.dailyRows === 0 ? "No daily history yet" : "station-days"}
+                  />
+                  <WarehouseMetric
+                    label="Maturity cold"
+                    value={String(warehouse.maturity.cold)}
+                    sub="cells"
+                  />
+                  <WarehouseMetric
+                    label="Maturity warming/ready"
+                    value={`${warehouse.maturity.warming}/${warehouse.maturity.ready}`}
+                    sub="cells"
+                  />
+                  <WarehouseMetric
+                    label="Sources"
+                    value={String(warehouse.sources)}
+                    sub="warehouse feeds"
+                  />
+                </div>
+              )}
+            </div>
+          </section>
+
           {/* 2-Column: Forecast/Model Status & System Health */}
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Section 6: Forecast / Model Status */}
@@ -569,6 +676,24 @@ function KpiCard({
         {value}
       </p>
       <p className="mt-0.5 text-[11px] text-slate-500 font-mono truncate">{sub}</p>
+    </div>
+  );
+}
+
+function WarehouseMetric({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+      <p className="text-slate-500">{label}</p>
+      <p className="mt-1 font-bold text-slate-200 truncate">{value}</p>
+      {sub && <p className="mt-0.5 text-slate-600 truncate">{sub}</p>}
     </div>
   );
 }
