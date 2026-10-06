@@ -719,4 +719,12 @@ Every entry should include:
 - Blockers / waiting on: admin-session UI proof (environmental); Phase 4.8 historical consistency validation.
 - Next step: Phase 4 Step 4.8 — Validate historical consistency.
 
+### 06 Oct 2026 — Phase 4 Step 4.8 closure
+- Phase / Step: Phase 4/6 — Step 4.8 (final)
+- What we built/changed: read-only live validation (counts, SCD2 intervals, connector/operator/location/source/provenance, NULL semantics, hourly-absence); ETL rerun delta-zero; DQ 24/24; OLAP 10/10; closure report `docs/phase_4_closure_report.md`; roadmap cutover.
+- Current state: PHASE 4 COMPLETE WITH DOCUMENTED NON-BLOCKING RISKS (Python 395, Node 122, tsc/lint/build clean; sole residual: authorized-admin UI proof needs an admin session).
+- Conceptual verification: OLTP=warehouse truthfully sparse; grains explicit; unknowns preserved; aggregates vacuous-but-correct; no Phase 5 introduced.
+- Blockers / waiting on: none for Phase 4.
+- Next step: Phase 5 Step 5.1 — Measure data maturity (warehouse COLD; do not train yet).
+
 
