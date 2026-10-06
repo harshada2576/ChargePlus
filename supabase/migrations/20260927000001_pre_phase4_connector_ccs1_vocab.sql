@@ -20,6 +20,8 @@ BEGIN;
 
 -- 1. public.connectors: replace the vocabulary CHECK (whatever its
 --    historical name) with the CCS1-inclusive named constraint.
+-- NOTE: pg_get_constraintdef normalizes `IN (...)` to `= ANY (ARRAY[...])`,
+-- so matching uses the column + a known vocabulary value, not the `IN` text.
 DO $$
 DECLARE
   v_conname text;
@@ -28,7 +30,8 @@ BEGIN
   FROM pg_constraint
   WHERE conrelid = 'public.connectors'::regclass
     AND contype = 'c'
-    AND pg_get_constraintdef(oid) LIKE '%connector_type IN%';
+    AND pg_get_constraintdef(oid) LIKE '%connector_type%'
+    AND pg_get_constraintdef(oid) LIKE '%CCS2%';
 
   IF v_conname IS NOT NULL THEN
     EXECUTE format('ALTER TABLE public.connectors DROP CONSTRAINT %I', v_conname);
@@ -60,7 +63,8 @@ BEGIN
   FROM pg_constraint
   WHERE conrelid = 'public.connectors'::regclass
     AND contype = 'c'
-    AND pg_get_constraintdef(oid) LIKE '%connector_type IN%';
+    AND pg_get_constraintdef(oid) LIKE '%connector_type%'
+    AND pg_get_constraintdef(oid) LIKE '%CCS2%';
   IF v_pub_count <> 1 THEN
     RAISE EXCEPTION 'R4: expected exactly 1 connector_type vocabulary CHECK on public.connectors, found %', v_pub_count;
   END IF;
