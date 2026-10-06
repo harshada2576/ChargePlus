@@ -735,6 +735,14 @@ Every entry should include:
 - Blockers / waiting on: none for Phase 5 start; Step 5.1 must confirm data maturity before any training.
 - Next step: Phase 5 Step 5.1 — Measure data maturity.
 
+### 06 Oct 2026 — Phase 5 Steps 5.2–5.10 methodology (COLD warehouse)
+- Phase / Step: Phase 5/6 — Steps 5.2–5.10
+- What we built/changed: `backend/ml/` (gates, baselines+metrics, features, gated datasets, gated training, forecasting specs, anomaly detectors, explainable recommender, ml.* registry writers, inference contracts) + `tests/test_phase5.py` (25 tests) + `docs/phase_5_methodology.md`. Stdlib only, no new deps.
+- Current state: methodology complete and fixture-proven; live gates refuse all six tasks (0 events); no models trained, no predictions served, no synthetic data.
+- Conceptual verification: gates-first; unknowns preserved; chronological splits; leakage documented; unknown never penalized in scoring; ready-status unreachable on cold maturity.
+- Blockers / waiting on: real temporal evidence (data, not code).
+- Next step: Phase 5 Step 5.11 — Final validation.
+
 ### 06 Oct 2026 — Phase 5 Step 5.1 Data maturity gate
 - Phase / Step: Phase 5/6 — Step 5.1
 - What we built/changed: `backend/warehouse/maturity.py` (read-only measurement + `python -m backend.warehouse.maturity --json` CLI reusing Phase 4 v1 gate constants) + `tests/test_maturity.py` (12 tests, strict scripted fake, fixtures isolated).
