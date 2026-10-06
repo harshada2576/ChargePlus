@@ -727,4 +727,12 @@ Every entry should include:
 - Blockers / waiting on: none for Phase 4.
 - Next step: Phase 5 Step 5.1 — Measure data maturity (warehouse COLD; do not train yet).
 
+### 06 Oct 2026 — Phase 5 branch start
+- Phase / Step: Phase 5/6 — Step 5.1 (not started)
+- What we built/changed: docs cutover only (Phases current-phase → 5/6, this entry, README Phase 5 note); Phase 4 closure commit pushed on `feature/phase-4-warehouse`; new branch `feature/phase-5-intelligence` created from it. No Phase 5 implementation yet.
+- Current state: Phase 4 locked with verdict `PHASE 4 COMPLETE WITH DOCUMENTED NON-BLOCKING RISKS`; warehouse COLD (16 stations, 6 connectors, 0 observations).
+- Conceptual verification: roadmap, memory, and closure report agree on phase boundary; history untouched.
+- Blockers / waiting on: none for Phase 5 start; Step 5.1 must confirm data maturity before any training.
+- Next step: Phase 5 Step 5.1 — Measure data maturity.
+
 

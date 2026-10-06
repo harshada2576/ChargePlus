@@ -172,10 +172,11 @@ We will also perform a conceptual check, not just a code check.
 
 ## Current status
 
-- **Current Phase**: Phase 4/6 — Warehouse, Analytics & Data Quality — COMPLETE
-- **Remaining Phases**: 2 (Phase 5: Data Mining, Forecasting & Recommendations, Phase 6: Production & Public Beta)
-- **Current Step**: Phase 4 COMPLETE — Steps 4.1–4.8 verified (`docs/phase_4_closure_report.md`,
-  verdict `PHASE 4 COMPLETE WITH DOCUMENTED NON-BLOCKING RISKS`); next is Phase 5 Step 5.1
+- **Current Phase**: Phase 5/6 — Data Mining, Forecasting & Recommendations
+- **Remaining Phases**: 1 (Phase 6: Production & Public Beta)
+- **Current Step**: Phase 5 Step 5.1 — Measure data maturity (NOT STARTED; branch `feature/phase-5-intelligence`)
+- **Phase 4**: COMPLETE — Steps 4.1–4.8 verified (`docs/phase_4_closure_report.md`,
+  verdict `PHASE 4 COMPLETE WITH DOCUMENTED NON-BLOCKING RISKS`); locked on `feature/phase-4-warehouse`
 - **Remaining Steps in Phase 3**: 0 (complete; Phase 3 locked on `feature/phase-3-complete` at gate commit)
 - **Gate**: pre-Phase-4 remediation gate COMPLETE (`docs/pre_phase4_remediation_gate.md`, verdict `PHASE 4 READY WITH DOCUMENTED NON-BLOCKING RISKS`)
 
