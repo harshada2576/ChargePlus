@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.env
+.env*.local
+__pycache__
+.pytest_cache
+*.zip
+supabase/.temp
+C:\Users\Admin\AppData\Local\Temp

@@ -735,6 +735,14 @@ Every entry should include:
 - Blockers / waiting on: none for Phase 5 start; Step 5.1 must confirm data maturity before any training.
 - Next step: Phase 5 Step 5.1 — Measure data maturity.
 
+### 06 Oct 2026 — Phase 6 production hardening (6.1–6.11)
+- Phase / Step: Phase 6/6 — Steps 6.1–6.11
+- What we built/changed: Dockerfile + .dockerignore + CI (typecheck/lint/tests/build); env audit (5 vars, correctly classified); secret/XSS/popup audit clean; live anon RLS probes deny correctly; RLS inventory exact (29+admin policies); token-bucket rate limits on API routes (60/min credential, 300/min IP) + 4 tests; structured server logging in routes; perf measured (wired paths <11ms; unused nearby_stations 280ms = future risk); mobile static audit; DQ 13/13 + 24/24 live; docs/production.md runbook + beta checklist.
+- Current state: implementation done; full verification + 6.12/6.13 pending.
+- Conceptual verification: smallest changes, no redesign, no new infra, honesty preserved.
+- Blockers / waiting on: none in code; environmental proofs (browser lab, OTP, admin session, hosting cutover) documented.
+- Next step: final verification, beta checklist sign-off, final docs.
+
 ### 06 Oct 2026 — Phase 6 branch start
 - Phase / Step: Phase 6/6 — Step 6.1 (not started)
 - What we built/changed: docs cutover only (Phases current-phase → 6/6, this entry, README Phase 5 closure + Phase 6 note); Phase 5 work pushed on `feature/phase-5-intelligence`; new branch `feature/phase-6-production` created from it. No Phase 6 implementation yet.

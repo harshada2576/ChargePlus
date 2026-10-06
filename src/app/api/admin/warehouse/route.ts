@@ -1,7 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 import { pool } from "@/db";
+import { checkRateLimit, credentialKey } from "@/lib/rateLimit";
+import { newRequestId, serverLog } from "@/lib/serverLog";
 
 export const dynamic = "force-dynamic";
+
+// Abuse friction: 60 requests/minute per credential (in-memory, per instance).
+const WAREHOUSE_RATE_LIMIT = { limit: 60, windowMs: 60_000 };
 
 /**
  * Admin-only warehouse summary (Phase 4.7).
@@ -14,6 +19,7 @@ export const dynamic = "force-dynamic";
  * no review/report text, no user IDs, no credentials.
  */
 export async function GET(request: Request) {
+  const requestId = newRequestId();
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceKey) {
@@ -27,6 +33,13 @@ export async function GET(request: Request) {
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
   if (!token) {
     return Response.json({ error: "Sign-in required." }, { status: 401 });
+  }
+  const rate = checkRateLimit(credentialKey(request), WAREHOUSE_RATE_LIMIT);
+  if (!rate.allowed) {
+    return Response.json(
+      { error: "Too many requests. Retry shortly." },
+      { status: 429, headers: { "retry-after": String(Math.ceil(rate.retryAfterMs / 1000)) } }
+    );
   }
 
   try {
@@ -87,6 +100,7 @@ export async function GET(request: Request) {
       },
     });
   } catch {
+    serverLog("error", "admin.warehouse.failed", { requestId });
     return Response.json(
       { error: "Warehouse analytics failed to load." },
       { status: 500 }
