@@ -1,0 +1,494 @@
+[
+  {
+    "id": "649f973e-3c76-5620-b36d-99a7ff89102a",
+    "name": "Tata Power EZ Charge \u2014 Bandra Kurla Complex",
+    "operator": "Tata Power",
+    "address_line": "G Block, BKC, Bandra East, Mumbai",
+    "locality": "Bandra Kurla Complex",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "postal_code": "400051",
+    "country": "India",
+    "latitude": 19.0662,
+    "longitude": 72.8688,
+    "is_24_hours": true,
+    "opening_time": "00:00:00",
+    "closing_time": "23:59:59",
+    "operational_status": "operational",
+    "connectors": [
+      {
+        "id": "157a5368-3200-56bb-98c8-a11a052083f7",
+        "station_id": "649f973e-3c76-5620-b36d-99a7ff89102a",
+        "connector_type": "CCS2",
+        "charging_standard": "IEC 62196-3",
+        "power_kw": 60.0,
+        "quantity": 2,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 18.5,
+        "currency": "INR"
+      },
+      {
+        "id": "49ee24d7-e28a-591d-b9df-acf3b3f0cf71",
+        "station_id": "649f973e-3c76-5620-b36d-99a7ff89102a",
+        "connector_type": "Type 2",
+        "charging_standard": "IEC 62196-2",
+        "power_kw": 22.0,
+        "quantity": 2,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 15.0,
+        "currency": "INR"
+      }
+    ]
+  },
+  {
+    "id": "f9dcb735-42a8-57b2-9718-df18dc9c0084",
+    "name": "Jio-bp pulse EV Hub \u2014 Andheri East",
+    "operator": "Jio-bp",
+    "address_line": "Sahar Road, Near Western Express Highway, Andheri East",
+    "locality": "Andheri East",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "postal_code": "400069",
+    "country": "India",
+    "latitude": 19.1172,
+    "longitude": 72.8532,
+    "is_24_hours": true,
+    "opening_time": "00:00:00",
+    "closing_time": "23:59:59",
+    "operational_status": "operational",
+    "connectors": [
+      {
+        "id": "80d7fd42-6005-5642-94a9-0e8986989e0c",
+        "station_id": "f9dcb735-42a8-57b2-9718-df18dc9c0084",
+        "connector_type": "CCS2",
+        "charging_standard": "IEC 62196-3",
+        "power_kw": 120.0,
+        "quantity": 4,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 21.0,
+        "currency": "INR"
+      },
+      {
+        "id": "651e954d-0437-515a-be08-5df02c01b9c2",
+        "station_id": "f9dcb735-42a8-57b2-9718-df18dc9c0084",
+        "connector_type": "Type 2",
+        "charging_standard": "IEC 62196-2",
+        "power_kw": 22.0,
+        "quantity": 2,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 16.0,
+        "currency": "INR"
+      }
+    ]
+  },
+  {
+    "id": "1d483d3b-273b-5932-8370-328841bea34d",
+    "name": "Statiq Charging Hub \u2014 Lower Parel High Street Phoenix",
+    "operator": "Statiq",
+    "address_line": "Grand Galleria Parking, Senapati Bapat Marg, Lower Parel",
+    "locality": "Lower Parel",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "postal_code": "400013",
+    "country": "India",
+    "latitude": 18.9958,
+    "longitude": 72.8252,
+    "is_24_hours": false,
+    "opening_time": "08:00:00",
+    "closing_time": "23:00:00",
+    "operational_status": "operational",
+    "connectors": [
+      {
+        "id": "3edaca98-80cc-549c-8cc4-e0e5c65ebdb2",
+        "station_id": "1d483d3b-273b-5932-8370-328841bea34d",
+        "connector_type": "CCS2",
+        "charging_standard": "IEC 62196-3",
+        "power_kw": 60.0,
+        "quantity": 2,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 19.0,
+        "currency": "INR"
+      },
+      {
+        "id": "ec6c497c-316d-5556-94b8-a11685e0dd72",
+        "station_id": "1d483d3b-273b-5932-8370-328841bea34d",
+        "connector_type": "CHAdeMO",
+        "charging_standard": "IEC 62196-2",
+        "power_kw": 50.0,
+        "quantity": 1,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 19.0,
+        "currency": "INR"
+      }
+    ]
+  },
+  {
+    "id": "fa6f0dfa-73a9-5b82-be87-5e18c15daca8",
+    "name": "Ather Grid Fast Charger \u2014 Hiranandani Powai",
+    "operator": "Ather Energy",
+    "address_line": "Galleria Shopping Mall, Hiranandani Gardens, Powai",
+    "locality": "Powai",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "postal_code": "400076",
+    "country": "India",
+    "latitude": 19.1197,
+    "longitude": 72.9056,
+    "is_24_hours": true,
+    "opening_time": "00:00:00",
+    "closing_time": "23:59:59",
+    "operational_status": "operational",
+    "connectors": [
+      {
+        "id": "434ccdd9-1602-521e-b739-5d992d6945bc",
+        "station_id": "fa6f0dfa-73a9-5b82-be87-5e18c15daca8",
+        "connector_type": "Type 2",
+        "charging_standard": "IEC 62196-2",
+        "power_kw": 22.0,
+        "quantity": 3,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 14.5,
+        "currency": "INR"
+      },
+      {
+        "id": "c0c555c8-3063-59cf-98a2-ed6608517468",
+        "station_id": "fa6f0dfa-73a9-5b82-be87-5e18c15daca8",
+        "connector_type": "Bharat AC001",
+        "charging_standard": "IEC 62196-2",
+        "power_kw": 15.0,
+        "quantity": 2,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 12.0,
+        "currency": "INR"
+      }
+    ]
+  },
+  {
+    "id": "67db8ec4-19ff-5704-9e55-11fb0da73a1b",
+    "name": "ChargeZone Fast Hub \u2014 Mumbai Airport T2",
+    "operator": "ChargeZone",
+    "address_line": "P4 Parking Level, Chhatrapati Shivaji Maharaj International Airport T2",
+    "locality": "Sahar",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "postal_code": "400099",
+    "country": "India",
+    "latitude": 19.0974,
+    "longitude": 72.8744,
+    "is_24_hours": true,
+    "opening_time": "00:00:00",
+    "closing_time": "23:59:59",
+    "operational_status": "operational",
+    "connectors": [
+      {
+        "id": "0a46bf81-30e0-5fa6-8bb5-a15be00faab9",
+        "station_id": "67db8ec4-19ff-5704-9e55-11fb0da73a1b",
+        "connector_type": "CCS2",
+        "charging_standard": "IEC 62196-3",
+        "power_kw": 120.0,
+        "quantity": 4,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 22.5,
+        "currency": "INR"
+      },
+      {
+        "id": "e80c34bf-aa58-5359-9a2e-f1930306789a",
+        "station_id": "67db8ec4-19ff-5704-9e55-11fb0da73a1b",
+        "connector_type": "CCS2",
+        "charging_standard": "IEC 62196-3",
+        "power_kw": 60.0,
+        "quantity": 2,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 19.5,
+        "currency": "INR"
+      }
+    ]
+  },
+  {
+    "id": "f898aaeb-c112-54b2-b4d1-7039fed8093c",
+    "name": "Magenta ChargeGrid \u2014 Vashi Sector 17",
+    "operator": "Magenta Mobility",
+    "address_line": "Sector 17 Market Complex, Vashi, Navi Mumbai",
+    "locality": "Navi Mumbai",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "postal_code": "400703",
+    "country": "India",
+    "latitude": 19.0771,
+    "longitude": 72.9986,
+    "is_24_hours": true,
+    "opening_time": "00:00:00",
+    "closing_time": "23:59:59",
+    "operational_status": "operational",
+    "connectors": [
+      {
+        "id": "80045017-79f2-52e2-95c0-343d954618ad",
+        "station_id": "f898aaeb-c112-54b2-b4d1-7039fed8093c",
+        "connector_type": "CCS2",
+        "charging_standard": "IEC 62196-3",
+        "power_kw": 50.0,
+        "quantity": 2,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 17.0,
+        "currency": "INR"
+      },
+      {
+        "id": "c1b5bc0e-c9d6-5e9c-b19a-8e378b7a8f7d",
+        "station_id": "f898aaeb-c112-54b2-b4d1-7039fed8093c",
+        "connector_type": "Type 2",
+        "charging_standard": "IEC 62196-2",
+        "power_kw": 11.0,
+        "quantity": 2,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 13.0,
+        "currency": "INR"
+      }
+    ]
+  },
+  {
+    "id": "424fb45f-00b5-57c7-8c1a-faec13076b75",
+    "name": "Tata Power EZ \u2014 Oberoi Mall Goregaon",
+    "operator": "Tata Power",
+    "address_line": "Western Express Highway, Yashodham, Goregaon East",
+    "locality": "Goregaon East",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "postal_code": "400063",
+    "country": "India",
+    "latitude": 19.1738,
+    "longitude": 72.8601,
+    "is_24_hours": false,
+    "opening_time": "09:00:00",
+    "closing_time": "23:00:00",
+    "operational_status": "operational",
+    "connectors": [
+      {
+        "id": "323a111a-3eb6-5090-a1be-2d5faa85a267",
+        "station_id": "424fb45f-00b5-57c7-8c1a-faec13076b75",
+        "connector_type": "CCS2",
+        "charging_standard": "IEC 62196-3",
+        "power_kw": 60.0,
+        "quantity": 2,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 18.0,
+        "currency": "INR"
+      },
+      {
+        "id": "092c38ee-b548-5a23-8064-138f482f9774",
+        "station_id": "424fb45f-00b5-57c7-8c1a-faec13076b75",
+        "connector_type": "Type 2",
+        "charging_standard": "IEC 62196-2",
+        "power_kw": 22.0,
+        "quantity": 1,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 15.0,
+        "currency": "INR"
+      }
+    ]
+  },
+  {
+    "id": "9b16fcc6-31eb-5c05-8dea-56e416da6fcf",
+    "name": "Fortum Charge & Drive \u2014 Viviana Mall Thane",
+    "operator": "Fortum",
+    "address_line": "Eastern Express Highway, Near Cadbury Junction, Thane",
+    "locality": "Thane West",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "postal_code": "400606",
+    "country": "India",
+    "latitude": 19.2089,
+    "longitude": 72.9715,
+    "is_24_hours": true,
+    "opening_time": "00:00:00",
+    "closing_time": "23:59:59",
+    "operational_status": "operational",
+    "connectors": [
+      {
+        "id": "5f1684bd-adfb-5dd7-bdca-b728eb4135aa",
+        "station_id": "9b16fcc6-31eb-5c05-8dea-56e416da6fcf",
+        "connector_type": "CCS2",
+        "charging_standard": "IEC 62196-3",
+        "power_kw": 60.0,
+        "quantity": 2,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 19.0,
+        "currency": "INR"
+      },
+      {
+        "id": "ee6d7166-bf2c-57b7-b57f-d27df052fbb2",
+        "station_id": "9b16fcc6-31eb-5c05-8dea-56e416da6fcf",
+        "connector_type": "CHAdeMO",
+        "charging_standard": "IEC 62196-2",
+        "power_kw": 50.0,
+        "quantity": 1,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 19.0,
+        "currency": "INR"
+      }
+    ]
+  },
+  {
+    "id": "5b219150-6902-54b1-8885-e728654e7891",
+    "name": "Kazam EV Station \u2014 Dadar TT Circle",
+    "operator": "Kazam",
+    "address_line": "Dr Baba Saheb Ambedkar Road, Dadar TT Circle",
+    "locality": "Dadar East",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "postal_code": "400014",
+    "country": "India",
+    "latitude": 19.0178,
+    "longitude": 72.8478,
+    "is_24_hours": true,
+    "opening_time": "00:00:00",
+    "closing_time": "23:59:59",
+    "operational_status": "operational",
+    "connectors": [
+      {
+        "id": "78ef6ce9-ef01-52e5-bb2f-ad63311eae21",
+        "station_id": "5b219150-6902-54b1-8885-e728654e7891",
+        "connector_type": "Type 2",
+        "charging_standard": "IEC 62196-2",
+        "power_kw": 22.0,
+        "quantity": 2,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 14.0,
+        "currency": "INR"
+      },
+      {
+        "id": "e2806978-2b86-5b4c-ba21-6b6188603f63",
+        "station_id": "5b219150-6902-54b1-8885-e728654e7891",
+        "connector_type": "Bharat AC001",
+        "charging_standard": "IEC 62196-2",
+        "power_kw": 15.0,
+        "quantity": 2,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 12.0,
+        "currency": "INR"
+      }
+    ]
+  },
+  {
+    "id": "2dc5087b-8e5b-55f6-b0be-c11814029d9a",
+    "name": "Jio-bp pulse Station \u2014 Chembur Diamond Garden",
+    "operator": "Jio-bp",
+    "address_line": "Sion Trombay Road, Near Diamond Garden, Chembur",
+    "locality": "Chembur",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "postal_code": "400071",
+    "country": "India",
+    "latitude": 19.0522,
+    "longitude": 72.8994,
+    "is_24_hours": true,
+    "opening_time": "00:00:00",
+    "closing_time": "23:59:59",
+    "operational_status": "operational",
+    "connectors": [
+      {
+        "id": "8f8f2af0-99cd-54b8-91bd-a7b521d60b45",
+        "station_id": "2dc5087b-8e5b-55f6-b0be-c11814029d9a",
+        "connector_type": "CCS2",
+        "charging_standard": "IEC 62196-3",
+        "power_kw": 60.0,
+        "quantity": 2,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 19.5,
+        "currency": "INR"
+      },
+      {
+        "id": "665a5d23-0198-52cd-b5a8-7b536fc4be3f",
+        "station_id": "2dc5087b-8e5b-55f6-b0be-c11814029d9a",
+        "connector_type": "Type 2",
+        "charging_standard": "IEC 62196-2",
+        "power_kw": 22.0,
+        "quantity": 2,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 15.5,
+        "currency": "INR"
+      }
+    ]
+  },
+  {
+    "id": "65237036-1835-522e-a1bd-706b6048604b",
+    "name": "Statiq EV Station \u2014 Inorbit Mall Malad",
+    "operator": "Statiq",
+    "address_line": "Link Road, Mindspace, Malad West, Mumbai",
+    "locality": "Malad West",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "postal_code": "400064",
+    "country": "India",
+    "latitude": 19.1868,
+    "longitude": 72.8344,
+    "is_24_hours": false,
+    "opening_time": "10:00:00",
+    "closing_time": "22:00:00",
+    "operational_status": "operational",
+    "connectors": [
+      {
+        "id": "dfcf1426-ccb6-5113-bb14-e8f83f5b719b",
+        "station_id": "65237036-1835-522e-a1bd-706b6048604b",
+        "connector_type": "CCS2",
+        "charging_standard": "IEC 62196-3",
+        "power_kw": 60.0,
+        "quantity": 2,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 18.0,
+        "currency": "INR"
+      },
+      {
+        "id": "a3dbf329-5cf8-5825-909d-5adcab910a28",
+        "station_id": "65237036-1835-522e-a1bd-706b6048604b",
+        "connector_type": "Type 2",
+        "charging_standard": "IEC 62196-2",
+        "power_kw": 22.0,
+        "quantity": 2,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 14.5,
+        "currency": "INR"
+      }
+    ]
+  },
+  {
+    "id": "5b4146cf-bd4b-5a8f-bdd3-5fafc26d0180",
+    "name": "Tata Power EZ \u2014 Nariman Point CR2",
+    "operator": "Tata Power",
+    "address_line": "CR2 Mall, Barrister Rajni Patel Marg, Nariman Point",
+    "locality": "Nariman Point",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "postal_code": "400021",
+    "country": "India",
+    "latitude": 18.9272,
+    "longitude": 72.8228,
+    "is_24_hours": true,
+    "opening_time": "00:00:00",
+    "closing_time": "23:59:59",
+    "operational_status": "operational",
+    "connectors": [
+      {
+        "id": "f1f489f4-c2a7-5a9e-9d1b-11cbd86e4bce",
+        "station_id": "5b4146cf-bd4b-5a8f-bdd3-5fafc26d0180",
+        "connector_type": "CCS2",
+        "charging_standard": "IEC 62196-3",
+        "power_kw": 50.0,
+        "quantity": 2,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 20.0,
+        "currency": "INR"
+      },
+      {
+        "id": "5ba95bc6-6e98-574a-a5bb-d51f162f5dd3",
+        "station_id": "5b4146cf-bd4b-5a8f-bdd3-5fafc26d0180",
+        "connector_type": "Type 2",
+        "charging_standard": "IEC 62196-2",
+        "power_kw": 22.0,
+        "quantity": 2,
+        "pricing_type": "per_kwh",
+        "price_per_kwh": 16.0,
+        "currency": "INR"
+      }
+    ]
+  }
+]

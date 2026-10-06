@@ -1,0 +1,13 @@
+station_key,station_id,operator_key,location_key,station_name,latitude,longitude,is_24_hours,total_connectors,is_current,valid_from
+1,649f973e-3c76-5620-b36d-99a7ff89102a,1,1,Tata Power EZ Charge — Bandra Kurla Complex,19.0662,72.8688,True,4,True,2026-09-01T00:00:00Z
+2,f9dcb735-42a8-57b2-9718-df18dc9c0084,2,2,Jio-bp pulse EV Hub — Andheri East,19.1172,72.8532,True,6,True,2026-09-01T00:00:00Z
+3,1d483d3b-273b-5932-8370-328841bea34d,3,3,Statiq Charging Hub — Lower Parel High Street Phoenix,18.9958,72.8252,False,3,True,2026-09-01T00:00:00Z
+4,fa6f0dfa-73a9-5b82-be87-5e18c15daca8,4,4,Ather Grid Fast Charger — Hiranandani Powai,19.1197,72.9056,True,5,True,2026-09-01T00:00:00Z
+5,67db8ec4-19ff-5704-9e55-11fb0da73a1b,5,5,ChargeZone Fast Hub — Mumbai Airport T2,19.0974,72.8744,True,6,True,2026-09-01T00:00:00Z
+6,f898aaeb-c112-54b2-b4d1-7039fed8093c,6,6,Magenta ChargeGrid — Vashi Sector 17,19.0771,72.9986,True,4,True,2026-09-01T00:00:00Z
+7,424fb45f-00b5-57c7-8c1a-faec13076b75,1,7,Tata Power EZ — Oberoi Mall Goregaon,19.1738,72.8601,False,3,True,2026-09-01T00:00:00Z
+8,9b16fcc6-31eb-5c05-8dea-56e416da6fcf,7,8,Fortum Charge & Drive — Viviana Mall Thane,19.2089,72.9715,True,3,True,2026-09-01T00:00:00Z
+9,5b219150-6902-54b1-8885-e728654e7891,8,9,Kazam EV Station — Dadar TT Circle,19.0178,72.8478,True,4,True,2026-09-01T00:00:00Z
+10,2dc5087b-8e5b-55f6-b0be-c11814029d9a,2,10,Jio-bp pulse Station — Chembur Diamond Garden,19.0522,72.8994,True,4,True,2026-09-01T00:00:00Z
+11,65237036-1835-522e-a1bd-706b6048604b,3,11,Statiq EV Station — Inorbit Mall Malad,19.1868,72.8344,False,4,True,2026-09-01T00:00:00Z
+12,5b4146cf-bd4b-5a8f-bdd3-5fafc26d0180,1,12,Tata Power EZ — Nariman Point CR2,18.9272,72.8228,True,4,True,2026-09-01T00:00:00Z

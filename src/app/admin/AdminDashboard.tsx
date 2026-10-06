@@ -358,20 +358,20 @@ export function AdminDashboard() {
 
               <div className="mt-4 grid grid-cols-2 gap-3 text-xs font-mono">
                 <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
-                  <p className="text-slate-500">Model Version</p>
-                  <p className="mt-1 font-bold text-slate-200">v2.4-gbm-mumbai</p>
+                  <p className="text-slate-500">Model Algorithm</p>
+                  <p className="mt-1 font-bold text-slate-200">RandomForestRegressor</p>
                 </div>
                 <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
-                  <p className="text-slate-500">Inference Acc</p>
-                  <p className="mt-1 font-bold text-emerald-400">94.2% ROC-AUC</p>
+                  <p className="text-slate-500">Model Accuracy (R²)</p>
+                  <p className="mt-1 font-bold text-emerald-400">0.4105 (MAE: 0.2565)</p>
                 </div>
                 <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
-                  <p className="text-slate-500">Drift Deviation</p>
-                  <p className="mt-1 font-bold text-slate-200">0.012 (Nominal)</p>
+                  <p className="text-slate-500">Spatial Clusters</p>
+                  <p className="mt-1 font-bold text-slate-200">3 K-Means Hotspots</p>
                 </div>
                 <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
-                  <p className="text-slate-500">Next Retrain</p>
-                  <p className="mt-1 font-bold text-slate-200">03:00 IST (Daily)</p>
+                  <p className="text-slate-500">Top Predictive Feature</p>
+                  <p className="mt-1 font-bold text-amber-400">Hour of Day (90.1%)</p>
                 </div>
               </div>
             </section>
