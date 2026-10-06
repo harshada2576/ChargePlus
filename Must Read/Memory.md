@@ -94,4 +94,21 @@ Every entry should include:
 - Blockers / waiting on: None.
 - Next step: Phase 2 Step 2.1 — Define canonical station/connector input contract.
 
+### 06 Oct 2026 — DWDM Academic Pipeline Implementation (No LLMs)
+- Phase / Step: Phases 2, 4, 5 (Academic DWDM Specialization)
+- What we built/changed:
+  1. Ingestion: Created `backend/ingestion/ingest_stations.py` generating 12 canonical Mumbai stations with 8 operators into `data/canonical_stations.json`.
+  2. Telemetry: Created `backend/ingestion/seed_observations.py` generating 17,280 hourly observations (30 days) modeling diurnal rush-hour curves.
+  3. Star Schema ETL: Created `backend/etl/etl_pipeline.py` populating Kimball Star Schema tables (`dim_station`, `dim_operator`, `dim_location`, `dim_connector`, `fact_station_daily`) into `data/warehouse/`.
+  4. Data Mining (No LLMs): Created `backend/ml/demand_mining.py` implementing K-Means spatial clustering (3 hotspots) and Random Forest queue regression (`R² = 0.4105`, `MAE = 0.2565`) evaluated against baseline.
+  5. OLAP Suite: Created `docs/olap/olap_queries.sql` providing Roll-up, Drill-down, Slice & Dice, Cube, and Window ranking queries.
+  6. Admin Dashboard: Updated `src/app/admin/AdminDashboard.tsx` Area 6 to display verified data mining outputs.
+  7. Client Resiliency: Added safe fallback client initialization in `src/lib/supabase.ts`.
+  8. Documentation: Authored `README2.md` explaining DWDM architecture, pipeline, and viva defense guide.
+- Current state: All Python pipelines executed and verified; Next.js 16 build (`npm run build`) passing 26/26 routes with 0 errors.
+- Conceptual verification: Strict Kimball star schema modeling; 0 LLMs or Generative AI used; classical statistical and machine learning algorithms only.
+- Blockers / waiting on: None.
+- Next step: Lab presentation and viva evaluation.
+
+
 
