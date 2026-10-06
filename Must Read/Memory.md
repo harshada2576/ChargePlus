@@ -735,6 +735,14 @@ Every entry should include:
 - Blockers / waiting on: none for Phase 5 start; Step 5.1 must confirm data maturity before any training.
 - Next step: Phase 5 Step 5.1 — Measure data maturity.
 
+### 06 Oct 2026 — Phase 6 branch start
+- Phase / Step: Phase 6/6 — Step 6.1 (not started)
+- What we built/changed: docs cutover only (Phases current-phase → 6/6, this entry, README Phase 5 closure + Phase 6 note); Phase 5 work pushed on `feature/phase-5-intelligence`; new branch `feature/phase-6-production` created from it. No Phase 6 implementation yet.
+- Current state: Phase 5 locked with verdict `PHASE 5 COMPLETE WITH DATA-DEPENDENT CAPABILITIES BLOCKED` (methodology complete, training correctly awaits temporal evidence).
+- Conceptual verification: roadmap, memory, and methodology doc agree on phase boundary; history untouched.
+- Blockers / waiting on: none for Phase 6 start.
+- Next step: Phase 6 Step 6.1 — Production deployment.
+
 ### 06 Oct 2026 — Phase 5 Steps 5.2–5.10 methodology (COLD warehouse)
 - Phase / Step: Phase 5/6 — Steps 5.2–5.10
 - What we built/changed: `backend/ml/` (gates, baselines+metrics, features, gated datasets, gated training, forecasting specs, anomaly detectors, explainable recommender, ml.* registry writers, inference contracts) + `tests/test_phase5.py` (25 tests) + `docs/phase_5_methodology.md`. Stdlib only, no new deps.
