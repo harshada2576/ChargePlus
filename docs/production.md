@@ -7,8 +7,8 @@
   Pre-configured build args (`ARG NEXT_PUBLIC_SUPABASE_URL`, `ARG NEXT_PUBLIC_SUPABASE_ANON_KEY`)
   allow standalone Docker builds to succeed reproducibly without leaking secrets.
 - **Python Environment:** Pinned reproducible manifest in `requirements.txt`:
-  `pydantic==1.10.22`, `python-dotenv==1.1.0`, `requests==2.31.0`,
-  `psycopg2-binary==2.9.10`, `pytest==8.3.5`, `pytest-asyncio==0.26.0`.
+  `pydantic==1.10.22`, `python-dotenv==1.2.2`, `requests==2.33.0`,
+  `psycopg2-binary==2.9.10`, `pytest==9.0.3`, `pytest-asyncio==1.4.0`.
 - **Scheduled Automation:** GitHub Actions (`.github/workflows/scheduled_ingestion.yml`)
   runs the end-to-end pipeline every 6 hours:
   `Ingestion (runner.py)` → `Warehouse ETL (etl.py)` → `Data Quality (quality.py)` → `Maturity Gate (maturity.py)`.
