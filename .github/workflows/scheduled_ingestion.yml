@@ -1,4 +1,4 @@
-name: Scheduled Ingestion Workflow
+name: Scheduled Ingestion & Warehouse Pipeline
 
 on:
   schedule:
@@ -25,10 +25,10 @@ on:
         default: false
 
 jobs:
-  ingest:
-    name: Run Ingestion Pipeline
+  pipeline:
+    name: Run Ingestion, Warehouse ETL & Quality Pipeline
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -43,7 +43,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pydantic python-dotenv requests psycopg2-binary pytest pytest-asyncio
+          pip install -r requirements.txt
 
       - name: Execute Ingestion Run
         env:
@@ -59,3 +59,29 @@ jobs:
           LIMIT="${{ github.event.inputs.limit || '50' }}"
           SCOPE="${{ github.event.inputs.scope || 'mumbai' }}"
           python -m backend.ingestion.runner --source "$SOURCE" --limit "$LIMIT" --scope "$SCOPE" --run-once $EXTRA_ARGS
+
+      - name: Execute Warehouse ETL
+        if: success()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          ETL_ARGS=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ETL_ARGS="--dry-run"
+          fi
+          python -m backend.warehouse.etl --job all $ETL_ARGS
+
+      - name: Execute Warehouse Data Quality Checks
+        if: success()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python -m backend.warehouse.quality
+
+      - name: Measure Warehouse Data Maturity
+        if: success()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python -m backend.warehouse.maturity

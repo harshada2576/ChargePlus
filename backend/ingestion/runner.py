@@ -671,6 +671,9 @@ def main() -> None:
                 print(json.dumps(run.to_dict(), indent=2))
             else:
                 print(f"Run ID: {run.run_id} | State: {run.state.value} | Fetched: {run.records_fetched} | Persisted: {run.stations_persisted}")
+            if run.state in (IngestionRunState.FAILED, IngestionRunState.CANCELLED):
+                logger.error("Scheduled ingestion run ended in unsuccess state: %s", run.state.value)
+                sys.exit(1)
         else:
             summary = runner.run(
                 dry_run=args.dry_run,

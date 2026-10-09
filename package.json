@@ -6,7 +6,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --import ./tests/register-hooks.mjs --test tests/test_*.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

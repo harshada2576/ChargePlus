@@ -1,4 +1,5 @@
-# ChargePlus CI (Phase 6.1): typecheck, lint, unit tests, production build.
+# ChargePlus CI (Phase 6.1): typecheck, lint, Node unit tests, production build,
+# Python tests with pinned requirements, and Docker image build verification.
 # The build needs public Supabase vars at module-evaluation time, so CI
 # supplies documented dummy values; runtime validation still fails fast
 # on missing real configuration.
@@ -11,6 +12,7 @@ on:
 
 jobs:
   web:
+    name: Node Web Suite (Typecheck, Lint, Tests, Build)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,17 +23,28 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
+      - run: npm test
       - run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
 
   python:
+    name: Python Test Suite (Pinned Requirements, Unit Tests)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install pydantic python-dotenv requests psycopg2-binary pytest pytest-asyncio
+          cache: "pip"
+      - run: pip install -r requirements.txt
       - run: python -m pytest tests/ -q --ignore=tests/test_canonical_postgres_integration.py
+
+  docker:
+    name: Production Docker Build Verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker Container
+        run: docker build -t chargeplus:ci .

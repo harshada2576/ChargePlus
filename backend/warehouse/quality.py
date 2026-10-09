@@ -7,10 +7,16 @@ reported, never hidden; this module writes nothing.
 
 from __future__ import annotations
 
+import argparse
+import json
 import logging
+import os
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Callable, Optional
+
+from dotenv import load_dotenv
 
 logger = logging.getLogger("chargeplus.warehouse.quality")
 
@@ -234,3 +240,40 @@ def run_all_checks(conn: Any) -> QualityReport:
                     rule_id="WH-CHECK-ERROR", severity="WARNING", passed=False,
                     detail=f"{getattr(check, '__name__', check)} errored: {ex}"))
     return report
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="ChargePlus warehouse data quality checks (Phase 4.5, read-only).")
+    parser.add_argument("--json", action="store_true", help="Machine-readable JSON output")
+    args = parser.parse_args()
+
+    load_dotenv(".env.local")
+    load_dotenv(".env")
+    import psycopg2
+
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        print("DATABASE_URL is not configured.", file=sys.stderr)
+        sys.exit(1)
+    conn = psycopg2.connect(db_url)
+    try:
+        report = run_all_checks(conn)
+    finally:
+        conn.close()
+
+    rep_dict = report.to_dict()
+    if args.json:
+        print(json.dumps(rep_dict, indent=2))
+    else:
+        status = "PASSED" if rep_dict["passed"] else "FAILED"
+        print(f"warehouse data quality: {status} ({len(report.findings)} checks)")
+        for f in report.findings:
+            mark = "PASS" if f.passed else f"FAIL [{f.severity}]"
+            print(f"  {f.rule_id} ({mark}): {f.detail}")
+
+    if not rep_dict["passed"]:
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
