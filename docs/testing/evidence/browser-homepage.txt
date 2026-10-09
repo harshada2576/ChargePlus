@@ -1,0 +1,10 @@
+ChargePlus browser smoke evidence
+Timestamp: 2026-10-09 (IST)
+Browser: Google Chrome installed locally
+URL: http://localhost:3000/
+Observed result: HTTP application rendered in a real browser. Page title was
+"ChargePlus — Find the right charger, before you reach the queue". The accessibility
+snapshot contained the hero heading, "Find a charger" and "Explore stations" links,
+anonymous-search copy, station pilot content, and primary mobile navigation.
+Scope: homepage smoke only. Multi-route E2E was not certified because the local
+development server was still compiling routes and did not provide a stable run.

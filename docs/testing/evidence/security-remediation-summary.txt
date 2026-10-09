@@ -1,0 +1,35 @@
+ChargePlus Phase 6 security remediation verification
+Starting commit: 2ed89056a9f4eca17d98dbe88535987139e214cf
+Final commit: uncommitted working tree (dependency/source/report changes)
+
+Runtime JavaScript audit:
+Command: npm audit --omit=dev --json
+Exit code: 0
+Result: 0 vulnerabilities (0 info, 0 low, 0 moderate, 0 high, 0 critical)
+
+All JavaScript audit:
+Command: npm audit --json
+Exit code: 1
+Result: 9 development-only vulnerabilities (4 moderate, 5 high, 0 critical)
+Residual packages: drizzle-kit/esbuild toolchain and eslint-config-next glob toolchain.
+
+Python audit:
+Command: pip-audit -r requirements.txt
+Exit code: 0
+Result: No known vulnerabilities found
+
+Final direct versions:
+next 16.3.8
+maplibre-gl 6.4.1
+postcss 8.5.29
+python-dotenv 1.2.2
+requests 2.33.0
+pytest 9.0.3
+pytest-asyncio 1.4.0
+
+Regression:
+npm test: 126 passed, exit 0
+python -m pytest tests -q --ignore=tests/test_canonical_postgres_integration.py: 432 passed, exit 0
+npm run typecheck: exit 0
+npm run lint: exit 0
+npm run build: exit 0; 25 routes generated

@@ -1,0 +1,8 @@
+﻿npm ci (clean isolated install from package-lock.json, validates CI contract):
+timestamp: 2026-10-09T20:40:40.4349055+05:30
+exit=0
+npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.hirok.io
+npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.hirok.io
+npm warn deprecated eslint@9.39.4: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+
+added 419 packages in 1m

@@ -1,0 +1,56 @@
+﻿
+> build
+> next build
+
+Γû▓ Next.js 16.3.8 (Turbopack)
+- Environments: .env.local
+node.exe : ΓÜá Warning: Next.js ignored package-lock.json in C:\Users\Admin because it is outside the current Git 
+repository (C:\Users\Admin\Desktop\Projects\ChargePlus).
+At C:\Program Files\nodejs\npm.ps1:29 char:3
++   & $NODE_EXE $NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ΓÜá Warning: Ne...ts\ChargePlus).:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ To use this directory, set `turbopack.root` in your Next.js config.
+
+Γ£ô Running next.config.ts took 350ms
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 19.5s
+  Running TypeScript ...
+  Finished TypeScript in 22.0s ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/25) ...
+  Generating static pages using 3 workers (6/25) 
+  Generating static pages using 3 workers (12/25) 
+  Generating static pages using 3 workers (18/25) 
+Γ£ô Generating static pages using 3 workers (25/25) in 6.1s
+  Finalizing page optimization ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ Γùï /about
+Γö£ ╞Æ /admin
+Γö£ ╞Æ /alerts
+Γö£ ╞Æ /api/admin/warehouse
+Γö£ ╞Æ /api/health
+Γö£ Γùï /contact
+Γö£ ╞Æ /explore
+Γö£ Γùï /help
+Γö£ ╞Æ /login
+Γö£ Γùï /privacy
+Γö£ ╞Æ /profile
+Γö£ ╞Æ /reports
+Γö£ ╞Æ /reviews
+Γö£ ╞Æ /saved
+Γö£ Γùï /search
+Γö£ ╞Æ /station/[id]
+Γö£ Γùï /terms
+Γöö ╞Æ /verify
+
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+
