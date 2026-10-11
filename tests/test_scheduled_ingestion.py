@@ -50,7 +50,9 @@ from unittest.mock import MagicMock, patch
 import uuid
 
 import psycopg2
-from dotenv import load_dotenv
+
+from tests.db_target_guard import require_disposable_target
+
 
 from backend.ingestion.adapters.openchargemap import OpenChargeMapAdapter
 from backend.ingestion.constants import AvailabilityStatus, OperationalStatus, ValidationOutcome
@@ -967,11 +969,14 @@ class TestScheduledIngestion(unittest.TestCase):
     # --------------------------------------------------------------------------
     def test_32_live_database_ingestion_run_persistence_and_cleanup(self):
         """32. Tests real public.ingestion_runs audit insert and clean cleanup on live Supabase PostgreSQL."""
-        load_dotenv(".env.local")
-        load_dotenv(".env")
         db_url = os.getenv("DATABASE_URL")
-        if not db_url:
+        if not db_url or "your-project-ref" in db_url:
             self.skipTest("DATABASE_URL not configured. Skipping live PostgreSQL test.")
+
+        try:
+            require_disposable_target(db_url, test_id="test_32_live_database")
+        except RuntimeError as e:
+            self.skipTest("REFUSED live-database write target: %s" % e)
 
         real_conn = None
         test_run_id = str(uuid.uuid4())
