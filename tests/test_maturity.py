@@ -15,6 +15,7 @@ from backend.warehouse.maturity import (
     classify_station,
     gap_stats,
     pct,
+    report_gate,
     split_feasible,
     station_maturity,
     target_assessment,
@@ -122,6 +123,32 @@ class TestClassification(unittest.TestCase):
 
 
 class TestEmptyWarehouse(unittest.TestCase):
+    def test_report_gate_accepts_cold_report(self):
+        report = {
+            "generated_at": "now",
+            "counts": {},
+            "temporal": {},
+            "targets": [],
+            "maturity": {"overall": "COLD"},
+            "capabilities": [],
+        }
+        self.assertEqual(report_gate(report), {"passed": True, "missing_fields": []})
+
+    def test_report_gate_rejects_incomplete_report(self):
+        self.assertEqual(
+            report_gate({"maturity": {"overall": "COLD"}}),
+            {
+                "passed": False,
+                "missing_fields": [
+                    "generated_at",
+                    "counts",
+                    "temporal",
+                    "targets",
+                    "capabilities",
+                ],
+            },
+        )
+
     def test_06_zero_evidence_profile(self):
         cur = FakeCur(empty_mapping())
         p = temporal_profile(cur, "public.station_observations", "observed_at")
