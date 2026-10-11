@@ -20,9 +20,14 @@ from __future__ import annotations
 import abc
 import json
 import logging
+import random
+import time
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any, Callable, Optional
+from urllib.parse import urlsplit
 from pydantic import BaseModel, Field
+
+import requests
 
 from backend.ingestion.contracts import (
     NormalizedStationRecord,
@@ -32,6 +37,192 @@ from backend.ingestion.contracts import (
 from backend.ingestion.validation import DataQualityValidator, ValidationResult
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Shared upstream-transport helpers (used by every source adapter).
+#
+# One implementation here beats one retry loop per adapter: timeouts, HTTP 429,
+# HTTP 5xx, and connection errors all get bounded retries with exponential
+# backoff, jitter, and Retry-After support, and every adapter inherits the
+# same failure vocabulary that ScheduledIngestionOrchestrator classifies.
+# ---------------------------------------------------------------------------
+
+# Nominal retry budget for a single upstream HTTP request. Whole-run retries
+# remain the orchestrator's job; this only absorbs transient per-request
+# failures so one blip does not fail an entire source poll.
+DEFAULT_REQUEST_MAX_ATTEMPTS = 3
+DEFAULT_REQUEST_BASE_DELAY_SEC = 0.5
+DEFAULT_REQUEST_MAX_DELAY_SEC = 5.0
+
+# Statuses worth retrying at the transport layer. Other 4xx (401/403/404) are
+# returned untouched so callers can raise domain-specific errors (e.g. bad
+# credentials, unknown dataset) instead of burning retries on them.
+RETRYABLE_STATUS_CODES = frozenset({408, 429, 500, 502, 503, 504})
+
+
+def _default_sleep(seconds: float) -> None:
+    """Module-level sleep indirection so tests can patch transport timing."""
+    time.sleep(seconds)
+
+
+def _parse_retry_after(headers: Any) -> Optional[float]:
+    """Extracts Retry-After delay seconds from response headers, if present."""
+    try:
+        raw = None
+        if headers is not None:
+            getter = getattr(headers, "get", None)
+            raw = getter("Retry-After", None) if callable(getter) else None
+            if raw is None and isinstance(headers, dict):
+                raw = headers.get("retry-after", headers.get("Retry-After"))
+        if raw is None:
+            return None
+        return max(0.0, float(str(raw).strip()))
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+
+def validate_endpoint_url(url: str, *, caller: str = "adapter") -> str:
+    """Validates a configurable upstream endpoint URL against SSRF risks.
+
+    Rules (minimal, edge-case-correct):
+      - Only http/https schemes. Anything else (file://, ftp://, ...) is
+        rejected outright.
+      - No URL-embedded credentials (user:pass@host) — secrets must travel in
+        headers or env vars, never in the URL.
+      - Plain http is allowed ONLY for loopback hosts (isolated simulator /
+        local test doubles). Anything else must use https.
+      - Empty or unparseable URLs are rejected.
+
+    NOTE (known ceiling): this does not resolve DNS or block private ranges —
+    endpoint URLs come from operator-controlled env config, never from end-user
+    input, and adapters run server-side only. Revisit if endpoints ever become
+    user-configurable.
+    """
+    if not url or not isinstance(url, str):
+        raise ValueError(f"{caller}: endpoint URL must be a non-empty string")
+    parts = urlsplit(url.strip())
+    if parts.scheme not in ("http", "https"):
+        raise ValueError(
+            f"{caller}: endpoint URL must use http(s), got scheme {parts.scheme!r}"
+        )
+    if not parts.hostname:
+        raise ValueError(f"{caller}: endpoint URL has no host: {url!r}")
+    if parts.username or parts.password:
+        raise ValueError(
+            f"{caller}: endpoint URL must not embed credentials; "
+            "pass secrets via headers or environment variables"
+        )
+    if parts.scheme == "http" and parts.hostname not in (
+        "localhost", "127.0.0.1", "::1",
+    ):
+        raise ValueError(
+            f"{caller}: plain http is only allowed for loopback test endpoints; "
+            f"use https for {parts.hostname}"
+        )
+    return url.strip()
+
+
+def request_with_retry(
+    method: str,
+    url: str,
+    *,
+    max_attempts: int = DEFAULT_REQUEST_MAX_ATTEMPTS,
+    timeout_sec: float = 30.0,
+    base_delay_sec: float = DEFAULT_REQUEST_BASE_DELAY_SEC,
+    max_delay_sec: float = DEFAULT_REQUEST_MAX_DELAY_SEC,
+    sleep_fn: Optional[Callable[[float], None]] = None,
+    **request_kwargs: Any,
+) -> "requests.Response":
+    """Performs one upstream HTTP request with bounded retries.
+
+    Retries (with exponential backoff, jitter, and Retry-After honoring, all
+    capped at max_delay_sec):
+      - requests Timeout / ConnectionError
+      - HTTP 408 / 429 / 5xx
+
+    Returns the response for every other status (including 401/403/404) so the
+    caller can raise precise domain errors. Raises TimeoutError /
+    ConnectionError (original type preserved) when transport retries are
+    exhausted, or RuntimeError with a "rate limit" / "server error (HTTP …)"
+    message when status retries are exhausted — the exact vocabulary the
+    scheduled orchestrator classifies as TRANSIENT.
+    """
+    if method not in ("get", "post"):
+        raise ValueError(f"request_with_retry supports 'get'/'post', got {method!r}")
+    if max_attempts < 1:
+        raise ValueError(f"max_attempts must be >= 1, got {max_attempts}")
+    validated_url = validate_endpoint_url(url)
+    send = getattr(requests, method)  # resolved per call: mock-friendly
+    sleeper = sleep_fn or _default_sleep  # module-global lookup: patchable
+
+    last_status: Optional[int] = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            response = send(validated_url, timeout=timeout_sec, **request_kwargs)
+        except (requests.exceptions.Timeout, TimeoutError) as exc:
+            if attempt >= max_attempts:
+                raise TimeoutError(
+                    f"Upstream request timed out after {timeout_sec}s "
+                    f"({max_attempts} attempts): {validated_url}"
+                ) from exc
+            _sleep_backoff(attempt, None, base_delay_sec, max_delay_sec, sleeper)
+            continue
+        except requests.exceptions.ConnectionError as exc:
+            if attempt >= max_attempts:
+                raise ConnectionError(
+                    f"Failed to connect to upstream ({max_attempts} attempts): "
+                    f"{type(exc).__name__}"
+                ) from exc
+            _sleep_backoff(attempt, None, base_delay_sec, max_delay_sec, sleeper)
+            continue
+        except requests.exceptions.RequestException as exc:
+            # Non-transport request errors (bad URL, too many redirects, …)
+            # will not heal on retry: fail fast without secret leakage.
+            raise ConnectionError(f"Upstream request failed: {type(exc).__name__}") from exc
+
+        status = getattr(response, "status_code", None)
+        last_status = status
+        if status in RETRYABLE_STATUS_CODES:
+            retry_after = _parse_retry_after(getattr(response, "headers", None))
+            if attempt >= max_attempts:
+                if status == 429:
+                    raise RuntimeError(
+                        "Upstream rate limit exceeded "
+                        f"(HTTP 429, {max_attempts} attempts). "
+                        "Back off before retrying."
+                    )
+                raise RuntimeError(
+                    f"Upstream server error (HTTP {status}, {max_attempts} attempts). "
+                    "Retry with exponential backoff."
+                )
+            _sleep_backoff(attempt, retry_after, base_delay_sec, max_delay_sec, sleeper)
+            continue
+        return response
+
+    # Unreachable: loop either returns or raises. Kept as a guard.
+    raise RuntimeError(
+        f"Upstream request failed after {max_attempts} attempts "
+        f"(last status: {last_status})"
+    )
+
+
+def _sleep_backoff(
+    attempt: int,
+    retry_after: Optional[float],
+    base_delay_sec: float,
+    max_delay_sec: float,
+    sleeper: Callable[[float], None],
+) -> None:
+    """Sleeps one bounded exponential-backoff-with-jitter step."""
+    backoff = min(max_delay_sec, base_delay_sec * (2.0 ** (attempt - 1)))
+    backoff *= 0.8 + 0.4 * random.random()  # ±20% jitter
+    if retry_after is not None and retry_after > 0:
+        backoff = min(max_delay_sec, max(backoff, min(retry_after, max_delay_sec)))
+    else:
+        backoff = min(max_delay_sec, backoff)
+    logger.debug("Upstream retry %d: sleeping %.2fs", attempt, backoff)
+    sleeper(max(0.0, backoff))
 
 
 class AdapterResult(BaseModel):

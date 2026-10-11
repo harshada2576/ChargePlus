@@ -186,6 +186,17 @@ We will also perform a conceptual check, not just a code check.
 - **Current Step**: Phase 3 COMPLETE — all Steps 3.1 through 3.13 verified and locked
 - **Remaining Steps in Phase 3**: 0 (complete; next is Phase 4)
 
+> **Dated note (11 Oct 2026) — completion mission, no phase rewritten:**
+> Secondary-source ingestion (OSM Overpass + data.gov.in adapters through the
+> canonical pipeline, manual/dry-run only), the Phase 5 ML runtime
+> (gates/training/registry/inference + `/api/ml/*`, production inference
+> fail-closed at COLD/NO_MODEL), and the CPO framework (OCPI 2.2.1 Locations
+> + OICP 2.3 PullEVSEData subset, all partners NOT_CONFIGURED) are implemented
+> and pytest-verified (603 passed). Phase 4 warehouse ETL, live secondary
+> rollouts, real observation history for ML, and partner onboarding remain
+> future/external work per `docs/secondary_sources.md`, `docs/phase5_ml.md`,
+> and `docs/cpo_partners.md`. The roadmap steps above are unchanged.
+
 ### What is complete:
 - **Phase 1 — Foundation & Real Database (Steps 1.1–1.10) — COMPLETE & SIGNED OFF**:
   - 1.1 Create/configure Supabase project — COMPLETE

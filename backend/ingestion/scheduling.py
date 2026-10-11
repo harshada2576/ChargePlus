@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 import hashlib
+import inspect
 import json
 import logging
 import os
@@ -36,6 +37,22 @@ from backend.ingestion.contracts import CandidateLookupError
 from backend.ingestion.persistence import IngestionPersistenceService, _scrub_secrets
 
 logger = logging.getLogger("chargeplus.ingestion.scheduling")
+
+
+def _runner_accepts_kw(runner: Any, kw: str) -> bool:
+    """Reports whether runner.run() accepts a given keyword argument.
+
+    Used to distinguish a genuine signature mismatch (old test double → fall
+    back to the older call shape) from a real TypeError bug inside run()
+    (must propagate, never silently retry as a different source).
+    """
+    try:
+        params = inspect.signature(getattr(runner, "run")).parameters
+    except (TypeError, ValueError):
+        return False
+    return kw in params or any(
+        p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values()
+    )
 
 
 # ==============================================================================
@@ -99,6 +116,12 @@ class RetryPolicy:
             return FailureClassification.UNKNOWN
 
         exc_type_name = type(exc).__name__
+
+        # Credential errors (missing/invalid/expired API keys, unknown dataset
+        # IDs) never heal on retry: fail fast as PERMANENT. Matched by class
+        # name so adapter-specific error types need no import here.
+        if "credential" in exc_type_name.lower():
+            return FailureClassification.PERMANENT
 
         # CandidateLookupError during candidate retrieval is a transient database query failure
         if isinstance(exc, CandidateLookupError) or "candidatelookuperror" in exc_type_name.lower():
@@ -458,6 +481,31 @@ class ScheduledIngestionOrchestrator:
             run.error_summary = "Skipped: source feed is disabled in schedule configuration."
             return run
 
+        # 1b. Unattended-scheduling guard: sources outside the runner's
+        # scheduled_sources stay manual/dry-run until their target,
+        # configuration, and safeguards are validated. Explicit dry-runs and
+        # fixture runs (manual operation) are always allowed.
+        allowed_sources = getattr(self.runner, "scheduled_sources", None)
+        if (
+            isinstance(allowed_sources, (set, frozenset, list, tuple))
+            and config.source_id not in allowed_sources
+            and not config.dry_run
+            and fixtures_data is None
+        ):
+            logger.info(
+                "Source '%s' is not enabled for unattended scheduling. "
+                "Run it manually with --dry-run first.",
+                config.source_id,
+            )
+            run.state = IngestionRunState.CANCELLED
+            run.completed_at = datetime.now(timezone.utc)
+            run.duration_seconds = time.time() - start_mono
+            run.error_summary = (
+                f"Skipped: source '{config.source_id}' is not enabled for "
+                "unattended scheduling. Validate it with a manual --dry-run first."
+            )
+            return run
+
         # 2. Concurrency Protection
         lock = IngestionConcurrencyLock(
             source_id=config.source_id,
@@ -510,8 +558,14 @@ class ScheduledIngestionOrchestrator:
                             fixtures_data=fixtures_data,
                             timeout_seconds=config.timeout_seconds,
                             attempt_count=attempt,
+                            source=config.source_id,
                         )
                     except TypeError:
+                        if _runner_accepts_kw(self.runner, "source"):
+                            # Real bug inside run(), not a signature mismatch:
+                            # never silently fall back (and never ingest a
+                            # different source than requested).
+                            raise
                         try:
                             summary = self.runner.run(
                                 dry_run=config.dry_run,
@@ -520,17 +574,28 @@ class ScheduledIngestionOrchestrator:
                                 bounding_box=config.bounding_box,
                                 fixtures_data=fixtures_data,
                                 timeout_seconds=config.timeout_seconds,
+                                attempt_count=attempt,
                             )
                         except TypeError:
-                            # Backward-compatible fallback for test doubles with an
-                            # older run() signature lacking timeout_seconds.
-                            summary = self.runner.run(
-                                dry_run=config.dry_run,
-                                limit=config.limit,
-                                mumbai_only=mumbai_only,
-                                bounding_box=config.bounding_box,
-                                fixtures_data=fixtures_data,
-                            )
+                            try:
+                                summary = self.runner.run(
+                                    dry_run=config.dry_run,
+                                    limit=config.limit,
+                                    mumbai_only=mumbai_only,
+                                    bounding_box=config.bounding_box,
+                                    fixtures_data=fixtures_data,
+                                    timeout_seconds=config.timeout_seconds,
+                                )
+                            except TypeError:
+                                # Backward-compatible fallback for test doubles with an
+                                # older run() signature lacking timeout_seconds.
+                                summary = self.runner.run(
+                                    dry_run=config.dry_run,
+                                    limit=config.limit,
+                                    mumbai_only=mumbai_only,
+                                    bounding_box=config.bounding_box,
+                                    fixtures_data=fixtures_data,
+                                )
 
                     # Transfer accounting metrics and align run_id with runner
                     if getattr(summary, "run_id", None):

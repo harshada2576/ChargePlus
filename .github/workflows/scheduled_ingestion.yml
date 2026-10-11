@@ -29,6 +29,9 @@ jobs:
     name: Run Ingestion Pipeline
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Least privilege: ingestion only needs to read the repo checkout.
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
@@ -50,6 +53,12 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           OPENCHARGEMAP_API_KEY: ${{ secrets.OPENCHARGEMAP_API_KEY }}
+          # Secondary sources are manual/dry-run until validated; the runner
+          # refuses unattended scheduling for them. Secrets are passed through
+          # so authorized manual workflow_dispatch runs can use them.
+          OSM_OVERPASS_ENDPOINT: ${{ secrets.OSM_OVERPASS_ENDPOINT }}
+          DATAGOVIN_API_KEY: ${{ secrets.DATAGOVIN_API_KEY }}
+          DATAGOVIN_RESOURCE_ID: ${{ secrets.DATAGOVIN_RESOURCE_ID }}
         run: |
           EXTRA_ARGS=""
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then

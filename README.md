@@ -80,9 +80,11 @@ ChargePlus/
 │       ├── constants.py               # CONTRACT_VERSION ("1.0.0"), bounding boxes, enums
 │       ├── contracts.py               # Pydantic models (RawSourceRecord, NormalizedStation, ProvenanceInfo)
 │       ├── validation.py              # DataQualityValidator (geofencing, electrical bounds, scoring)
-│       ├── base.py                    # BaseSourceAdapter, AdapterResult, BatchAdapterResult
+│       ├── base.py                    # BaseSourceAdapter, AdapterResult, BatchAdapterResult + shared retry/SSRF-hardened transport
 │       ├── adapters/                  # Provider-specific implementations
-│       │   └── openchargemap.py       # OpenChargeMapAdapter (schema parsing, telemetry extraction)
+│       │   ├── openchargemap.py       # OpenChargeMapAdapter (schema parsing, telemetry extraction)
+│       │   ├── osm.py                 # OSMOverpassAdapter (Overpass bbox inventory, static only, ODbL attribution)
+│       │   └── datagovin.py           # DataGovInAdapter (government registry framework; needs API key + resource ID)
 │       ├── persistence.py             # IngestionPersistenceService (idempotency, DB sync, fact tracking)
 │       ├── runner.py                  # IngestionRunner CLI orchestrator
 │       ├── resolution.py              # CrossSourceEntityResolver (geodetic candidate generation, evidence fusion)
@@ -91,8 +93,20 @@ ChargePlus/
 │       ├── freshness.py               # Pure deterministic freshness decay engine & policy abstraction
 │       ├── scheduling.py              # Ingestion run state machine, retry policies, backoff & PostgreSQL advisory lock
 │       └── audit.py                   # Step 2.11 read-only Mumbai coverage & data quality audit engine
+│   ├── ml/                            # Phase 5 ML runtime (fail-closed; production inference disabled until gate READY + approved model)
+│   │   ├── gates.py                   # Data-maturity gate (COLD/WARMING/READY) + typed NO_MODEL reasons
+│   │   ├── training.py                # Reproducible training, chronological splits, baseline comparison, ml.* recording
+│   │   ├── registry.py                # Versioned artifacts: checksum verify, approve, rollback (synthetic never promotable)
+│   │   ├── inference.py               # Verified inference + freshness/schema/output checks
+│   │   └── cli.py                     # Operator CLI: status / train / predict (also serves /api/ml/predict)
+│   └── cpo/                           # CPO integrations: OCPI 2.2.1 Locations + OICP 2.3 PullEVSEData subset (all partners NOT_CONFIGURED)
+│       ├── partners.py                # Env-based partner config, activation lifecycle, credential redaction
+│       ├── ocpi.py / oicp.py          # Protocol adapters mapping to canonical records (no direct DB writes)
+│       ├── sync.py                    # Partner sync through the canonical pipeline (cursors, idempotent, dry-run default)
+│       ├── simulator.py               # Isolated deterministic protocol simulator for conformance tests
+│       └── cli.py                     # Operator CLI: partner status + sync
 ├── supabase/migrations/               # AUTHORITATIVE database schema — Phase 1 & 2 SQL migrations
-├── tests/                             # Comprehensive test suites (376 automated tests passing)
+├── tests/                             # Comprehensive test suites (603 automated tests passing)
 │   ├── test_canonical_contracts.py         # 17 unit tests — Step 2.1 canonical input contract
 │   ├── test_openchargemap_adapter.py        # 20 unit tests — Step 2.2 OCM adapter & error isolation
 │   ├── test_ingestion_persistence.py        # 15 unit tests — Step 2.3 persistence & idempotency
@@ -105,6 +119,13 @@ ChargePlus/
 │   ├── test_scheduled_ingestion.py           # 32 unit tests — Step 2.10 scheduling, retry, backoff & concurrency
 │   ├── test_mumbai_coverage_audit.py         # 64 unit tests — Step 2.11 Mumbai coverage & data quality audit
 │   ├── test_phase2_12_recovery_hardening.py  # 19 regression tests — Step 2.12 recovery hardening & final closure
+│   ├── test_osm_adapter.py                   # OSM Overpass adapter (offline fixtures, bbox guard, no-telemetry rules)
+│   ├── test_datagovin_adapter.py             # data.gov.in adapter (credential fail-closed, pagination, geo filter)
+│   ├── test_source_transport_retry.py        # Shared retry transport (backoff/jitter/Retry-After) + SSRF URL guard
+│   ├── test_runner_multisource.py            # Multi-source runner, unattended-scheduling guard, checkpoint resume
+│   ├── test_phase5.py                        # Phase 5 ML: gates, training, registry, inference, CLI (synthetic only)
+│   ├── test_cpo_ocpi.py / test_cpo_oicp.py   # OCPI/OICP conformance via isolated simulator (no network)
+│   ├── test_cpo_sync.py                      # Partner lifecycle, sync cursors, idempotency, redaction, CLI
 │   ├── test_station_adapter.mjs              # 8 unit tests — Step 3.1 station domain adapter & honesty
 │   └── fixtures/                             # Offline representative test fixtures
 │       └── ocm_fixtures.py                   # 18 labeled OCM fixture scenarios
@@ -124,7 +145,10 @@ ChargePlus/
     ├── step_2_11_mumbai_coverage_and_data_quality_audit.md  # Step 2.11 Mumbai pilot audit & Phase 2 sign-off
     ├── step_2_12_recovery_hardening_and_final_closure.md   # Step 2.12 Recovery hardening & final Phase 2 closure
     ├── step_3_1_replace_hardcoded_station_dataset.md       # Step 3.1 Hardcoded dataset replacement & audit
-    └── step_3_2_connect_explore_map.md                     # Step 3.2 Connect Explore & map specification
+    ├── step_3_2_connect_explore_map.md                     # Step 3.2 Connect Explore & map specification
+    ├── secondary_sources.md                                # OSM + data.gov.in operations (manual/dry-run until validated)
+    ├── phase5_ml.md                                        # Phase 5 ML runtime, promotion & inference operations
+    └── cpo_partners.md                                     # OCPI/OICP scope, partner lifecycle & activation checklist
 ```
 
 ---

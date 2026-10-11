@@ -695,3 +695,11 @@ Every entry should include:
 - Next step: Phase 4 — Warehouse, Analytics & Data Quality (not begun).
 
 
+
+### 11 Oct 2026 - Secondary sources + Phase 5 ML + CPO integrations (completion mission)
+- Phase / Step: Mission completion (secondary ingestion, Phase 5 ML, OCPI/OICP)
+- What we built/changed: OSM Overpass + data.gov.in adapters through the canonical pipeline with shared retry/SSRF-hardened transport; multi-source runner (--source) + unattended-scheduling guard; ML gates/training/registry/inference/CLI + /api/ml/status + /api/ml/predict (no UI changes); OCPI 2.2.1 Locations + OICP 2.3 PullEVSEData subset with partner lifecycle, sync cursors, simulator; docs secondary_sources/phase5_ml/cpo_partners; env template + workflow least-privilege. No migrations, no Docker, no commits.
+- Current state: pytest 603 passed + 2 skipped (7 pre-existing live-DB tests blocked: placeholder DB host); eslint clean; tsc clean on new files (pre-existing MapLibre + stale .next errors untouched); next build blocked by pre-existing maplibre-gl default-export drift. Production ML correctly disabled (COLD, NO_MODEL); all partners NOT_CONFIGURED; secondary sources manual/dry-run only.
+- Conceptual verification: unknown!=zero and missing!=free preserved in every adapter; STALE!=UNAVAILABLE; synthetic test data never promotable; partner isolation + credential redaction tested; no fabricated evidence anywhere.
+- Blockers / waiting on: data.gov.in API key + verified resource ID; OSM approved endpoint + supervised first run; real observation history (>=500 obs / 5 stations / 30 days) for ML; bilateral CPO agreements + credentials for any partner (all external, precisely scoped in docs).
+- Next step: Supervised secondary-source dry-runs; observation collection; partner onboarding per docs/cpo_partners.md.

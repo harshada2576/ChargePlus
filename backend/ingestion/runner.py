@@ -31,6 +31,9 @@ import uuid
 from dotenv import load_dotenv
 
 from backend.ingestion.adapters.openchargemap import OpenChargeMapAdapter
+from backend.ingestion.adapters.osm import OSMOverpassAdapter
+from backend.ingestion.adapters.datagovin import DataGovInAdapter
+from backend.ingestion.base import BaseSourceAdapter
 from backend.ingestion.constants import (
     MUMBAI_LAT_MAX,
     MUMBAI_LAT_MIN,
@@ -63,6 +66,36 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("chargeplus.ingestion.runner")
+
+
+# ---------------------------------------------------------------------------
+# Multi-source adapter registry (Phase 2 secondary sources).
+#
+# Cron-scheduled by default: open_charge_map ONLY. osm and datagovin are
+# manual/dry-run sources until their target, configuration, source terms, and
+# operational safeguards are validated (see docs/secondary_sources.md).
+# The scheduled workflow (.github/workflows/scheduled_ingestion.yml) runs OCM;
+# secondary sources are invoked explicitly via --source.
+# ---------------------------------------------------------------------------
+
+ADAPTER_FACTORIES: dict[str, Any] = {
+    "open_charge_map": OpenChargeMapAdapter,
+    "osm": OSMOverpassAdapter,
+    "datagovin": DataGovInAdapter,
+}
+
+SOURCE_BASE_URLS: dict[str, str] = {
+    "open_charge_map": "https://api.openchargemap.io/v3/poi/",
+    "osm": "https://overpass-api.de/api/interpreter",
+    "datagovin": "https://data.gov.in/api/datastore/resource.json",
+}
+
+# Sources the cron schedule may run unattended. Secondary sources stay manual
+# until validated — ScheduledIngestionOrchestrator refuses unattended runs for
+# any source outside this set unless explicitly overridden.
+SCHEDULED_BY_DEFAULT: frozenset = frozenset({"open_charge_map"})
+
+SUPPORTED_SOURCES: tuple = tuple(ADAPTER_FACTORIES.keys())
 
 
 @dataclass
@@ -170,6 +203,10 @@ class IngestionSummary:
 class IngestionRunner:
     """Coordinates external source extraction, normalization, validation, and database persistence."""
 
+    # Sources permitted unattended cron scheduling. Secondary sources stay
+    # manual/dry-run until validated; the orchestrator reads this attribute.
+    scheduled_sources = SCHEDULED_BY_DEFAULT
+
     def __init__(
         self,
         db_url: Optional[str] = None,
@@ -196,6 +233,8 @@ class IngestionRunner:
         timeout_seconds: Optional[float] = None,
         attempt_count: int = 1,
         run_id: Optional[str] = None,
+        source: str = "open_charge_map",
+        adapter: Optional[BaseSourceAdapter] = None,
     ) -> IngestionSummary:
         """Executes the canonical ingestion pipeline and returns the execution summary.
 
@@ -211,6 +250,25 @@ class IngestionRunner:
         start_time = time.time()
         retrieved_at = datetime.now(timezone.utc)
 
+        # 0. Resolve source adapter (fail fast on unknown source IDs).
+        # Partner (CPO) syncs inject their own scoped adapter instance plus an
+        # explicit partner source_id; the registry covers built-in sources.
+        if adapter is not None:
+            resolved_adapter = adapter
+            if source == "open_charge_map":
+                source = resolved_adapter.source_id
+        else:
+            if source not in ADAPTER_FACTORIES:
+                raise ValueError(
+                    f"Unknown ingestion source {source!r}. "
+                    f"Supported sources: {', '.join(SUPPORTED_SOURCES)}"
+                )
+            resolved_adapter = ADAPTER_FACTORIES[source]()
+            # self.adapter stays the default OCM adapter for backward
+            # compatibility; per-run logic below uses the resolved adapter.
+            if source == "open_charge_map":
+                resolved_adapter = self.adapter
+
         # 1. Resolve Geographic Scope
         if bounding_box:
             bbox = bounding_box
@@ -223,7 +281,7 @@ class IngestionRunner:
             scope_desc = "India Nationwide (countrycode=IN)"
 
         summary = IngestionSummary(
-            source_id="open_charge_map",
+            source_id=source,
             scope=scope_desc,
             retrieved_at=retrieved_at,
             dry_run=dry_run,
@@ -234,7 +292,7 @@ class IngestionRunner:
             logger.info("Using provided in-memory test fixtures (%d records)", len(fixtures_data))
             raw_payloads = fixtures_data[:limit]
             summary.scope = "Offline Representative Test Fixtures"
-        else:
+        elif source == "open_charge_map":
             if not self.api_key:
                 raise RuntimeError(
                     "OPENCHARGEMAP_API_KEY is not configured in .env.local or environment. "
@@ -250,7 +308,38 @@ class IngestionRunner:
             }
             if timeout_seconds is not None:
                 fetch_kwargs["timeout_sec"] = timeout_seconds
-            raw_payloads = self.adapter.fetch_raw(**fetch_kwargs)
+            raw_payloads = resolved_adapter.fetch_raw(**fetch_kwargs)
+        elif source == "osm":
+            # Overpass refuses unbounded global extracts: a bounding box is
+            # mandatory. Mumbai MMR is the default; nationwide OSM pulls must
+            # be tiled into explicit bounding boxes by the caller.
+            if bbox is None:
+                raise ValueError(
+                    "OSM Overpass ingestion requires an explicit bounding box "
+                    "(nationwide pulls must be tiled). Pass --scope mumbai or a "
+                    "custom bounding box; --all-india is not supported for OSM."
+                )
+            logger.info("Fetching OSM charging stations for scope: %s", scope_desc)
+            fetch_kwargs = {
+                "lat_min": bbox[0], "lng_min": bbox[1],
+                "lat_max": bbox[2], "lng_max": bbox[3],
+            }
+            if timeout_seconds is not None:
+                fetch_kwargs["timeout_sec"] = timeout_seconds
+            raw_payloads = resolved_adapter.fetch_raw(**fetch_kwargs)
+        elif source == "datagovin":
+            logger.info("Fetching data.gov.in records for scope: %s", scope_desc)
+            fetch_kwargs = {"max_records": limit}
+            if bbox is not None:
+                fetch_kwargs.update({
+                    "lat_min": bbox[0], "lng_min": bbox[1],
+                    "lat_max": bbox[2], "lng_max": bbox[3],
+                })
+            if timeout_seconds is not None:
+                fetch_kwargs["timeout_sec"] = timeout_seconds
+            raw_payloads = resolved_adapter.fetch_raw(**fetch_kwargs)
+        else:  # pragma: no cover — guarded by the registry check above
+            raise ValueError(f"Unsupported ingestion source {source!r}")
 
         summary.records_fetched = len(raw_payloads)
         logger.info("Retrieved %d raw source records", summary.records_fetched)
@@ -272,9 +361,12 @@ class IngestionRunner:
         runner_exception: Optional[Exception] = None
         try:
             persistence.get_or_create_data_source(
-                name="open_charge_map",
-                source_type="api",
-                base_url="https://api.openchargemap.io/v3/poi/",
+                name=source,
+                source_type=(
+                    "cpo_api" if source.startswith(("ocpi:", "oicp:")) else "api"
+                ),
+                base_url=SOURCE_BASE_URLS.get(source),  # None for partner sources
+                source_priority=resolved_adapter.source_priority,
                 dry_run=dry_run,
             )
 
@@ -290,7 +382,7 @@ class IngestionRunner:
             for idx, raw_dict in enumerate(raw_payloads):
                 try:
                     # A. Source transport + source-shape interpretation (Step 2.2).
-                    adapter_res = self.adapter.process_record(raw_dict, retrieved_at=retrieved_at)
+                    adapter_res = resolved_adapter.process_record(raw_dict, retrieved_at=retrieved_at)
                     if adapter_res.station_record is None:
                         summary.records_rejected += 1
                         summary.persistence_errors.append(
@@ -473,8 +565,8 @@ class IngestionRunner:
 
                     run_record = IngestionRun(
                         run_id=run_id or str(uuid.uuid4()),
-                        source_id="open_charge_map",
-                        source_name="open_charge_map",
+                        source_id=source,
+                        source_name=source,
                         scope=summary.scope,
                         state=run_state,
                         started_at=retrieved_at,
@@ -605,6 +697,13 @@ def main() -> None:
 
     fixtures_data = None
     if args.use_fixtures:
+        if args.source != "open_charge_map":
+            logger.error(
+                "--use-fixtures currently bundles OpenChargeMap fixtures only; "
+                "run --source %s as a live --dry-run instead.",
+                args.source,
+            )
+            sys.exit(2)
         from tests.fixtures.ocm_fixtures import (
             OCM_FIXTURE_01_VALID_COMPLETE,
             OCM_FIXTURE_02_MULTIPLE_CONNECTORS,
@@ -669,6 +768,7 @@ def main() -> None:
                 mumbai_only=not args.all_india,
                 fixtures_data=fixtures_data,
                 timeout_seconds=args.timeout,
+                source=args.source,
             )
             if args.json:
                 print(json.dumps(summary.to_dict(), indent=2))
