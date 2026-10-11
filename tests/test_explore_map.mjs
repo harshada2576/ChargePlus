@@ -398,8 +398,12 @@ test("12. Existing HTML escaping protections remain intact", () => {
 });
 
 test("live: fetchStations against public anon client when credentials are present", async (t) => {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    t.skip("Supabase public credentials not available in this environment");
+  if (
+    process.env.CHARGEPLUS_LIVE_TESTS !== "1" ||
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    t.skip("Live Supabase tests require explicit CHARGEPLUS_LIVE_TESTS=1 opt-in");
     return;
   }
   const stations = await fetchStations();
