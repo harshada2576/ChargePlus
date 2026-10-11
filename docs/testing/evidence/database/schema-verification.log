@@ -1,0 +1,40 @@
+Output format is unaligned.
+rls_enabled_total | 30
+rls_public | 12
+rls_analytics | 12
+rls_ml | 6
+legacy_rls_enabled | 0
+policies_public | 31
+policies_analytics_ml | 0
+cross_layer_fks | 0
+dim_date_rows | 3288
+dim_time_rows | 96
+stations_rows | 0
+ingestion_runs_rows | 0
+public_tables | alerts,connectors,data_sources,dim_date,dim_location,dim_station,dim_tariff,dim_time,dim_vehicle,dim_weather,fact_charging_session,fact_station_daily_agg,favorites,ingestion_runs,operators,profiles,reviews,spatial_ref_sys,station_observations,station_source_link,stations,user_reports
+analytics_tables | dim_connector,dim_date,dim_location,dim_operator,dim_source,dim_station,dim_time,dim_weather,fact_review,fact_station_daily,fact_station_observation,fact_user_report
+ml_tables | datasets,experiments,features,metrics,model_versions,prediction_runs
+views | public.geography_columns,public.geometry_columns,public.v_station_approved_reviews,public.v_station_connectors,public.v_station_current_state,analytics.v_station_daily_summary
+triggers_profiles | trg_profiles_role_guard
+triggers_stations | trg_stations_geom
+fn_definer_searchpath | get_author_display_name:definer=true:search_path=public, pg_temp
+fn_definer_searchpath | guard_profiles_role:definer=true:search_path=public, pg_temp
+fn_definer_searchpath | nearby_stations:definer=false:search_path=public, extensions, pg_temp
+fn_definer_searchpath | set_stations_geom:definer=false:search_path=none
+unique_alert_idx | 1
+unique_connector_idx | 1
+unique_review_idx | 1
+unique_link_idx | 1
+anon_ingestion_grants | 
+auth_ingestion_grants | SELECT
+anon_analytics_grants | 0
+docker : psql:/tmp/mig/verify_schema.sql:52: ERROR:  aggregate function calls cannot be nested
+At line:1 char:107
++ ... g/"; $out = docker exec $c psql -U postgres -d postgres -v ON_ERROR_S ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:/tmp/mig/v...annot be nested:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+LINE 1: ...ofiles_col_grants_auth', string_agg(grantee||':'||string_agg...
+                                                             ^
+
