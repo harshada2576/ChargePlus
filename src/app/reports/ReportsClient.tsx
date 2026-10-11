@@ -111,11 +111,9 @@ export function ReportsClient() {
             When you visit a charging station, report its real-time status and queue to help fellow drivers.
           </p>
           <div className="mt-5">
-            <Link href="/explore">
-              <Button size="md" variant="primary" iconLeft={<ExploreIcon size={16} />}>
-                Find stations to report
-              </Button>
-            </Link>
+            <Button size="md" variant="primary" href="/explore" iconLeft={<ExploreIcon size={16} />}>
+              Find stations to report
+            </Button>
           </div>
         </div>
       ) : (
