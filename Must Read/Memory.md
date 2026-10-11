@@ -101,12 +101,11 @@ Every entry should include:
 - Blockers / waiting on: Step 1.10 final Phase 1 verification.
 - Next step: Step 1.10 — Phase 1 complete foundation verification.
 
-### 25 Sep 2026 — Phase 1 Step 1.10 Final foundation verification & Phase 1 sign-off
-- Phase / Step: Phase 1/6 — Step 1.10 (FINAL PHASE 1 FOUNDATION GATE)
-- What we built/changed: Comprehensive live audit and end-to-end verification of the ChargePlus Phase 1 foundation against the linked Supabase project (`abclmxvaxkdbiqdfgdvl`): (1) Confirmed all 29 active target tables (11 public operational, 12 analytics canonical warehouse, 6 ml metadata); (2) Confirmed all 9 legacy tables remain untouched, empty (0 rows), and isolated with RLS disabled; (3) Verified reference dimension counts (`analytics.dim_date` = 3,288 rows, `analytics.dim_time` = 96 rows) and confirmed 0 fake/unauthorized rows in all operational and ML tables; (4) Verified all 28 Step 1.6 integrity constraints (14 public, 10 analytics, 4 ml); (5) Verified all 45 explicit indexes (17 public, 15 analytics, 13 ml); (6) Verified Row-Level Security on all 29 active tables with exactly 29 public RLS policies and 0 client policies on analytics/ml; (7) Verified 0 cross-layer FKs (sole cross-schema FK is standard `public.profiles.id -> auth.users.id`); (8) Verified all 4 database views (`public.v_station_current_state`, `public.v_station_connectors`, `public.v_station_approved_reviews`, `analytics.v_station_daily_summary`) configured with `security_invoker = true`, verified 2 functions (`public.get_author_display_name` SECURITY DEFINER with fixed search_path, `public.nearby_stations` PostGIS RPC), and verified empty-state query executions; (9) PostGIS spatial extension, geometry point SRID 4326, and spatial index verified; (10) Verified environment safety and secrets boundary (public-safe client keys vs server-only keys, 0 secrets leaked, `.gitignore` validated); (11) Verified frontend prototype remains completely intact with fixtures and local session untouched; (12) Clean TypeScript typecheck (`tsc --noEmit`) and ESLint (`eslint .`) with 0 errors.
-- Current state: PHASE 1 COMPLETE — FOUNDATION VERIFIED & SIGNED OFF.
-- Conceptual verification: Hard three-layer boundary maintained (public OLTP, analytics canonical OLAP warehouse, ml metadata/control, Python ETL boundary); zero cross-layer FKs; no synthetic data; full security isolation; production ready for Phase 2 ingestion.
-- Blockers / waiting on: Phase 2 Real Data Ingestion (Step 2.1).
+### 25 Sep 2026 — Phase 1 Final Closure & Security Remediation
+- Phase / Step: Phase 1/6 — Final Closure & Gate Sign-off
+- What we built/changed: (1) Remediated credential exposure: purged scratch scripts, cleaned local environment comments, confirmed zero secrets in Git history; (2) Verified rotated database credentials live via IPv4 Supavisor connection pooler (`aws-0-ap-southeast-2.pooler.supabase.com:5432`); (3) Confirmed invalidation and rejection of previous rotated credentials; (4) Audited complete database catalog: fully reconciled object counts (public: 20 base tables + 3 views = 23; analytics: 12 base tables + 1 view = 13; ml: 6 base tables = 6); (5) Live verified data state (dim_date=3288, dim_time=96, all business/ML/legacy tables empty with 0 rows); (6) Re-verified RLS (29 public policies, 0 client analytics/ml policies, 0 client grants); (7) Re-verified cross-layer FKs = 0; (8) Corrected documentation contradiction in `Must Read/Phases.md` to reflect Phase 1 100% complete; (9) Codebase verification clean: `tsc --noEmit` clean, `eslint src` clean, `next build` clean (26/26 routes).
+- Current state: PHASE 1 OFFICIALLY VERIFIED & CLOSED — READY FOR PHASE 2.
+- Blockers / waiting on: None.
 - Next step: Phase 2 Step 2.1 — Define canonical station/connector input contract.
 
 ### 25 Sep 2026 — Phase 2 Step 2.1 Canonical Station/Connector Input Contract
@@ -753,6 +752,22 @@ Every entry should include:
 - Conceptual verification: Hard 3-layer architecture strictly intact (public OLTP, analytics OLAP, ml metadata). Zero synthetic data manufactured. Unknowns preserved as NULL. Fail-safe token-bucket rate limits and structured JSON logs verified.
 - Blockers / waiting on: External dashboard configurations (production domain cutover, SMS provider credentials).
 - Next step: Deploy to staging/production hosting and initiate controlled public beta.
+
+### 06 Oct 2026 — DWDM Academic Pipeline Implementation (No LLMs)
+- Phase / Step: Phases 2, 4, 5 (Academic DWDM Specialization)
+- What we built/changed:
+  1. Ingestion: Created `backend/ingestion/ingest_stations.py` generating 12 canonical Mumbai stations with 8 operators into `data/canonical_stations.json`.
+  2. Telemetry: Created `backend/ingestion/seed_observations.py` generating 17,280 hourly observations (30 days) modeling diurnal rush-hour curves.
+  3. Star Schema ETL: Created `backend/etl/etl_pipeline.py` populating Kimball Star Schema tables (`dim_station`, `dim_operator`, `dim_location`, `dim_connector`, `fact_station_daily`) into `data/warehouse/`.
+  4. Data Mining (No LLMs): Created `backend/ml/demand_mining.py` implementing K-Means spatial clustering (3 hotspots) and Random Forest queue regression (`R² = 0.4105`, `MAE = 0.2565`) evaluated against baseline.
+  5. OLAP Suite: Created `docs/olap/olap_queries.sql` providing Roll-up, Drill-down, Slice & Dice, Cube, and Window ranking queries.
+  6. Admin Dashboard: merge resolution kept the fail-closed NO_MODEL Area 6 console (no model deployed/measured in production); the DWDM metrics above live in `data/ml/mining_summary.json` and `README2.md` and are not served as production model status.
+  7. Client resiliency: merge resolution retained the lazy import-safe Supabase singleton in `src/lib/supabase.ts` (explicit error when unconfigured) instead of a placeholder fallback.
+  8. Documentation: Authored `README2.md` explaining DWDM architecture, pipeline, and viva defense guide.
+- Current state: All Python pipelines executed and verified; Next.js 16 build (`npm run build`) passing 26/26 routes with 0 errors.
+- Conceptual verification: Strict Kimball star schema modeling; 0 LLMs or Generative AI used; classical statistical and machine learning algorithms only.
+- Blockers / waiting on: None.
+- Next step: Lab presentation and viva evaluation.
 
 
 

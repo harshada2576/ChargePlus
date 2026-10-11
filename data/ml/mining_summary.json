@@ -1,0 +1,39 @@
+{
+  "clusters": [
+    {
+      "cluster_id": 0,
+      "station_count": 5,
+      "avg_demand_score": 69.37847222222221,
+      "avg_lat": 19.05222,
+      "avg_lng": 72.8806
+    },
+    {
+      "cluster_id": 1,
+      "station_count": 3,
+      "avg_demand_score": 59.6412037037037,
+      "avg_lat": 19.111433333333334,
+      "avg_lng": 72.87773333333332
+    },
+    {
+      "cluster_id": 2,
+      "station_count": 4,
+      "avg_demand_score": 77.52170138888889,
+      "avg_lat": 19.111175,
+      "avg_lng": 72.8814
+    }
+  ],
+  "metrics": {
+    "baseline_mae": 0.2655,
+    "rf_mae": 0.2565,
+    "rf_rmse": 0.3133,
+    "r2_score": 0.4105,
+    "improvement_pct": 3.38
+  },
+  "feature_importance": {
+    "hour": 0.9009,
+    "day_of_week": 0.0318,
+    "is_weekend": 0.0092,
+    "total_connectors": 0.0174,
+    "is_commercial_hub": 0.0407
+  }
+}
