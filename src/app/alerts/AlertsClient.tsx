@@ -1,16 +1,93 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/state/SessionProvider";
-import { STATIONS, getStation } from "@/data/stations";
-import { BellIcon, CheckIcon } from "@/components/Icon";
+import { fetchStations } from "@/data/stations";
+import type { Station } from "@/data/types";
+import { supabase } from "@/lib/supabase";
+import { listAlerts, setAlert, type AlertRecord, type UiAlertType } from "@/lib/alerts";
+import { stationDetailHref } from "@/data/exploreQuery";
+import { BellIcon, CheckIcon, AlertTriangleIcon } from "@/components/Icon";
+import { Button } from "@/components/Button";
 import { Link } from "@/i18n/Link";
+import { useToast } from "@/components/Toast";
 import { cx } from "@/lib/util";
 import { AuthPrompt } from "../saved/SavedClient";
 
 export function AlertsClient() {
   const { t } = useI18n();
-  const { isAuthed, alerts, setAlertEnabled } = useSession();
+  const { user, isAuthed, savedIds, authReady } = useSession();
+  const { show: showToast } = useToast();
+  const [stations, setStations] = useState<Station[]>([]);
+  const [alerts, setAlerts] = useState<AlertRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [nonce, setNonce] = useState(0);
+  const [pending, setPending] = useState<Set<string>>(new Set());
+
+  const reload = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    setNonce((n) => n + 1);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    // Unauthenticated branch renders AuthPrompt; no state reset needed here.
+    if (!user) return;
+    Promise.all([fetchStations(), listAlerts(supabase, user.id)])
+      .then(([all, mine]) => {
+        if (!active) return;
+        setStations(all);
+        setAlerts(mine);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : "Failed to load alerts");
+        setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user, nonce]);
+
+  async function handleToggle(stationId: string, type: UiAlertType, enabled: boolean) {
+    if (!user) return;
+    const key = `${stationId}:${type}`;
+    if (pending.has(key)) return; // serialize toggles: no double-insert races
+    setPending((prev) => new Set(prev).add(key));
+    try {
+      const updated = await setAlert(
+        supabase,
+        { userId: user.id, stationId, uiType: type, enabled },
+        alerts
+      );
+      setAlerts((prev) => {
+        const rest = prev.filter(
+          (a) => !(a.stationId === stationId && a.uiType === type)
+        );
+        return updated.id ? [...rest, updated] : rest;
+      });
+    } catch {
+      showToast(t("errors.network.body"));
+    } finally {
+      setPending((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }
+  }
+
+  if (!authReady) {
+    return (
+      <div className="mx-auto max-w-screen-md px-4 py-10 sm:px-6">
+        <p className="text-center text-[13.5px] text-ink-600">{t("common.loading")}</p>
+      </div>
+    );
+  }
 
   if (!isAuthed) {
     return (
@@ -20,14 +97,46 @@ export function AlertsClient() {
     );
   }
 
-  // Show toggleable alerts per saved station, defaulting to OFF for any station not yet configured.
-  const savedIds = JSON.parse(
-    typeof window !== "undefined" ? localStorage.getItem("chargeplus:saved") || "[]" : "[]"
-  ) as string[];
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-screen-md px-4 pb-10 pt-4 sm:px-6">
+        <h1 className="text-[clamp(1.5rem,3vw,2rem)] font-semibold tracking-[-0.01em] text-ink-900">
+          {t("alerts.title")}
+        </h1>
+        <p className="mt-1 text-[14px] text-ink-700">{t("common.loading")}</p>
+      </div>
+    );
+  }
 
-  const myStations = savedIds.length > 0
-    ? savedIds.map(getStation).filter(Boolean) as typeof STATIONS
-    : STATIONS.slice(0, 4);
+  if (error) {
+    return (
+      <div className="mx-auto max-w-screen-md px-4 pb-10 pt-4 sm:px-6">
+        <h1 className="text-[clamp(1.5rem,3vw,2rem)] font-semibold tracking-[-0.01em] text-ink-900">
+          {t("alerts.title")}
+        </h1>
+        <div className="mt-8 rounded-[20px] border border-ink-100 bg-white p-8 text-center shadow-card">
+          <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-red-600">
+            <AlertTriangleIcon size={22} />
+          </span>
+          <h2 className="mt-3 text-[17px] font-semibold text-ink-900">{t("errors.network.title")}</h2>
+          <p className="mt-1 text-[13.5px] text-ink-600">{t("errors.network.body")}</p>
+          <div className="mt-5">
+            <Button size="md" variant="primary" onClick={reload}>
+              {t("common.tryAgain")}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Watch conditions apply to saved stations only. With no saves there is
+  // nothing to configure — the previous STATIONS.slice(0, 4) fallback showed
+  // unrelated stations and is removed.
+  const byId = new Map(stations.map((s) => [s.id, s]));
+  const myStations = [...savedIds]
+    .map((id) => byId.get(id))
+    .filter((s): s is Station => !!s);
 
   return (
     <div className="mx-auto max-w-screen-md px-4 pb-10 pt-4 sm:px-6">
@@ -47,7 +156,7 @@ export function AlertsClient() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <Link href={`/station/${s.id}`} className="block">
+                  <Link href={stationDetailHref(s.id)} className="block">
                     <h3 className="truncate text-[14.5px] font-semibold text-ink-900 hover:underline">
                       {s.name}
                     </h3>
@@ -64,13 +173,13 @@ export function AlertsClient() {
                   label={t("alerts.type.available")}
                   desc={t("alerts.type.availableDesc")}
                   enabled={isEnabled(alerts, s.id, "available")}
-                  onChange={(v) => setAlertEnabled(s.id, "available", v)}
+                  onChange={(v) => handleToggle(s.id, "available", v)}
                 />
                 <AlertToggle
                   label={t("alerts.type.lessBusy")}
                   desc={t("alerts.type.lessBusyDesc")}
                   enabled={isEnabled(alerts, s.id, "lessBusy")}
-                  onChange={(v) => setAlertEnabled(s.id, "lessBusy", v)}
+                  onChange={(v) => handleToggle(s.id, "lessBusy", v)}
                 />
               </div>
             </li>
@@ -82,11 +191,11 @@ export function AlertsClient() {
 }
 
 function isEnabled(
-  alerts: ReturnType<typeof useSession>["alerts"],
+  alerts: AlertRecord[],
   stationId: string,
   type: "available" | "lessBusy"
 ) {
-  return alerts.find((a) => a.id === `${stationId}:${type}`)?.enabled ?? false;
+  return alerts.some((a) => a.stationId === stationId && a.uiType === type && a.enabled);
 }
 
 function AlertToggle({

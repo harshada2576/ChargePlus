@@ -3,17 +3,19 @@
 import type { Station } from "@/data/types";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/state/SessionProvider";
+import { useToast } from "@/components/Toast";
+import { useRouter } from "next/navigation";
 import { BottomSheet } from "./BottomSheet";
 import { Button } from "./Button";
 import { StatusBadge } from "./StatusBadge";
 import { HeartIcon, HeartFilledIcon } from "./Icon";
-import { Link } from "@/i18n/Link";
 import {
   distanceKm,
   formatDistance,
   getMaxPowerKw,
   getTotalChargers,
 } from "@/data/stations";
+import { stationDetailHref } from "@/data/exploreQuery";
 
 export function StationPreviewSheet({
   station,
@@ -26,9 +28,18 @@ export function StationPreviewSheet({
 }) {
   const { t } = useI18n();
   const { toggleSaved, isSaved } = useSession();
+  const { show: showToast } = useToast();
+  const router = useRouter();
   if (!station) return null;
 
   const saved = isSaved(station.id);
+
+  async function handleToggleSaved() {
+    if (!station) return;
+    const res = await toggleSaved(station.id);
+    if (res === "login-required") router.push("/login");
+    else if (res === "error") showToast(t("errors.network.body"));
+  }
   const dist = userLocation
     ? distanceKm(userLocation, { lat: station.lat, lng: station.lng })
     : null;
@@ -36,19 +47,24 @@ export function StationPreviewSheet({
   const chargers = getTotalChargers(station);
 
   return (
-    <BottomSheet open={!!station} onClose={onClose} placement="bottom">
+    <BottomSheet
+      open={!!station}
+      onClose={onClose}
+      placement="bottom"
+      ariaLabel={station.name}
+    >
       <div className="-mt-2 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="line-clamp-2 text-[17px] font-semibold text-ink-900">
+          <h2 className="line-clamp-2 text-[17px] font-semibold text-ink-900">
             {station.name}
-          </h3>
+          </h2>
           <p className="mt-0.5 truncate text-[13px] text-ink-600">
             {station.operator}
           </p>
         </div>
         <button
           type="button"
-          onClick={() => toggleSaved(station.id)}
+          onClick={handleToggleSaved}
           aria-label={saved ? t("common.remove") : t("common.save")}
           className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-700 hover:bg-ink-50"
         >
@@ -70,13 +86,15 @@ export function StationPreviewSheet({
             {station.connectors.map((c) => c.type).join(" · ")}
           </span>
           <span className="text-ink-300">·</span>
-          <span>{maxKw} kW</span>
+          <span>{maxKw > 0 ? `${maxKw} kW` : "—"}</span>
         </p>
-        <p>
-          <span className="font-medium text-ink-900">
-            {t("station.chargerCount", { n: chargers })}
-          </span>
-        </p>
+        {chargers != null && (
+          <p>
+            <span className="font-medium text-ink-900">
+              {t("station.chargerCount", { n: chargers })}
+            </span>
+          </p>
+        )}
         <p className="text-[15px] font-semibold text-ink-900">
           {station.isFree
             ? "Free"
@@ -96,11 +114,15 @@ export function StationPreviewSheet({
       </div>
 
       <div className="mt-5">
-        <Link href={`/station/${station.id}`} onClick={onClose} className="block">
-          <Button block size="lg" variant="primary">
-            {t("common.viewStation")}
-          </Button>
-        </Link>
+        <Button
+          block
+          size="lg"
+          variant="primary"
+          href={stationDetailHref(station.id)}
+          onClick={onClose}
+        >
+          {t("common.viewStation")}
+        </Button>
       </div>
     </BottomSheet>
   );

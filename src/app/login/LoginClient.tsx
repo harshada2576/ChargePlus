@@ -6,37 +6,43 @@ import { Button } from "@/components/Button";
 import { Link } from "@/i18n/Link";
 import { BrandMark } from "@/components/BrandMark";
 import { ChevronLeftIcon } from "@/components/Icon";
-import { useSession } from "@/state/SessionProvider";
 import { useToast } from "@/components/Toast";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import { normalizeEmail, normalizePhone, sendOtp } from "@/lib/auth";
 
 export function LoginClient() {
   const { t } = useI18n();
   const router = useRouter();
-  const { signIn } = useSession();
   const { show } = useToast();
   const [mode, setMode] = useState<"phone" | "email">("phone");
   const [value, setValue] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function submit() {
+  async function submit() {
+    if (submitting) return;
     setSubmitting(true);
-    setTimeout(() => {
-      // Mock "send code"
-      const normalized = mode === "phone" ? value.replace(/\D/g, "") : value.trim();
+    setError(null);
+    try {
+      // Real Supabase OTP send; phone delivery needs an SMS provider
+      // configured in the Supabase dashboard (error surfaced, never faked).
+      const { contact } = await sendOtp(supabase, mode, value);
       sessionStorage.setItem(
         "chargeplus:otp:pending",
-        JSON.stringify({ contact: normalized, kind: mode })
+        JSON.stringify({ contact, kind: mode })
       );
       show("Code sent");
       router.push(`/verify?kind=${mode}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not send the code. Try again.");
+    } finally {
       setSubmitting(false);
-    }, 400);
+    }
   }
 
   const valid =
-    (mode === "phone" && value.replace(/\D/g, "").length >= 10) ||
-    (mode === "email" && /\S+@\S+\.\S+/.test(value));
+    mode === "phone" ? normalizePhone(value) !== null : normalizeEmail(value) !== null;
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md flex-col px-4 pt-3 sm:px-6">
@@ -120,6 +126,9 @@ export function LoginClient() {
           <Button block size="lg" variant="primary" onClick={submit} loading={submitting} disabled={!valid}>
             {t("auth.continue")}
           </Button>
+          {error && (
+            <p className="mt-3 text-center text-[12.5px] text-status-broken">{error}</p>
+          )}
           <p className="mt-3 text-center text-[12.5px] text-ink-600">{t("auth.noPassword")}</p>
         </div>
 

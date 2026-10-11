@@ -12,20 +12,29 @@ import {
   UserIcon,
 } from "./Icon";
 import type { ComponentType, SVGProps } from "react";
+import { BOTTOM_NAV_ITEMS } from "@/data/navigation";
+
+const ICONS: Record<
+  (typeof BOTTOM_NAV_ITEMS)[number]["key"],
+  ComponentType<SVGProps<SVGSVGElement> & { size?: number }>
+> = {
+  home: HomeIcon,
+  explore: ExploreIcon,
+  saved: SavedIcon,
+  alerts: BellIcon,
+  profile: UserIcon,
+};
 
 type NavItem = {
-  key: "home" | "explore" | "saved" | "alerts" | "profile";
+  key: (typeof BOTTOM_NAV_ITEMS)[number]["key"];
   href: string;
   Icon: ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
 };
 
-const items: NavItem[] = [
-  { key: "home", href: "/", Icon: HomeIcon },
-  { key: "explore", href: "/explore", Icon: ExploreIcon },
-  { key: "saved", href: "/saved", Icon: SavedIcon },
-  { key: "alerts", href: "/alerts", Icon: BellIcon },
-  { key: "profile", href: "/profile", Icon: UserIcon },
-];
+const items: NavItem[] = BOTTOM_NAV_ITEMS.map((item) => ({
+  ...item,
+  Icon: ICONS[item.key],
+}));
 
 export function BottomNav() {
   const { t } = useI18n();

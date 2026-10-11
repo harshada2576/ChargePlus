@@ -7,11 +7,9 @@ import { Link } from "@/i18n/Link";
 import { cx } from "@/lib/util";
 import { usePathname } from "next/navigation";
 
-const navItems = [
-  { key: "explore", href: "/explore" },
-  { key: "saved", href: "/saved" },
-  { key: "alerts", href: "/alerts" },
-] as const;
+import { HEADER_NAV_ITEMS } from "@/data/navigation";
+
+const navItems = HEADER_NAV_ITEMS;
 
 export function SiteHeader() {
   const { t } = useI18n();
@@ -23,6 +21,12 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-ink-100 bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/70">
       <div className="mx-auto flex h-14 max-w-screen-xl items-center justify-between gap-3 px-4 sm:h-16 sm:px-6">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-[13px] focus:font-medium focus:text-ink-900 focus:shadow-card"
+        >
+          {t("common.skipToContent")}
+        </a>
         <Link href="/" className="shrink-0" aria-label={t("brand.name")}>
           <BrandMark size="md" />
         </Link>
@@ -36,6 +40,7 @@ export function SiteHeader() {
                 <li key={item.key}>
                   <Link
                     href={item.href}
+                    aria-current={active ? "page" : undefined}
                     className={cx(
                       "inline-flex h-9 items-center rounded-full px-3.5 text-[13.5px] font-medium transition-colors",
                       active

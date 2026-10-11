@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
+import { fetchStations, getAvailableChargers } from "@/data/stations";
 import {
-  STATIONS,
-  distanceKm,
-  getAvailableChargers,
-  getMaxPowerKw,
-  getTotalChargers,
-} from "@/data/stations";
+  DEFAULT_EXPLORE_FILTERS,
+  filterAndSortStations,
+  resolveSelectedStation,
+  visibleSelection,
+} from "@/data/exploreQuery";
 import type {
   FiltersState,
   Recommendation,
@@ -19,7 +19,7 @@ import { MapLibreMap } from "@/components/MapLibreMap";
 import { StationCard } from "@/components/StationCard";
 import { StationPreviewSheet } from "@/components/StationPreviewSheet";
 import { FiltersPanel } from "@/components/FiltersPanel";
-import { Skeleton, StationCardSkeleton } from "@/components/Skeleton";
+import { StationCardSkeleton } from "@/components/Skeleton";
 import { useToast } from "@/components/Toast";
 import { Button } from "@/components/Button";
 import {
@@ -29,41 +29,20 @@ import {
   SortIcon,
   ChevronDownIcon,
   CheckIcon,
+  AlertTriangleIcon,
 } from "@/components/Icon";
 import { cx } from "@/lib/util";
-
-const DEFAULT_FILTERS: FiltersState = {
-  distanceKm: 0,
-  connectorTypes: [],
-  minPowerKw: 0,
-  openNow: false,
-  availableOnly: false,
-  fastCharging: false,
-  freeOnly: false,
-  lessBusy: false,
-  maxPrice: 0,
-  minChargers: 0,
-};
-
-function isOpenNow(s: Station): boolean {
-  if (s.hours.kind === "24h") return true;
-  if (s.hours.kind === "unknown") return false;
-  const now = new Date();
-  const cur = now.getHours() * 60 + now.getMinutes();
-  const [oh, om] = s.hours.open.split(":").map(Number);
-  const [ch, cm] = s.hours.close.split(":").map(Number);
-  const open = oh * 60 + om;
-  const close = ch * 60 + cm;
-  if (close <= open) return cur >= open || cur < close;
-  return cur >= open && cur < close;
-}
 
 export function ExploreClient() {
   const { t } = useI18n();
   const { show: showToast } = useToast();
 
+  const [stations, setStations] = useState<Station[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<FiltersState>(DEFAULT_EXPLORE_FILTERS);
   const [sort, setSort] = useState<SortKey>("nearest");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
@@ -71,24 +50,49 @@ export function ExploreClient() {
   const [locError, setLocError] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+  const desktopSearchInputRef = useRef<HTMLInputElement>(null);
+
+  const [retryNonce, setRetryNonce] = useState(0);
+  const loadStations = useCallback(() => {
+    // Sync state reset lives in the event handler (not the effect below).
+    setLoading(true);
+    setError(null);
+    setRetryNonce((n) => n + 1);
+  }, []);
 
   // Auto-focus search if arrived via /search route
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       if (params.get("focus") === "search") {
-        searchInputRef.current?.focus();
+        const input = window.matchMedia("(min-width: 768px)").matches
+          ? desktopSearchInputRef.current
+          : mobileSearchInputRef.current;
+        input?.focus();
       }
     }
   }, []);
 
-  // initial simulated loading
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 350);
-    return () => clearTimeout(t);
-  }, []);
+    let active = true;
+    fetchStations()
+      .then((data) => {
+        if (!active) return;
+        setStations(data);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        console.error("ExploreClient failed to load stations:", err);
+        const msg = err instanceof Error ? err.message : "Failed to load stations";
+        setError(msg);
+        setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [retryNonce]);
 
   function requestLocation() {
     if (!navigator.geolocation) {
@@ -112,79 +116,35 @@ export function ExploreClient() {
     );
   }
 
-  const filtered = useMemo(() => {
-    let list = STATIONS.slice();
-    const q = query.trim().toLowerCase();
-    if (q) {
-      list = list.filter(
-        (s) =>
-          s.name.toLowerCase().includes(q) ||
-          s.operator.toLowerCase().includes(q) ||
-          s.area.toLowerCase().includes(q) ||
-          s.address.toLowerCase().includes(q)
-      );
-    }
-    if (filters.connectorTypes.length > 0) {
-      list = list.filter((s) => s.connectors.some((c) => filters.connectorTypes.includes(c.type)));
-    }
-    if (filters.minPowerKw > 0) {
-      list = list.filter((s) => getMaxPowerKw(s) >= filters.minPowerKw);
-    }
-    if (filters.openNow) list = list.filter(isOpenNow);
-    if (filters.availableOnly) list = list.filter((s) => s.status === "available");
-    if (filters.fastCharging) list = list.filter((s) => getMaxPowerKw(s) >= 50);
-    if (filters.freeOnly) list = list.filter((s) => s.isFree === true);
-    if (filters.maxPrice > 0) list = list.filter((s) => s.pricePerKwh != null && s.pricePerKwh <= filters.maxPrice);
-    if (filters.minChargers > 0) list = list.filter((s) => getTotalChargers(s) >= filters.minChargers);
-    if (filters.lessBusy) {
-      // 'lessBusy' filter: pick stations with at least one known quiet hour from busyWindows
-      // In this mock, 'lessBusy' correlates with non-empty busyWindows (we treat them as known)
-      list = list.filter((s) => s.busyWindows.length > 0 || s.busyWindows.length === 0);
-      // For honesty, we don't filter out stations we don't know about; keep them visible.
-    }
-    if (filters.distanceKm > 0 && userLoc) {
-      list = list.filter((s) => distanceKm(userLoc, { lat: s.lat, lng: s.lng }) <= filters.distanceKm);
-    }
-
-    list.sort((a, b) => {
-      if (sort === "nearest" && userLoc) {
-        return distanceKm(userLoc, { lat: a.lat, lng: a.lng }) - distanceKm(userLoc, { lat: b.lat, lng: b.lng });
-      }
-      if (sort === "available") {
-        return rankAvailability(a) - rankAvailability(b);
-      }
-      if (sort === "speed") {
-        return getMaxPowerKw(b) - getMaxPowerKw(a);
-      }
-      if (sort === "price") {
-        const ap = a.pricePerKwh ?? Number.POSITIVE_INFINITY;
-        const bp = b.pricePerKwh ?? Number.POSITIVE_INFINITY;
-        return ap - bp;
-      }
-      // recommended: prefer available, then highest rated
-      const ar = a.rating ?? 0;
-      const br = b.rating ?? 0;
-      return rankAvailability(a) - rankAvailability(b) || br - ar;
-    });
-    return list;
-  }, [query, filters, sort, userLoc]);
-
-  const selectedStation = useMemo(
-    () => filtered.find((s) => s.id === selectedId) ?? null,
-    [filtered, selectedId]
+  const filtered = useMemo(
+    () => filterAndSortStations(stations, { query, filters, sort, userLoc }),
+    [stations, query, filters, sort, userLoc]
   );
 
-  const activeChips = useMemo(() => buildChips(filters, t), [filters, t]);
+  // Visible selection clears predictably when search/filters remove the station
+  // from results (no stale highlight, popup, or preview); the raw selectedId is
+  // retained so resetting search/filters restores it without refetching.
+  const visibleSelectedId = useMemo(
+    () => visibleSelection(selectedId, filtered),
+    [selectedId, filtered]
+  );
+
+  const selectedStation = useMemo(
+    () => resolveSelectedStation(visibleSelectedId, filtered, stations),
+    [filtered, stations, visibleSelectedId]
+  );
+
+  const activeChips = useMemo(() => buildChips(filters, setFilters, t), [filters, t]);
 
   const recommendations: Recommendation[] = useMemo(() => {
     // Recommend up to 1 well-matched station from the visible list
-    const cand = filtered.find((s) => s.status === "available" && getAvailableChargers(s) > 0);
+    const cand = filtered.find((s) => s.status === "available" && (getAvailableChargers(s) ?? 0) > 0);
     if (!cand) return [];
     return [
       {
         stationId: cand.id,
         reasons: ["availableNow", "matchConnector"],
-        availableCount: getAvailableChargers(cand),
+        availableCount: getAvailableChargers(cand) ?? undefined,
       },
     ];
   }, [filtered]);
@@ -199,6 +159,8 @@ export function ExploreClient() {
 
   return (
     <div className="bg-ink-50">
+      {/* Page title — visual search row stays first, heading exposed to SR only */}
+      <h1 className="sr-only">{t("explore.title")}</h1>
       {/* Mobile search & filter row */}
       <div className="sticky top-14 z-20 border-b border-ink-100 bg-white/95 px-3 pb-3 pt-3 backdrop-blur md:hidden">
         <SearchBar
@@ -207,7 +169,7 @@ export function ExploreClient() {
           onUseLocation={requestLocation}
           locating={locating}
           placeholder={t("common.searchPlaceholder")}
-          inputRef={searchInputRef}
+          inputRef={mobileSearchInputRef}
         />
         <div className="mt-2.5 flex items-center gap-2">
           <Button
@@ -242,7 +204,7 @@ export function ExploreClient() {
           <div className="h-[44vh] min-h-[320px] lg:h-[calc(100vh-9rem)] lg:min-h-[560px] lg:max-h-[760px]">
             <MapLibreMap
               stations={filtered}
-              selectedId={selectedId}
+              selectedId={visibleSelectedId}
               onSelect={(id) => setSelectedId(id)}
               userLocation={userLoc}
             />
@@ -263,7 +225,7 @@ export function ExploreClient() {
               onUseLocation={requestLocation}
               locating={locating}
               placeholder={t("common.searchPlaceholder")}
-              inputRef={searchInputRef}
+              inputRef={desktopSearchInputRef}
             />
             <div className="mt-3 flex items-center gap-2">
               <Button
@@ -274,7 +236,7 @@ export function ExploreClient() {
               >
                 {t("common.filters")}
                 {activeChips.length > 0 && (
-                  <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-coral-600 px-1.5 text-[11px] font-medium text-white">
+                  <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-coral-600 px-1.5 text-[11px] font-medium text-ink-900">
                     {activeChips.length}
                   </span>
                 )}
@@ -299,16 +261,20 @@ export function ExploreClient() {
 
           <div className="mt-4 flex items-center justify-between">
             <p className="text-[12.5px] text-ink-600">
-              {t("common.resultsCount", { count: filtered.length })}
+              {loading
+                ? t("common.loading")
+                : error
+                ? t("common.unavailable")
+                : t("common.resultsCount", { count: filtered.length })}
             </p>
           </div>
 
           {/* Recommendations */}
-          {recommendations.length > 0 && (
+          {recommendations.length > 0 && !loading && !error && (
             <div className="mt-3">
-              <h3 className="px-1 text-[12px] font-semibold uppercase tracking-wider text-ink-600">
+              <h2 className="px-1 text-[12px] font-semibold uppercase tracking-wider text-ink-600">
                 {t("station.rec.title")}
-              </h3>
+              </h2>
               <div className="mt-2 space-y-2">
                 {recommendations.map((r) => {
                   const st = filtered.find((s) => s.id === r.stationId)!;
@@ -357,25 +323,61 @@ export function ExploreClient() {
                 <StationCardSkeleton />
                 <StationCardSkeleton />
               </>
+            ) : error ? (
+              <div className="rounded-[18px] border border-ink-100 bg-white p-6 text-center shadow-card">
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
+                  <AlertTriangleIcon size={20} />
+                </span>
+                <h2 className="mt-3 text-[15.5px] font-semibold text-ink-900">
+                  {t("errors.network.title")}
+                </h2>
+                <p className="mt-1 text-[13px] text-ink-600">
+                  {t("errors.network.body")}
+                </p>
+                <div className="mt-4">
+                  <Button variant="primary" size="md" onClick={loadStations}>
+                    {t("common.tryAgain")}
+                  </Button>
+                </div>
+              </div>
             ) : filtered.length === 0 ? (
-              <EmptyResults onClear={() => { setFilters(DEFAULT_FILTERS); setQuery(""); }} />
+              <EmptyResults onClear={() => { setFilters(DEFAULT_EXPLORE_FILTERS); setQuery(""); }} />
             ) : (
               filtered.map((s) => (
-                <button
+                <div
                   key={s.id}
-                  onClick={() => setSelectedId(s.id)}
+                  role="group"
+                  tabIndex={0}
+                  aria-label={s.name}
+                  onClick={(event) => {
+                    if (
+                      event.target instanceof Element &&
+                      event.target.closest("a,button,input,select,textarea")
+                    ) {
+                      return;
+                    }
+                    setSelectedId(s.id);
+                  }}
+                  onKeyDown={(event) => {
+                    if (
+                      (event.key === "Enter" || event.key === " ") &&
+                      event.target === event.currentTarget
+                    ) {
+                      event.preventDefault();
+                      setSelectedId(s.id);
+                    }
+                  }}
                   className="block w-full text-left"
-                  aria-pressed={selectedId === s.id}
                 >
                   <div
                     className={cx(
                       "rounded-[18px]",
-                      selectedId === s.id && "ring-2 ring-coral-600 ring-offset-2 ring-offset-ink-50"
+                      visibleSelectedId === s.id && "ring-2 ring-coral-600 ring-offset-2 ring-offset-ink-50"
                     )}
                   >
                     <StationCard station={s} userLocation={userLoc} />
                   </div>
-                </button>
+                </div>
               ))
             )}
           </div>
@@ -436,7 +438,7 @@ function SearchBar({
         onClick={onUseLocation}
         disabled={locating}
         aria-label={t("common.useMyLocation")}
-        className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-coral-600 px-3.5 text-[13px] font-medium text-white shadow-card hover:bg-coral-700 disabled:bg-coral-300"
+        className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-coral-600 px-3.5 text-[13px] font-medium text-ink-900 shadow-card hover:bg-coral-700 disabled:bg-coral-300"
       >
         {locating ? (
           <span
@@ -472,6 +474,8 @@ function SortMenu({
       <button
         type="button"
         onClick={() => setOpen(!open)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
         className="inline-flex h-10 items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3.5 text-[13px] font-medium text-ink-800 hover:bg-ink-50"
       >
         <SortIcon size={14} />
@@ -487,6 +491,8 @@ function SortMenu({
           {(Object.keys(options) as SortKey[]).map((k) => (
             <li key={k}>
               <button
+                role="option"
+                aria-selected={value === k}
                 onClick={() => {
                   onChange(k);
                   setOpen(false);
@@ -532,9 +538,9 @@ function EmptyResults({ onClear }: { onClear: () => void }) {
       <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-apricot-100 text-coral-700">
         <SearchIcon size={20} />
       </span>
-      <h3 className="mt-3 text-[15.5px] font-semibold text-ink-900">
+      <h2 className="mt-3 text-[15.5px] font-semibold text-ink-900">
         {t("explore.noResults.title")}
-      </h3>
+      </h2>
       <p className="mt-1 text-[13px] text-ink-600">{t("explore.noResults.body")}</p>
       <div className="mt-4">
         <Button variant="secondary" size="md" onClick={onClear}>
@@ -545,15 +551,9 @@ function EmptyResults({ onClear }: { onClear: () => void }) {
   );
 }
 
-function rankAvailability(s: Station): number {
-  if (s.status === "available") return 0;
-  if (s.status === "busy") return 1;
-  if (s.status === "broken") return 2;
-  return 3;
-}
-
 function buildChips(
   f: FiltersState,
+  setFilters: React.Dispatch<React.SetStateAction<FiltersState>>,
   t: (k: any, vars?: Record<string, string | number>) => string
 ): { label: string; onRemove: () => void }[] {
   const out: { label: string; onRemove: () => void }[] = [];
@@ -562,7 +562,10 @@ function buildChips(
       out.push({
         label: c,
         onRemove: () => {
-          // handled via parent — we'll do a simpler approach by mutating chips inline via parent; for now noop
+          setFilters((prev) => ({
+            ...prev,
+            connectorTypes: prev.connectorTypes.filter((x) => x !== c),
+          }));
         },
       });
     }
@@ -570,25 +573,47 @@ function buildChips(
   if (f.distanceKm > 0)
     out.push({
       label: t("filters.withinKm", { km: f.distanceKm }),
-      onRemove: () => {},
+      onRemove: () => setFilters((prev) => ({ ...prev, distanceKm: 0 })),
     });
   if (f.minPowerKw > 0)
     out.push({
       label: t("filters.overKw", { kw: f.minPowerKw }),
-      onRemove: () => {},
+      onRemove: () => setFilters((prev) => ({ ...prev, minPowerKw: 0 })),
     });
   if (f.maxPrice > 0)
     out.push({
       label: t("filters.underKwh", { price: f.maxPrice }),
-      onRemove: () => {},
+      onRemove: () => setFilters((prev) => ({ ...prev, maxPrice: 0 })),
     });
-  if (f.openNow) out.push({ label: t("filters.openNow"), onRemove: () => {} });
+  if (f.openNow)
+    out.push({
+      label: t("filters.openNow"),
+      onRemove: () => setFilters((prev) => ({ ...prev, openNow: false })),
+    });
   if (f.availableOnly)
-    out.push({ label: t("filters.availability") + ": " + t("station.status.available"), onRemove: () => {} });
-  if (f.fastCharging) out.push({ label: t("filters.fastCharging"), onRemove: () => {} });
-  if (f.freeOnly) out.push({ label: t("filters.freeCharging"), onRemove: () => {} });
-  if (f.lessBusy) out.push({ label: t("filters.lessBusy"), onRemove: () => {} });
+    out.push({
+      label: t("filters.availability") + ": " + t("station.status.available"),
+      onRemove: () => setFilters((prev) => ({ ...prev, availableOnly: false })),
+    });
+  if (f.fastCharging)
+    out.push({
+      label: t("filters.fastCharging"),
+      onRemove: () => setFilters((prev) => ({ ...prev, fastCharging: false })),
+    });
+  if (f.freeOnly)
+    out.push({
+      label: t("filters.freeCharging"),
+      onRemove: () => setFilters((prev) => ({ ...prev, freeOnly: false })),
+    });
+  if (f.lessBusy)
+    out.push({
+      label: t("filters.lessBusy"),
+      onRemove: () => setFilters((prev) => ({ ...prev, lessBusy: false })),
+    });
   if (f.minChargers > 0)
-    out.push({ label: `≥ ${f.minChargers} ${t("station.chargers")}`, onRemove: () => {} });
+    out.push({
+      label: `≥ ${f.minChargers} ${t("station.chargers")}`,
+      onRemove: () => setFilters((prev) => ({ ...prev, minChargers: 0 })),
+    });
   return out;
 }

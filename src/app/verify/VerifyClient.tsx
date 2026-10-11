@@ -5,20 +5,21 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { Button } from "@/components/Button";
 import { Link } from "@/i18n/Link";
 import { ChevronLeftIcon } from "@/components/Icon";
-import { useSession } from "@/state/SessionProvider";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
+import { supabase } from "@/lib/supabase";
+import { normalizeCode, sendOtp, verifyOtpCode } from "@/lib/auth";
 
 type Pending = { contact: string; kind: "phone" | "email" };
 
 export function VerifyClient() {
   const { t } = useI18n();
   const router = useRouter();
-  const { signIn } = useSession();
   const { show } = useToast();
   const [pending, setPending] = useState<Pending | null>(null);
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [resendIn, setResendIn] = useState(30);
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -68,24 +69,35 @@ export function VerifyClient() {
     inputsRef.current[Math.min(text.length, 5)]?.focus();
   }
 
-  function submit() {
-    if (!pending) return;
-    const code = digits.join("");
-    if (code.length !== 6) {
-      setError(t("auth.otp.invalid"));
-      return;
-    }
-    // Accept any 6-digit code in this mock.
+  async function submit() {
+    if (!pending || submitting) return;
+    setSubmitting(true);
     setError(null);
-    signIn(pending.contact, pending.kind);
-    sessionStorage.removeItem("chargeplus:otp:pending");
-    show("Signed in");
-    router.push("/profile");
+    try {
+      // Real Supabase OTP verification; the session is established by the
+      // client and picked up via onAuthStateChange. Any code is rejected
+      // unless the provider confirms it — invalid codes never sign in.
+      normalizeCode(digits.join(""));
+      await verifyOtpCode(supabase, pending.kind, pending.contact, digits.join(""));
+      sessionStorage.removeItem("chargeplus:otp:pending");
+      show("Signed in");
+      router.push("/profile");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("auth.otp.invalid"));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  function resend() {
+  async function resend() {
+    if (!pending || resendIn > 0) return;
     setResendIn(30);
-    show("Code resent");
+    try {
+      await sendOtp(supabase, pending.kind, pending.contact);
+      show("Code resent");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("auth.otp.invalid"));
+    }
   }
 
   if (!pending) {
@@ -111,7 +123,7 @@ export function VerifyClient() {
       </h1>
       <p className="mt-1 text-[14px] text-ink-700">
         {t("auth.otp.subtitle", {
-          contact: pending.kind === "phone" ? `+91 ${pending.contact}` : pending.contact,
+          contact: pending.contact,
         })}
       </p>
 
@@ -155,7 +167,7 @@ export function VerifyClient() {
         </div>
 
         <div className="mt-6">
-          <Button block size="lg" variant="primary" onClick={submit} disabled={digits.some((d) => !d)}>
+          <Button block size="lg" variant="primary" onClick={submit} loading={submitting} disabled={digits.some((d) => !d)}>
             {t("auth.continue")}
           </Button>
         </div>

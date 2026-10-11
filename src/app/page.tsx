@@ -11,7 +11,6 @@ import {
   PinIcon,
   ClockIcon,
 } from "@/components/Icon";
-import { Link } from "@/i18n/Link";
 import { useI18n } from "@/i18n/I18nProvider";
 
 export default function HomePage() {
@@ -67,18 +66,14 @@ export default function HomePage() {
                 {t("home.hero.subtitle")}
               </p>
               <div className="mt-7 flex flex-wrap items-center gap-3">
-                <Link href="/explore">
-                  <Button size="lg" variant="primary">
-                    <PinIcon size={18} />
-                    {t("home.hero.ctaPrimary")}
-                  </Button>
-                </Link>
-                <Link href="/explore">
-                  <Button size="lg" variant="secondary">
-                    <CompassIcon size={18} />
-                    {t("home.hero.ctaSecondary")}
-                  </Button>
-                </Link>
+                <Button size="lg" variant="primary" href="/explore">
+                  <PinIcon size={18} />
+                  {t("home.hero.ctaPrimary")}
+                </Button>
+                <Button size="lg" variant="secondary" href="/explore">
+                  <CompassIcon size={18} />
+                  {t("home.hero.ctaSecondary")}
+                </Button>
               </div>
 
               <ul className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12.5px] text-ink-600">

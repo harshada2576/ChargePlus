@@ -1,0 +1,874 @@
+
+> test
+> node --experimental-strip-types --import ./tests/register-hooks.mjs --test tests/test_*.mjs
+
+TAP version 13
+# [dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+# [dotenv@17.3.1] injecting env (6) from .env.local -- tip: 🛡️ auth for agents: https://vestauth.com
+# (node:10668) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: pending queues map honestly and fail loudly
+ok 1 - pending queues map honestly and fail loudly
+  ---
+  duration_ms: 6.3172
+  type: 'test'
+  ...
+# Subtest: moderation writes decision, moderator, and timestamp
+ok 2 - moderation writes decision, moderator, and timestamp
+  ---
+  duration_ms: 21.5666
+  type: 'test'
+  ...
+# Subtest: moderation validates ids and never fakes success
+ok 3 - moderation validates ids and never fakes success
+  ---
+  duration_ms: 1.1748
+  type: 'test'
+  ...
+# Subtest: ingestion runs map with honest nulls
+# (node:10668) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+ok 4 - ingestion runs map with honest nulls
+  ---
+  duration_ms: 1.2585
+  type: 'test'
+  ...
+# Subtest: approved count is exact or honestly unknown
+ok 5 - approved count is exact or honestly unknown
+  ---
+  duration_ms: 0.7958
+  type: 'test'
+  ...
+# [dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+# [dotenv@17.3.1] injecting env (6) from .env.local -- tip: 🤖 agentic secret storage: https://dotenvx.com/as2
+# (node:12156) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:12156) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: UI alert types map to canonical DB types explicitly
+ok 6 - UI alert types map to canonical DB types explicitly
+  ---
+  duration_ms: 3.3793
+  type: 'test'
+  ...
+# Subtest: list maps rows honestly and fails loudly
+ok 7 - list maps rows honestly and fails loudly
+  ---
+  duration_ms: 4.6699
+  type: 'test'
+  ...
+# Subtest: enabling a new condition inserts a whitelisted row
+ok 8 - enabling a new condition inserts a whitelisted row
+  ---
+  duration_ms: 1.316
+  type: 'test'
+  ...
+# Subtest: toggling an existing condition updates instead of duplicating
+ok 9 - toggling an existing condition updates instead of duplicating
+  ---
+  duration_ms: 14.1699
+  type: 'test'
+  ...
+# Subtest: disabling an unconfigured condition persists nothing
+ok 10 - disabling an unconfigured condition persists nothing
+  ---
+  duration_ms: 1.9484
+  type: 'test'
+  ...
+# Subtest: concurrent insert race (23505) updates the winner instead of duplicating
+ok 11 - concurrent insert race (23505) updates the winner instead of duplicating
+  ---
+  duration_ms: 2.1054
+  type: 'test'
+  ...
+# Subtest: validation and failures never fake success
+ok 12 - validation and failures never fake success
+  ---
+  duration_ms: 3.3043
+  type: 'test'
+  ...
+# [dotenv@17.3.1] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+# [dotenv@17.3.1] injecting env (6) from .env.local -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+# (node:19780) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: phone normalization enforces Indian E.164
+ok 13 - phone normalization enforces Indian E.164
+  ---
+  duration_ms: 4.8625
+  type: 'test'
+  ...
+# Subtest: email normalization trims, lowercases, and validates
+ok 14 - email normalization trims, lowercases, and validates
+  ---
+  duration_ms: 0.6673
+  type: 'test'
+  ...
+# Subtest: invalid contacts throw validation errors, never network calls
+ok 15 - invalid contacts throw validation errors, never network calls
+  ---
+  duration_ms: 13.9624
+  type: 'test'
+  ...
+# Subtest: send uses the normalized contact and correct channel
+ok 16 - send uses the normalized contact and correct channel
+  ---
+  duration_ms: 1.1462
+  type: 'test'
+  ...
+# Subtest: provider failures surface honestly without fake sessions
+ok 17 - provider failures surface honestly without fake sessions
+  ---
+  duration_ms: 1.4749
+  type: 'test'
+  ...
+# Subtest: verify maps sms/email types and returns the user id
+ok 18 - verify maps sms/email types and returns the user id
+  ---
+  duration_ms: 1.1485
+  type: 'test'
+  ...
+# Subtest: null user after verify never authenticates
+ok 19 - null user after verify never authenticates
+  ---
+  duration_ms: 0.6793
+  type: 'test'
+  ...
+# Subtest: redirects stay internal
+ok 20 - redirects stay internal
+  ---
+  duration_ms: 0.4762
+  type: 'test'
+  ...
+# Subtest: signOut delegates to the provider
+ok 21 - signOut delegates to the provider
+  ---
+  duration_ms: 1.151
+  type: 'test'
+  ...
+# (node:19780) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [dotenv@17.3.1] injecting env (0) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+# [dotenv@17.3.1] injecting env (6) from .env.local -- tip: 🛡️ auth for agents: https://vestauth.com
+# (node:16700) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:16700) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:16700) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/Admin/Desktop/Projects/ChargePlus/src/data/stations.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to C:\\Users\\Admin\\Desktop\\Projects\\ChargePlus\\package.json.
+# fetchStations error: { message: 'connection refused' }
+# fetchStations error: { message: 'Transient network failure' }
+# Subtest: 1. Explore loads canonical station data and renders the returned stations
+ok 22 - 1. Explore loads canonical station data and renders the returned stations
+  ---
+  duration_ms: 5.5716
+  type: 'test'
+  ...
+# Subtest: 2. Successful empty response renders the empty state, not the error state
+ok 23 - 2. Successful empty response renders the empty state, not the error state
+  ---
+  duration_ms: 1.9891
+  type: 'test'
+  ...
+# Subtest: 3. Failed query renders an error state and does not load mock data
+ok 24 - 3. Failed query renders an error state and does not load mock data
+  ---
+  duration_ms: 3.1116
+  type: 'test'
+  ...
+# Subtest: 4. Retry attempts to fetch canonical data again
+ok 25 - 4. Retry attempts to fetch canonical data again
+  ---
+  duration_ms: 8.4111
+  type: 'test'
+  ...
+# Subtest: 5. List selection and map selection remain synchronized
+ok 26 - 5. List selection and map selection remain synchronized
+  ---
+  duration_ms: 1.5545
+  type: 'test'
+  ...
+# Subtest: 6. Invalid/missing coordinates do not generate misleading markers or crash rendering
+ok 27 - 6. Invalid/missing coordinates do not generate misleading markers or crash rendering
+  ---
+  duration_ms: 1.9078
+  type: 'test'
+  ...
+# Subtest: 7. Unknown availability is not converted to available or busy
+ok 28 - 7. Unknown availability is not converted to available or busy
+  ---
+  duration_ms: 1.6649
+  type: 'test'
+  ...
+# Subtest: 8. Unknown prices are not treated as free
+ok 29 - 8. Unknown prices are not treated as free
+  ---
+  duration_ms: 1.4629
+  type: 'test'
+  ...
+# Subtest: 9. Unknown connector types and quantities remain unknown
+ok 30 - 9. Unknown connector types and quantities remain unknown
+  ---
+  duration_ms: 4.4521
+  type: 'test'
+  ...
+# Subtest: 10. Filtering does not mutate the original canonical collection or corrupt selection state
+ok 31 - 10. Filtering does not mutate the original canonical collection or corrupt selection state
+  ---
+  duration_ms: 2.602
+  type: 'test'
+  ...
+# Subtest: 11. Marker/list navigation uses the correct canonical station ID
+ok 32 - 11. Marker/list navigation uses the correct canonical station ID
+  ---
+  duration_ms: 3.5586
+  type: 'test'
+  ...
+# Subtest: 12. Existing HTML escaping protections remain intact
+ok 33 - 12. Existing HTML escaping protections remain intact
+  ---
+  duration_ms: 0.8556
+  type: 'test'
+  ...
+# fetchStations error: { message: 'forced' }
+# Subtest: live: fetchStations against public anon client when credentials are present
+ok 34 - live: fetchStations against public anon client when credentials are present
+  ---
+  duration_ms: 1901.789
+  type: 'test'
+  ...
+# [dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+# [dotenv@17.3.1] injecting env (6) from .env.local -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+# (node:2920) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: list returns saved ids in order, empty when none
+ok 35 - list returns saved ids in order, empty when none
+  ---
+  duration_ms: 4.6064
+  type: 'test'
+  ...
+# Subtest: list failures throw instead of faking an empty list
+ok 36 - list failures throw instead of faking an empty list
+  ---
+  duration_ms: 1.7135
+  type: 'test'
+  ...
+# Subtest: add writes the caller user id and station id
+ok 37 - add writes the caller user id and station id
+  ---
+  duration_ms: 16.2349
+  type: 'test'
+  ...
+# Subtest: duplicate saves are idempotent, never errors
+ok 38 - duplicate saves are idempotent, never errors
+  ---
+  duration_ms: 0.4886
+  type: 'test'
+  ...
+# Subtest: remove scopes to the caller and tolerates non-saved stations
+ok 39 - remove scopes to the caller and tolerates non-saved stations
+  ---
+  duration_ms: 1.8695
+  type: 'test'
+  ...
+# (node:2920) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+# [dotenv@17.3.1] injecting env (6) from .env.local -- tip: 🤖 agentic secret storage: https://dotenvx.com/as2
+# (node:11604) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:11604) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:11604) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/Admin/Desktop/Projects/ChargePlus/src/data/navigation.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to C:\\Users\\Admin\\Desktop\\Projects\\ChargePlus\\package.json.
+# fetchStationById query error: { message: 'timeout' }
+# Subtest: 1. List selection opens the correct preview
+ok 40 - 1. List selection opens the correct preview
+  ---
+  duration_ms: 6.072
+  type: 'test'
+  ...
+# Subtest: 2. Marker selection opens the matching preview
+ok 41 - 2. Marker selection opens the matching preview
+  ---
+  duration_ms: 0.5707
+  type: 'test'
+  ...
+# Subtest: 3. Preview navigation uses the canonical station ID
+ok 42 - 3. Preview navigation uses the canonical station ID
+  ---
+  duration_ms: 0.3659
+  type: 'test'
+  ...
+# Subtest: 4. Switching stations updates preview identity
+ok 43 - 4. Switching stations updates preview identity
+  ---
+  duration_ms: 0.5378
+  type: 'test'
+  ...
+# Subtest: 5. Closing the preview reconciles selection
+ok 44 - 5. Closing the preview reconciles selection
+  ---
+  duration_ms: 0.5253
+  type: 'test'
+  ...
+# Subtest: 6. Filtering out the selection clears the preview
+ok 45 - 6. Filtering out the selection clears the preview
+  ---
+  duration_ms: 1.0967
+  type: 'test'
+  ...
+# Subtest: 7. A missing station never falls back to a hardcoded station
+ok 46 - 7. A missing station never falls back to a hardcoded station
+  ---
+  duration_ms: 1.3589
+  type: 'test'
+  ...
+# Subtest: 8. Malformed IDs follow not-found behavior
+ok 47 - 8. Malformed IDs follow not-found behavior
+  ---
+  duration_ms: 0.5512
+  type: 'test'
+  ...
+# Subtest: 9. Query failures stay distinguishable from missing records
+ok 48 - 9. Query failures stay distinguishable from missing records
+  ---
+  duration_ms: 3.6387
+  type: 'test'
+  ...
+# Subtest: 10. The Explore return route exists
+ok 49 - 10. The Explore return route exists
+  ---
+  duration_ms: 16.5237
+  type: 'test'
+  ...
+# Subtest: 11. Primary navigation links resolve to real routes
+ok 50 - 11. Primary navigation links resolve to real routes
+  ---
+  duration_ms: 10.9154
+  type: 'test'
+  ...
+# Subtest: 12. URL encoding keeps unusual identifiers safe
+ok 51 - 12. URL encoding keeps unusual identifiers safe
+  ---
+  duration_ms: 0.3873
+  type: 'test'
+  ...
+# Subtest: 13. External map links require valid coordinates
+ok 52 - 13. External map links require valid coordinates
+  ---
+  duration_ms: 0.7465
+  type: 'test'
+  ...
+# Subtest: 14. Selection transitions are stable and single-pathed
+ok 53 - 14. Selection transitions are stable and single-pathed
+  ---
+  duration_ms: 2.4662
+  type: 'test'
+  ...
+# Subtest: 16. No prototype data enters the discovery journey
+ok 54 - 16. No prototype data enters the discovery journey
+  ---
+  duration_ms: 1.1867
+  type: 'test'
+  ...
+# [dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+# [dotenv@17.3.1] injecting env (6) from .env.local -- tip: ⚙️  override existing env vars with { override: true }
+# (node:13768) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: profile mapping keeps role server-truthful
+ok 55 - profile mapping keeps role server-truthful
+  ---
+  duration_ms: 3.3782
+  type: 'test'
+  ...
+# Subtest: absent profile returns null without fabrication
+ok 56 - absent profile returns null without fabrication
+  ---
+  duration_ms: 0.4529
+  type: 'test'
+  ...
+# Subtest: profile query failures throw
+ok 57 - profile query failures throw
+  ---
+  duration_ms: 1.4411
+  type: 'test'
+  ...
+# Subtest: display-name validation matches the 1-120 CHECK
+ok 58 - display-name validation matches the 1-120 CHECK
+  ---
+  duration_ms: 0.8419
+  type: 'test'
+  ...
+# Subtest: update writes only whitelisted columns for the caller id
+ok 59 - update writes only whitelisted columns for the caller id
+  ---
+  duration_ms: 26.1491
+  type: 'test'
+  ...
+# Subtest: update failures and missing rows never fake success
+ok 60 - update failures and missing rows never fake success
+  ---
+  duration_ms: 1.3575
+  type: 'test'
+  ...
+# (node:13768) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+# [dotenv@17.3.1] injecting env (6) from .env.local -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+# (node:13616) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:13616) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: token bucket allows burst then denies with retry hint
+ok 61 - token bucket allows burst then denies with retry hint
+  ---
+  duration_ms: 2.9441
+  type: 'test'
+  ...
+# Subtest: keys are independent per caller
+ok 62 - keys are independent per caller
+  ---
+  duration_ms: 0.4015
+  type: 'test'
+  ...
+# Subtest: client and credential keys derive safely
+ok 63 - client and credential keys derive safely
+  ---
+  duration_ms: 70.7479
+  type: 'test'
+  ...
+# Subtest: serverLog emits JSON without secrets and never throws
+ok 64 - serverLog emits JSON without secrets and never throws
+  ---
+  duration_ms: 2.9574
+  type: 'test'
+  ...
+# [dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+# [dotenv@17.3.1] injecting env (6) from .env.local -- tip: ⚙️  override existing env vars with { override: true }
+# (node:6312) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: validation rejects bad input before any network call
+ok 65 - validation rejects bad input before any network call
+  ---
+  duration_ms: 15.9278
+  type: 'test'
+  ...
+# Subtest: submit writes a pending-by-default observation row
+# (node:6312) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+ok 66 - submit writes a pending-by-default observation row
+  ---
+  duration_ms: 2.2694
+  type: 'test'
+  ...
+# Subtest: submit failures never fake success
+ok 67 - submit failures never fake success
+  ---
+  duration_ms: 0.8598
+  type: 'test'
+  ...
+# Subtest: list returns newest-first own rows with honest fallbacks
+ok 68 - list returns newest-first own rows with honest fallbacks
+  ---
+  duration_ms: 1.7234
+  type: 'test'
+  ...
+# [dotenv@17.3.1] injecting env (0) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+# [dotenv@17.3.1] injecting env (6) from .env.local -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+# (node:7716) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: validation enforces rating, station, and user
+ok 69 - validation enforces rating, station, and user
+  ---
+  duration_ms: 3.975
+  type: 'test'
+  ...
+# Subtest: first submit inserts and reports no update
+ok 70 - first submit inserts and reports no update
+  ---
+  duration_ms: 12.4691
+  type: 'test'
+  ...
+# Subtest: duplicate submits update the own row instead of failing
+ok 71 - duplicate submits update the own row instead of failing
+  ---
+  duration_ms: 2.9493
+  type: 'test'
+  ...
+# Subtest: genuine failures never fake success
+ok 72 - genuine failures never fake success
+  ---
+  duration_ms: 2.6646
+  type: 'test'
+  ...
+# Subtest: approved list is sanitized and honest
+ok 73 - approved list is sanitized and honest
+  ---
+  duration_ms: 2.0576
+  type: 'test'
+  ...
+# Subtest: own list carries moderation status for honesty
+ok 74 - own list carries moderation status for honesty
+  ---
+  duration_ms: 3.0849
+  type: 'test'
+  ...
+# (node:7716) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+# [dotenv@17.3.1] injecting env (6) from .env.local -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+# (node:14428) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:14428) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:14428) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/Admin/Desktop/Projects/ChargePlus/src/data/stationAdapter.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to C:\\Users\\Admin\\Desktop\\Projects\\ChargePlus\\package.json.
+# fetchStations error: { message: 'db down' }
+# Subtest: 1. Search is case-insensitive
+ok 75 - 1. Search is case-insensitive
+  ---
+  duration_ms: 6.6837
+  type: 'test'
+  ...
+# Subtest: 2. Whitespace is trimmed and empty search restores all
+ok 76 - 2. Whitespace is trimmed and empty search restores all
+  ---
+  duration_ms: 10.7525
+  type: 'test'
+  ...
+# Subtest: 3. Partial name, operator, and location matching
+ok 77 - 3. Partial name, operator, and location matching
+  ---
+  duration_ms: 1.3009
+  type: 'test'
+  ...
+# Subtest: 4. Missing searchable fields never crash
+ok 78 - 4. Missing searchable fields never crash
+  ---
+  duration_ms: 0.7655
+  type: 'test'
+  ...
+# Subtest: 5. Multiple filters compose on the same collection
+ok 79 - 5. Multiple filters compose on the same collection
+  ---
+  duration_ms: 1.0418
+  type: 'test'
+  ...
+# Subtest: 6. Connector-type filter never matches Unknown
+ok 80 - 6. Connector-type filter never matches Unknown
+  ---
+  duration_ms: 2.5809
+  type: 'test'
+  ...
+# Subtest: 7. Power thresholds ignore null power
+ok 81 - 7. Power thresholds ignore null power
+  ---
+  duration_ms: 1.1102
+  type: 'test'
+  ...
+# Subtest: 8. Charger-count filter distinguishes known zero from unknown
+ok 82 - 8. Charger-count filter distinguishes known zero from unknown
+  ---
+  duration_ms: 7.0712
+  type: 'test'
+  ...
+# Subtest: 9. Availability filter needs telemetry evidence
+ok 83 - 9. Availability filter needs telemetry evidence
+  ---
+  duration_ms: 1.1605
+  type: 'test'
+  ...
+# Subtest: 10. Free/paid filters never treat unknown price as free
+ok 84 - 10. Free/paid filters never treat unknown price as free
+  ---
+  duration_ms: 1.4853
+  type: 'test'
+  ...
+# Subtest: 11. Open-now excludes unknown hours
+ok 85 - 11. Open-now excludes unknown hours
+  ---
+  duration_ms: 1.389
+  type: 'test'
+  ...
+# Subtest: 12. Invalid coordinates fail radius filters and sort last without crashing
+ok 86 - 12. Invalid coordinates fail radius filters and sort last without crashing
+  ---
+  duration_ms: 1.9143
+  type: 'test'
+  ...
+# Subtest: 13. Sorting is deterministic with stable ties
+ok 87 - 13. Sorting is deterministic with stable ties
+  ---
+  duration_ms: 0.9015
+  type: 'test'
+  ...
+# Subtest: 14. Filtering never mutates inputs
+ok 88 - 14. Filtering never mutates inputs
+  ---
+  duration_ms: 0.5819
+  type: 'test'
+  ...
+# Subtest: 15. Counts match the visible set
+ok 89 - 15. Counts match the visible set
+  ---
+  duration_ms: 0.5518
+  type: 'test'
+  ...
+# Subtest: 16. Map markers mirror the filtered list
+ok 90 - 16. Map markers mirror the filtered list
+  ---
+  duration_ms: 3.5892
+  type: 'test'
+  ...
+# Subtest: 17. Selection clears when filtered out and restores on reset
+ok 91 - 17. Selection clears when filtered out and restores on reset
+  ---
+  duration_ms: 0.8429
+  type: 'test'
+  ...
+# Subtest: 18. Default filters restore the full collection
+ok 92 - 18. Default filters restore the full collection
+  ---
+  duration_ms: 0.5288
+  type: 'test'
+  ...
+# Subtest: 19. Empty results are distinct from query failure
+ok 93 - 19. Empty results are distinct from query failure
+  ---
+  duration_ms: 2.8872
+  type: 'test'
+  ...
+# Subtest: 20. No fabricated stations in the search/filter path
+ok 94 - 20. No fabricated stations in the search/filter path
+  ---
+  duration_ms: 0.8839
+  type: 'test'
+  ...
+# Subtest: 21. Cold-start filters match nothing without evidence
+ok 95 - 21. Cold-start filters match nothing without evidence
+  ---
+  duration_ms: 0.6232
+  type: 'test'
+  ...
+# [dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+# [dotenv@17.3.1] injecting env (6) from .env.local -- tip: 🛡️ auth for agents: https://vestauth.com
+# (node:1704) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:1704) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: deriveStationStatus enforces telemetry priority and Rule 5 (static != availability)
+ok 96 - deriveStationStatus enforces telemetry priority and Rule 5 (static != availability)
+  ---
+  duration_ms: 3.3235
+  type: 'test'
+  ...
+# Subtest: derivePricing handles null, zero, and positive prices honestly without fabricating free rates
+ok 97 - derivePricing handles null, zero, and positive prices honestly without fabricating free rates
+  ---
+  duration_ms: 3.3468
+  type: 'test'
+  ...
+# Subtest: deriveHours formats 24h, open-close, and unknown hours
+ok 98 - deriveHours formats 24h, open-close, and unknown hours
+  ---
+  duration_ms: 1.4495
+  type: 'test'
+  ...
+# Subtest: deriveArea and deriveAddress handle missing location honestly without presuming Mumbai
+ok 99 - deriveArea and deriveAddress handle missing location honestly without presuming Mumbai
+  ---
+  duration_ms: 1.9412
+  type: 'test'
+  ...
+# Subtest: normalizeConnectorType does not fabricate CCS2 for missing or unknown types
+ok 100 - normalizeConnectorType does not fabricate CCS2 for missing or unknown types
+  ---
+  duration_ms: 0.9512
+  type: 'test'
+  ...
+# Subtest: mapDbConnectorToConnector preserves missing quantity and unobserved availability as null
+ok 101 - mapDbConnectorToConnector preserves missing quantity and unobserved availability as null
+  ---
+  duration_ms: 1.015
+  type: 'test'
+  ...
+# Subtest: mapDbStationToStation does not invent operator, address, or busy windows
+ok 102 - mapDbStationToStation does not invent operator, address, or busy windows
+  ---
+  duration_ms: 1.2076
+  type: 'test'
+  ...
+# Subtest: escapeHtml sanitizes untrusted markup to prevent HTML injection
+ok 103 - escapeHtml sanitizes untrusted markup to prevent HTML injection
+  ---
+  duration_ms: 0.5617
+  type: 'test'
+  ...
+# Subtest: parseStationCoord does not coerce missing values to 0
+ok 104 - parseStationCoord does not coerce missing values to 0
+  ---
+  duration_ms: 0.8502
+  type: 'test'
+  ...
+# [dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+# [dotenv@17.3.1] injecting env (6) from .env.local -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+# (node:5900) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:5900) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:5900) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/Admin/Desktop/Projects/ChargePlus/src/data/stations.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to C:\\Users\\Admin\\Desktop\\Projects\\ChargePlus\\package.json.
+# fetchStationById query error: { message: 'db down' }
+# fetchStationById connectors error: { message: 'conn down' }
+# fetchStations error: { message: 'nope' }
+# Subtest: 1. A valid canonical station ID loads the correct station
+ok 105 - 1. A valid canonical station ID loads the correct station
+  ---
+  duration_ms: 5.0407
+  type: 'test'
+  ...
+# Subtest: 2. A nonexistent station returns null (notFound downstream)
+ok 106 - 2. A nonexistent station returns null (notFound downstream)
+  ---
+  duration_ms: 20.2054
+  type: 'test'
+  ...
+# Subtest: 3. A query failure throws and never fabricates a station
+ok 107 - 3. A query failure throws and never fabricates a station
+  ---
+  duration_ms: 2.8402
+  type: 'test'
+  ...
+# Subtest: 3b. A malformed ID returns null without querying
+ok 108 - 3b. A malformed ID returns null without querying
+  ---
+  duration_ms: 2.3753
+  type: 'test'
+  ...
+# Subtest: 4. Unknown address, operator, and location render honestly
+ok 109 - 4. Unknown address, operator, and location render honestly
+  ---
+  duration_ms: 0.5098
+  type: 'test'
+  ...
+# Subtest: 5. Missing coordinates disable directions and map actions
+ok 110 - 5. Missing coordinates disable directions and map actions
+  ---
+  duration_ms: 0.6518
+  type: 'test'
+  ...
+# Subtest: 6. Unknown connector type remains unknown
+ok 111 - 6. Unknown connector type remains unknown
+  ---
+  duration_ms: 0.4943
+  type: 'test'
+  ...
+# Subtest: 7. Null connector quantity and power remain unknown
+ok 112 - 7. Null connector quantity and power remain unknown
+  ---
+  duration_ms: 0.7181
+  type: 'test'
+  ...
+# Subtest: 8. Unknown connector availability never becomes available or busy
+ok 113 - 8. Unknown connector availability never becomes available or busy
+  ---
+  duration_ms: 1.0801
+  type: 'test'
+  ...
+# Subtest: 9. Unknown price is neither free nor ₹0
+ok 114 - 9. Unknown price is neither free nor ₹0
+  ---
+  duration_ms: 1.4863
+  type: 'test'
+  ...
+# Subtest: 10. Unknown hours are not 24/7
+ok 115 - 10. Unknown hours are not 24/7
+  ---
+  duration_ms: 2.1724
+  type: 'test'
+  ...
+# Subtest: 11. Static operational status is not live availability
+ok 116 - 11. Static operational status is not live availability
+  ---
+  duration_ms: 0.6259
+  type: 'test'
+  ...
+# Subtest: 12. Missing freshness creates no timestamp
+ok 117 - 12. Missing freshness creates no timestamp
+  ---
+  duration_ms: 1.1555
+  type: 'test'
+  ...
+# Subtest: 13. Missing ratings and reviews stay empty, never fabricated
+ok 118 - 13. Missing ratings and reviews stay empty, never fabricated
+  ---
+  duration_ms: 0.7529
+  type: 'test'
+  ...
+# Subtest: 14. Empty reviews drive the empty state branch
+ok 119 - 14. Empty reviews drive the empty state branch
+  ---
+  duration_ms: 0.4439
+  type: 'test'
+  ...
+# Subtest: 15. Canonical station ID survives navigation
+ok 120 - 15. Canonical station ID survives navigation
+  ---
+  duration_ms: 1.3522
+  type: 'test'
+  ...
+# Subtest: 16. Escaping and URL safety are preserved
+ok 121 - 16. Escaping and URL safety are preserved
+  ---
+  duration_ms: 1.6852
+  type: 'test'
+  ...
+# Subtest: 17. No prototype fallback is reachable from the detail route
+ok 122 - 17. No prototype fallback is reachable from the detail route
+  ---
+  duration_ms: 29.8354
+  type: 'test'
+  ...
+# [dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+# [dotenv@17.3.1] injecting env (6) from .env.local -- tip: ⚙️  override existing env vars with { override: true }
+# (node:3392) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: ready state maps counts and preserves null latest observation
+ok 123 - ready state maps counts and preserves null latest observation
+  ---
+  duration_ms: 12.8842
+  type: 'test'
+  ...
+# Subtest: non-numeric payloads coerce to honest zeros, null stays null
+ok 124 - non-numeric payloads coerce to honest zeros, null stays null
+  ---
+  duration_ms: 0.7495
+  type: 'test'
+  ...
+# Subtest: missing session and auth failures never fake a summary
+ok 125 - missing session and auth failures never fake a summary
+  ---
+  duration_ms: 3.1857
+  type: 'test'
+  ...
+# Subtest: admin warehouse route exposes no PII columns and authorizes server-side
+ok 126 - admin warehouse route exposes no PII columns and authorizes server-side
+  ---
+  duration_ms: 3.3917
+  type: 'test'
+  ...
+# (node:3392) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+1..126
+# tests 126
+# suites 0
+# pass 126
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9647.7233

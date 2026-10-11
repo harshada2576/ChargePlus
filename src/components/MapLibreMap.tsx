@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
-import maplibregl from "maplibre-gl";
+import { useEffect, useRef, useCallback, useState } from "react";
+import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Station } from "@/data/types";
 import { MUMBAI_CENTER } from "@/data/stations";
-import { PlusIcon, MinusIcon, CompassIcon, PinIcon } from "./Icon";
-import { cx } from "@/lib/util";
+import { toStationGeoJSON } from "@/data/exploreQuery";
+import { PlusIcon, MinusIcon, CompassIcon, PinIcon, AlertTriangleIcon } from "./Icon";
+import { cx, escapeHtml, isValidCoordinate } from "@/lib/util";
+import { useI18n } from "@/i18n/I18nProvider";
 
 export type MapLibreMapProps = {
   stations: Station[];
@@ -24,6 +26,8 @@ export type MapLibreMapProps = {
 
 // MapLibre compatible no-key OpenFreeMap style (as specified in srs.md line 516)
 const TILE_STYLE_URL = "https://tiles.openfreemap.org/styles/bright";
+
+export { isValidCoordinate } from "@/lib/util";
 
 export function MapLibreMap({
   stations,
@@ -43,6 +47,8 @@ export function MapLibreMap({
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const stationsRef = useRef(stations);
   const onSelectRef = useRef(onSelect);
+  const [mapError, setMapError] = useState(false);
+  const { t } = useI18n();
 
   useEffect(() => {
     stationsRef.current = stations;
@@ -53,9 +59,10 @@ export function MapLibreMap({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    const center: [number, number] = singleStation
-      ? [singleStation.lng, singleStation.lat]
-      : initialCenter || [MUMBAI_CENTER.lng, MUMBAI_CENTER.lat];
+    const center: [number, number] =
+      singleStation && isValidCoordinate(singleStation.lat, singleStation.lng)
+        ? [singleStation.lng, singleStation.lat]
+        : initialCenter || [MUMBAI_CENTER.lng, MUMBAI_CENTER.lat];
     const zoom = singleStation ? 15 : (initialZoom ?? 11);
 
     const map = new maplibregl.Map({
@@ -69,6 +76,13 @@ export function MapLibreMap({
 
     mapRef.current = map;
 
+    // A style/tile failure before the style is ready leaves an empty canvas with
+    // no feedback, so surface it in the UI instead of failing silently.
+    map.on("error", (event) => {
+      console.error("MapLibre map error:", event.error);
+      if (!map.isStyleLoaded()) setMapError(true);
+    });
+
     // Compact attribution
     map.addControl(
       new maplibregl.AttributionControl({ compact: true }),
@@ -76,29 +90,10 @@ export function MapLibreMap({
     );
 
     map.on("load", () => {
-      // Build GeoJSON features for all stations
+      setMapError(false);
+      // Build GeoJSON features for valid stations
       const featureStations = singleStation ? [singleStation] : stationsRef.current;
-      const geojson: GeoJSON.FeatureCollection = {
-        type: "FeatureCollection",
-        features: featureStations.map((s) => ({
-          type: "Feature",
-          id: s.id,
-          properties: {
-            id: s.id,
-            name: s.name,
-            operator: s.operator,
-            area: s.area,
-            status: s.status,
-            pricePerKwh: s.pricePerKwh,
-            isFree: s.isFree,
-            rating: s.rating,
-          },
-          geometry: {
-            type: "Point",
-            coordinates: [s.lng, s.lat],
-          },
-        })),
-      };
+      const geojson = toStationGeoJSON(featureStations);
 
       // Add clustered GeoJSON source
       map.addSource("stations", {
@@ -267,27 +262,7 @@ export function MapLibreMap({
     if (!source) return;
 
     const featureStations = singleStation ? [singleStation] : stations;
-    const geojson: GeoJSON.FeatureCollection = {
-      type: "FeatureCollection",
-      features: featureStations.map((s) => ({
-        type: "Feature",
-        id: s.id,
-        properties: {
-          id: s.id,
-          name: s.name,
-          operator: s.operator,
-          area: s.area,
-          status: s.status,
-          pricePerKwh: s.pricePerKwh,
-          isFree: s.isFree,
-          rating: s.rating,
-        },
-        geometry: {
-          type: "Point",
-          coordinates: [s.lng, s.lat],
-        },
-      })),
-    };
+    const geojson = toStationGeoJSON(featureStations);
 
     source.setData(geojson);
   }, [stations, singleStation]);
@@ -349,7 +324,15 @@ export function MapLibreMap({
     }
 
     const st = stations.find((s) => s.id === selectedId);
-    if (!st) return;
+    if (!st || !isValidCoordinate(st.lat, st.lng)) {
+      // Selection left the visible set (filtered out or reloaded away):
+      // never leave a stale popup behind.
+      if (popupRef.current) {
+        popupRef.current.remove();
+        popupRef.current = null;
+      }
+      return;
+    }
 
     map.easeTo({
       center: [st.lng, st.lat],
@@ -379,14 +362,17 @@ export function MapLibreMap({
         ? "Broken"
         : "Unknown";
 
-    const priceText = st.isFree
-      ? "Free"
-      : st.pricePerKwh != null
-      ? `₹${st.pricePerKwh}/kWh`
-      : "—";
+    const priceText =
+      st.isFree === true
+        ? "Free"
+        : st.pricePerKwh != null
+        ? `₹${st.pricePerKwh}/kWh`
+        : "—";
 
     const popupNode = document.createElement("div");
     popupNode.className = "p-2 text-ink-900 font-sans";
+    popupNode.setAttribute("role", "group");
+    popupNode.setAttribute("aria-label", `${st.name}, ${statusText}`);
     popupNode.innerHTML = `
       <div class="flex items-center justify-between gap-2">
         <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[10.5px] font-semibold ${statusBadgeClass}">
@@ -396,10 +382,10 @@ export function MapLibreMap({
           ${priceText}
         </span>
       </div>
-      <p class="mt-1.5 line-clamp-1 text-[13px] font-semibold text-ink-900">${st.name}</p>
-      <p class="text-[11.5px] text-ink-600">${st.operator} · ${st.area}</p>
+      <p class="mt-1.5 line-clamp-1 text-[13px] font-semibold text-ink-900">${escapeHtml(st.name)}</p>
+      <p class="text-[11.5px] text-ink-600">${escapeHtml(st.operator)} · ${escapeHtml(st.area)}</p>
       <div class="mt-2 flex justify-end">
-        <a href="/station/${st.id}" class="inline-flex items-center rounded-full bg-coral-600 px-3 py-1 text-[11px] font-medium text-white hover:bg-coral-700">
+        <a href="/station/${encodeURIComponent(st.id)}" class="inline-flex items-center rounded-full bg-coral-600 px-3 py-1 text-[11px] font-medium text-ink-900 hover:bg-coral-700">
           View details →
         </a>
       </div>
@@ -426,7 +412,7 @@ export function MapLibreMap({
 
   const handleRecenter = useCallback(() => {
     if (!mapRef.current) return;
-    if (singleStation) {
+    if (singleStation && isValidCoordinate(singleStation.lat, singleStation.lng)) {
       mapRef.current.flyTo({
         center: [singleStation.lng, singleStation.lat],
         zoom: 15,
@@ -455,6 +441,18 @@ export function MapLibreMap({
       )}
     >
       <div ref={containerRef} className="h-full w-full" />
+
+      {/* Style/tile load failure — never leave a silent blank map */}
+      {mapError && (
+        <div
+          role="alert"
+          className="absolute inset-0 z-0 flex flex-col items-center justify-center gap-1 bg-white/95 px-4 text-center"
+        >
+          <AlertTriangleIcon size={20} className="text-coral-700" />
+          <p className="text-[13px] font-semibold text-ink-900">{t("errors.map.title")}</p>
+          <p className="text-[12px] text-ink-600">{t("errors.map.body")}</p>
+        </div>
+      )}
 
       {/* City identification badge */}
       <div className="pointer-events-none absolute left-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-medium text-ink-700 shadow-card backdrop-blur-sm">
