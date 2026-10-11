@@ -37,7 +37,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <SessionProvider>
             <ToastProvider>
               <SiteHeader />
-              <main className="pb-20 md:pb-12">{children}</main>
+              <main id="main" className="pb-20 md:pb-12">
+                {children}
+              </main>
               <SiteFooter />
               <BottomNav />
             </ToastProvider>
