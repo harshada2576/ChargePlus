@@ -221,7 +221,7 @@ export function AdminDashboard() {
             </button>
             <Link
               href="/"
-              className="rounded-lg bg-coral-600 px-3 py-1 text-xs font-medium text-white hover:bg-coral-500 transition"
+              className="rounded-lg bg-coral-600 px-3 py-1 text-xs font-medium text-ink-900 hover:bg-coral-500 transition"
             >
               Exit to Driver App
             </Link>
