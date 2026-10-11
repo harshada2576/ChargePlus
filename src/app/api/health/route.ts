@@ -1,5 +1,5 @@
-import { db } from "@/db";
-import { sql } from "drizzle-orm";
+import { pool } from "@/db";
+
 import { checkRateLimit, clientKey } from "@/lib/rateLimit";
 import { serverLog } from "@/lib/serverLog";
 
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     return Response.json({ ok: false, throttled: true }, { status: 429 });
   }
   try {
-    await db.execute(sql`select 1`);
+    await pool.query("select 1");
     return Response.json({ ok: true });
   } catch {
     serverLog("error", "health.db_unreachable", {});
