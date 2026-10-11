@@ -566,6 +566,14 @@ class ScheduledIngestionOrchestrator:
                         run.state = IngestionRunState.PARTIAL
                         if run.persistence_errors:
                             run.error_summary = _scrub_secrets("; ".join(run.persistence_errors[:3]))
+                    elif run.records_fetched == 0:
+                        # Zero fetched records are indistinguishable from an
+                        # upstream outage at the source, so never report
+                        # SUCCEEDED: flag it for operator inspection.
+                        run.state = IngestionRunState.PARTIAL
+                        run.error_summary = (
+                            "Source returned zero records; an empty response is indistinguishable from a source outage."
+                        )
                     else:
                         run.state = IngestionRunState.SUCCEEDED
 
