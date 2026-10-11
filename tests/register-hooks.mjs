@@ -1,11 +1,7 @@
-import { existsSync } from "node:fs";
 import { register } from "node:module";
 import { pathToFileURL } from "node:url";
-import { config } from "dotenv";
 
-config();
-if (existsSync(".env.local")) {
-  config({ path: ".env.local", override: true });
-}
+// Tests receive configuration explicitly from the runner. Never load a
+// developer's environment file because it can point tests at production.
 
 register("./hooks.mjs", pathToFileURL("./tests/"));
