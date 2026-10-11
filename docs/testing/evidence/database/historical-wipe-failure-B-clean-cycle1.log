@@ -1,0 +1,110 @@
+
+WIPE exit=3 docker : psql:/tmp/mig/harness_wipe.sql:20: ERROR:  cannot drop view geography_columns because extension postgis 
+requires it
+At line:1 char:220
++ ... ning'; $w = docker exec -e PGOPTIONS="-c client_min_messages=warning" ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:/tmp/mig/h...gis requires it:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+HINT:  You can drop extension postgis instead.
+CONTEXT:  SQL statement "DROP VIEW public.geography_columns CASCADE"
+PL/pgSQL function inline_code_block line 9 at EXECUTE
+STUBS exit=3 docker : psql:/tmp/mig/harness_legacy_stubs.sql:10: ERROR:  relation "dim_date" already exists
+At line:1 char:444
++ ...  $log; $s = docker exec -e PGOPTIONS="-c client_min_messages=warning" ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:/tmp/mig/h... already exists:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+APPLY 20260918000001_step_1_3_core_operational_schema.sql exit=0 
+APPLY 20260922000001_step_1_4_analytics_warehouse_schema.sql exit=0 
+APPLY 20260922000002_step_1_5_ml_metadata_schema.sql exit=0 
+APPLY 20260923000001_step_1_6_constraints_indexes.sql exit=0 
+APPLY 20260924000001_step_1_7_rls_security_policies.sql exit=3 docker : psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked 
+for "spatial_ref_sys"
+At line:1 char:788
++ ... es){ $out = docker exec -e PGOPTIONS="-c client_min_messages=warning" ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:/tmp/mig/2...patial_ref_sys":String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "tableoid" of relation "spatial_ref_sys"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "cmax" of relation "spatial_ref_sys"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "xmax" of relation "spatial_ref_sys"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "cmin" of relation "spatial_ref_sys"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "xmin" of relation "spatial_ref_sys"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "ctid" of relation "spatial_ref_sys"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "srid" of relation "spatial_ref_sys"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "auth_name" of relation "spatial_ref_sys"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "auth_srid" of relation "spatial_ref_sys"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "srtext" of relation "spatial_ref_sys"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "proj4text" of relation "spatial_ref_sys"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+"geography_columns"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "f_table_catalog" of relation "geography_columns"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "f_table_schema" of relation "geography_columns"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "f_table_name" of relation "geography_columns"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "f_geography_column" of relation "geography_columns"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "coord_dimension" of relation "geography_columns"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "srid" of relation "geography_columns"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "type" of relation "geography_columns"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+"geometry_columns"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "f_table_catalog" of relation "geometry_columns"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "f_table_schema" of relation "geometry_columns"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "f_table_name" of relation "geometry_columns"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "f_geometry_column" of relation "geometry_columns"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "coord_dimension" of relation "geometry_columns"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "srid" of relation "geometry_columns"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:36: WARNING:  no privileges could be revoked for 
+column "type" of relation "geometry_columns"
+psql:/tmp/mig/20260924000001_step_1_7_rls_security_policies.sql:439: ERROR:  CRITICAL: Active RLS table count mismatch 
+(expected 29, got 30)
+CONTEXT:  PL/pgSQL function inline_code_block line 22 at RAISE
+APPLY 20260925000001_step_1_8_views_functions.sql exit=3 docker : psql:/tmp/mig/20260925000001_step_1_8_views_functions.sql:507: ERROR:  Assertion failed: expected 29 tables 
+with RLS enabled, found 30
+At line:1 char:788
++ ... es){ $out = docker exec -e PGOPTIONS="-c client_min_messages=warning" ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:/tmp/mig/2...abled, found 30:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+CONTEXT:  PL/pgSQL function inline_code_block line 47 at RAISE
+APPLY 20260926000001_step_2_10_ingestion_runs.sql exit=3 docker : psql:/tmp/mig/20260926000001_step_2_10_ingestion_runs.sql:59: ERROR:  policy "Allow service_role write access 
+to ingestion_runs" for table "ingestion_runs" already exists
+At line:1 char:788
++ ... es){ $out = docker exec -e PGOPTIONS="-c client_min_messages=warning" ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:/tmp/mig/2... already exists:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+APPLY 20260926000002_step_2_10_ingestion_runs_grants.sql exit=0 
+APPLY 20260926000003_step_2_12_connector_unknown_power.sql exit=0 
+APPLY 20260927000001_pre_phase4_connector_ccs1_vocab.sql exit=0 
+APPLY 20260927000002_pre_phase4_ingestion_runs_admin.sql exit=0 
+APPLY 20260927000003_pre_phase4_profiles_role_guard.sql exit=0 
+APPLY 20260927000004_pre_phase4_alerts_uniqueness.sql exit=0 
+APPLY 20260928000001_phase4_dim_connector_null_power.sql exit=0 
