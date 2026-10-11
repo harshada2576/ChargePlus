@@ -378,11 +378,9 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
           >
             {t("common.notNow")}
           </Button>
-          <Link href="/login" className="block flex-1">
-            <Button variant="primary" size="md" block>
-              {t("common.continue")}
-            </Button>
-          </Link>
+          <Button variant="primary" size="md" block href="/login" className="flex-1">
+            {t("common.continue")}
+          </Button>
         </div>
       </Modal>
     </div>
