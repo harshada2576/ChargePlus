@@ -1,8 +1,9 @@
 "use client";
 
 import { forwardRef } from "react";
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, ComponentProps, ReactNode } from "react";
 import { cx } from "@/lib/util";
+import { Link } from "@/i18n/Link";
 
 type Variant = "primary" | "secondary" | "ghost" | "destructive";
 type Size = "sm" | "md" | "lg";
@@ -15,11 +16,13 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   iconRight?: ReactNode;
   loading?: boolean;
   children?: ReactNode;
+  /** When set the button renders as a link anchor instead of a nested <button> inside <Link>. */
+  href?: string;
 };
 
 const variantClass: Record<Variant, string> = {
   primary:
-    "bg-coral-600 text-white hover:bg-coral-700 active:bg-coral-700 disabled:bg-coral-300 disabled:text-white shadow-[0_1px_2px_rgba(240,128,128,0.25)]",
+    "bg-coral-600 text-ink-900 hover:bg-coral-700 active:bg-coral-700 disabled:bg-coral-300 disabled:text-ink-900 shadow-[0_1px_2px_rgba(240,128,128,0.25)]",
   secondary:
     "bg-white text-ink-900 border border-ink-200 hover:border-ink-300 hover:bg-ink-50 active:bg-ink-100 disabled:bg-ink-50 disabled:text-ink-400 disabled:border-ink-200",
   ghost:
@@ -46,26 +49,21 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
     children,
     className,
     type = "button",
+    href,
     ...rest
   },
   ref
 ) {
-  return (
-    <button
-      ref={ref}
-      type={type}
-      disabled={disabled || loading}
-      aria-busy={loading || undefined}
-      className={cx(
-        "inline-flex items-center justify-center font-medium select-none transition-colors duration-150",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-        variantClass[variant],
-        sizeClass[size],
-        block && "w-full",
-        className
-      )}
-      {...rest}
-    >
+  const classes = cx(
+    "inline-flex items-center justify-center font-medium select-none transition-colors duration-150",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+    variantClass[variant],
+    sizeClass[size],
+    block && "w-full",
+    className
+  );
+  const content = (
+    <>
       {loading ? (
         <span
           className="inline-block h-4 w-4 rounded-full border-2 border-current border-r-transparent animate-spin"
@@ -76,6 +74,27 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
       )}
       {children && <span className="truncate">{children}</span>}
       {!loading && iconRight}
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link {...(rest as ComponentProps<typeof Link>)} href={href} className={classes}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      ref={ref}
+      type={type}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      className={classes}
+      {...rest}
+    >
+      {content}
     </button>
   );
 });
