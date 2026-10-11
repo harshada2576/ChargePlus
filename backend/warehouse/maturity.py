@@ -31,6 +31,9 @@ from backend.warehouse.etl import (
     MATURITY_READY_OBSERVATIONS,
     MATURITY_WARMING_DAYS,
 )
+from backend.ingestion.persistence import _scrub_secrets, connect_database
+from backend.ingestion.scheduling import IngestionRunState
+from backend.warehouse.accounting import record_stage_run
 
 logger = logging.getLogger("chargeplus.warehouse.maturity")
 
@@ -399,26 +402,64 @@ def build_report(conn: Any) -> dict[str, Any]:
     }
 
 
+def report_gate(report: dict[str, Any]) -> dict[str, Any]:
+    """Validate report structure without treating COLD as an execution failure."""
+    required = ("generated_at", "counts", "temporal", "targets", "maturity", "capabilities")
+    missing = [key for key in required if key not in report]
+    return {"passed": not missing, "missing_fields": missing}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="ChargePlus data maturity & ML feasibility (5.1, read-only).")
     parser.add_argument("--json", action="store_true", help="Machine-readable JSON output")
+    parser.add_argument("--dry-run", action="store_true", help="Do not persist stage accounting")
     args = parser.parse_args()
 
     load_dotenv(".env.local")
     load_dotenv(".env")
-    import psycopg2
-
     db_url = os.getenv("DATABASE_URL")
     if not db_url:
         print("DATABASE_URL is not configured.", file=sys.stderr)
         sys.exit(1)
-    conn = psycopg2.connect(db_url)
+    started_at = datetime.now(timezone.utc)
+    try:
+        conn = connect_database(db_url)
+    except Exception as ex:
+        print(f"Database connection failed: {_scrub_secrets(str(ex))}", file=sys.stderr)
+        sys.exit(1)
+    accounting_error: Optional[Exception] = None
+    run_id = None
     try:
         report = build_report(conn)
+        gate = report_gate(report)
+        if not args.dry_run:
+            try:
+                run_id = record_stage_run(
+                    conn,
+                    source_name="warehouse_maturity",
+                    scope="warehouse:maturity",
+                    started_at=started_at,
+                    state=IngestionRunState.SUCCEEDED if gate["passed"] else IngestionRunState.FAILED,
+                    error_summary=("Missing report fields: " + ", ".join(gate["missing_fields"]))
+                    if not gate["passed"] else None,
+                    metadata={
+                        "maturity_overall": report.get("maturity", {}).get("overall"),
+                        "trainable_tasks": sum(
+                            1 for target in report.get("targets", []) if target.get("trainable_now")
+                        ),
+                        "gate": gate,
+                    },
+                )
+            except Exception as ex:
+                accounting_error = ex
+                logger.error("Maturity stage accounting failed: %s", _scrub_secrets(str(ex)))
     finally:
         conn.close()
+    if not gate["passed"]:
+        print(f"Maturity report gate failed: {gate['missing_fields']}", file=sys.stderr)
+        sys.exit(1)
     if args.json:
-        print(json.dumps(report, indent=2, default=str))
+        print(json.dumps({**report, "report_gate": gate, "run_id": run_id}, indent=2, default=str))
     else:
         m = report["maturity"]["overall"]
         print(f"warehouse maturity: {m}")
@@ -429,6 +470,12 @@ def main() -> None:
         print("capabilities:")
         for c in report["capabilities"]:
             print(f"  {c['capability']}: {c['state']}")
+        if run_id:
+            print(f"warehouse_maturity_run_id: {run_id}")
+
+    if accounting_error is not None:
+        print(f"Stage accounting failed: {accounting_error}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
