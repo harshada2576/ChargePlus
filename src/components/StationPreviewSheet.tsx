@@ -9,7 +9,6 @@ import { BottomSheet } from "./BottomSheet";
 import { Button } from "./Button";
 import { StatusBadge } from "./StatusBadge";
 import { HeartIcon, HeartFilledIcon } from "./Icon";
-import { Link } from "@/i18n/Link";
 import {
   distanceKm,
   formatDistance,
@@ -48,12 +47,17 @@ export function StationPreviewSheet({
   const chargers = getTotalChargers(station);
 
   return (
-    <BottomSheet open={!!station} onClose={onClose} placement="bottom">
+    <BottomSheet
+      open={!!station}
+      onClose={onClose}
+      placement="bottom"
+      ariaLabel={station.name}
+    >
       <div className="-mt-2 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="line-clamp-2 text-[17px] font-semibold text-ink-900">
+          <h2 className="line-clamp-2 text-[17px] font-semibold text-ink-900">
             {station.name}
-          </h3>
+          </h2>
           <p className="mt-0.5 truncate text-[13px] text-ink-600">
             {station.operator}
           </p>
@@ -110,11 +114,15 @@ export function StationPreviewSheet({
       </div>
 
       <div className="mt-5">
-        <Link href={stationDetailHref(station.id)} onClick={onClose} className="block">
-          <Button block size="lg" variant="primary">
-            {t("common.viewStation")}
-          </Button>
-        </Link>
+        <Button
+          block
+          size="lg"
+          variant="primary"
+          href={stationDetailHref(station.id)}
+          onClick={onClose}
+        >
+          {t("common.viewStation")}
+        </Button>
       </div>
     </BottomSheet>
   );
