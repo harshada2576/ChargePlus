@@ -25,7 +25,6 @@ RUN addgroup -S app && adduser -S app -G app
 COPY --from=builder /app/package.json /app/package-lock.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
 USER app
 EXPOSE 3000
 CMD ["npm", "run", "start"]
