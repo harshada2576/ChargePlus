@@ -9,7 +9,6 @@ import { StationCard } from "@/components/StationCard";
 import { StationCardSkeleton } from "@/components/Skeleton";
 import { Button } from "@/components/Button";
 import { HeartIcon, ExploreIcon, AlertTriangleIcon } from "@/components/Icon";
-import { Link } from "@/i18n/Link";
 
 export function SavedClient() {
   const { t } = useI18n();
@@ -96,11 +95,9 @@ export function SavedClient() {
           <h2 className="mt-3 text-[17px] font-semibold text-ink-900">{t("saved.empty.title")}</h2>
           <p className="mt-1 text-[13.5px] text-ink-600">{t("saved.empty.body")}</p>
           <div className="mt-5">
-            <Link href="/explore">
-              <Button size="md" variant="primary" iconLeft={<ExploreIcon size={16} />}>
-                {t("saved.empty.cta")}
-              </Button>
-            </Link>
+            <Button size="md" variant="primary" href="/explore" iconLeft={<ExploreIcon size={16} />}>
+              {t("saved.empty.cta")}
+            </Button>
           </div>
         </div>
       ) : (
@@ -123,11 +120,9 @@ export function AuthPrompt({ title, body }: { title: string; body: string }) {
       <h2 className="text-[17px] font-semibold text-ink-900">{title}</h2>
       <p className="mt-1 text-[13.5px] text-ink-600">{body}</p>
       <div className="mt-5 flex justify-center gap-3">
-        <Link href="/login">
-          <Button size="md" variant="primary">
-            {t("common.continue")}
-          </Button>
-        </Link>
+        <Button size="md" variant="primary" href="/login">
+          {t("common.continue")}
+        </Button>
       </div>
     </div>
   );
