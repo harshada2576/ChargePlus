@@ -14,15 +14,13 @@ baseline counts are restored.
 
 from __future__ import annotations
 
-import os
 import unittest
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from dotenv import load_dotenv
+import os
 
-load_dotenv(".env.local")
-load_dotenv(".env")
+from tests.db_target_guard import require_disposable_target
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -36,6 +34,7 @@ requires_db = unittest.skipUnless(
 class TestCanonicalPostgresIntegration(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        require_disposable_target(DATABASE_URL, test_id="test_canonical_postgres_integration")
         import psycopg2
         cls._conn = psycopg2.connect(DATABASE_URL)
         cls._conn.autocommit = True
