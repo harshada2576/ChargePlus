@@ -30,7 +30,7 @@ from typing import Any, Optional
 
 from dotenv import load_dotenv
 
-from backend.ingestion.persistence import IngestionPersistenceService, _scrub_secrets
+from backend.ingestion.persistence import IngestionPersistenceService, _scrub_secrets, connect_database
 from backend.ingestion.scheduling import IngestionRun, IngestionRunState
 
 logger = logging.getLogger("chargeplus.warehouse.etl")
@@ -101,9 +101,8 @@ class WarehouseETL:
             return self._conn
         if not self.db_url:
             raise RuntimeError("DATABASE_URL is not configured; warehouse ETL needs the database.")
-        import psycopg2
 
-        self._conn = psycopg2.connect(self.db_url)
+        self._conn = connect_database(self.db_url)
         self._owns_conn = True
         return self._conn
 
@@ -542,7 +541,11 @@ class WarehouseETL:
                 dims.persist_ingestion_run(run, dry_run=False)
                 overall.run_id = run.run_id
             except Exception as ex:
-                logger.warning("Warehouse run accounting failed: %s", _scrub_secrets(str(ex)))
+                # Same fail-closed rule as DQ/maturity stage accounting: a job
+                # whose run was never recorded must not be reported as succeeded.
+                logger.error("Warehouse run accounting failed: %s", _scrub_secrets(str(ex)))
+                if failed is None:
+                    raise
         if failed is not None:
             raise failed
         return overall
