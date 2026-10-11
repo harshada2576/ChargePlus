@@ -49,6 +49,29 @@ import time
 
 logger = logging.getLogger(__name__)
 
+DB_CONNECT_TIMEOUT_SECONDS = 10
+DB_STATEMENT_TIMEOUT_MS = 30_000
+DB_LOCK_TIMEOUT_MS = 10_000
+
+
+def connect_database(
+    db_url: str,
+    *,
+    connect_timeout: int = DB_CONNECT_TIMEOUT_SECONDS,
+    statement_timeout_ms: int = DB_STATEMENT_TIMEOUT_MS,
+    lock_timeout_ms: int = DB_LOCK_TIMEOUT_MS,
+) -> Any:
+    """Open PostgreSQL with bounded connection, query, and lock waits."""
+    options = (
+        f"-c statement_timeout={int(statement_timeout_ms)} "
+        f"-c lock_timeout={int(lock_timeout_ms)}"
+    )
+    return psycopg2.connect(
+        db_url,
+        connect_timeout=connect_timeout,
+        options=options,
+    )
+
 # Valid connector types supported by public.connectors check constraint
 # (chk_connectors_connector_type, extended with CCS1 in pre-Phase-4 R4).
 # 'Other' is deliberately excluded: it carries no physical information and
@@ -287,7 +310,7 @@ class IngestionPersistenceService:
             self.conn = None
             self._owns_connection = False
         elif isinstance(db_conn_or_url, str):
-            self.conn = psycopg2.connect(db_conn_or_url)
+            self.conn = connect_database(db_conn_or_url)
             self._owns_connection = True
         else:
             self.conn = db_conn_or_url
