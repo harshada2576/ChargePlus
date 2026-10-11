@@ -11,6 +11,7 @@
 # Environment files
 .env
 .env*.local
+.env*.bak
 .env.development
 .env.test
 .env.production
@@ -43,3 +44,6 @@ yarn-error.log*
 # IDE / Editor configuration
 .idea/
 .vscode/
+
+# Playwright MCP browser artifacts (local-only logs/screenshots)
+.playwright-mcp/
