@@ -128,11 +128,9 @@ export function StationCard({
             </span>
           </div>
         </div>
-        <Link href={stationDetailHref(station.id)}>
-          <Button variant="primary" size="sm">
-            {t("common.viewStation")}
-          </Button>
-        </Link>
+        <Button variant="primary" size="sm" href={stationDetailHref(station.id)}>
+          {t("common.viewStation")}
+        </Button>
       </div>
     </article>
   );
