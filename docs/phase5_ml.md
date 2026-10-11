@@ -84,6 +84,14 @@ never stored in observation tables.
   20s timeout, passes the typed result through. 400 on bad input, 503 with
   `NO_MODEL` when the backend is unavailable. No UI depends on it.
 
+## Spatial Density Clustering & Coverage Gaps (`spatial_clustering.py`)
+
+- **Algorithm**: Density-Based Spatial Clustering of Applications with Noise (DBSCAN).
+- **Distance Metric**: Great-circle spherical Haversine metric ($R = 6371.0088\text{ km}$). No naive Euclidean approximations on latitude/longitude degrees.
+- **Corridor Discovery**: Groups geographically dense charging hubs (`eps_km=5.0`, `min_samples=2`), calculating cluster centroids, bounding boxes, and cluster radii.
+- **Coverage Gap Mining (`find_coverage_gaps`)**: Nearest-neighbor geodesic distance algorithm evaluating isolation distance in kilometers to flag underserved areas and pioneer stations requiring network expansion.
+- **Tests**: `tests/test_spatial_clustering.py` (5 tests covering empty edge cases, Mumbai landmark distance validations, and canonical Mumbai stations dataset).
+
 ## What unlocks production ML (real-data checklist)
 
 1. Live observation history: ≥500 real observations across ≥5 stations over
