@@ -22,13 +22,20 @@ on:
         description: 'Dry run (no database writes)'
         required: true
         type: boolean
-        default: false
+        default: true
 
 jobs:
   pipeline:
     name: Run Ingestion, Warehouse ETL & Quality Pipeline
+    if: github.event_name == 'workflow_dispatch' || vars.SCHEDULED_INGESTION_ENABLED == 'true'
+    environment: staging-ingestion
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      ALLOW_STAGING_WRITES: ${{ vars.ALLOW_STAGING_WRITES || 'false' }}
+      SCHEDULED_INGESTION_DRY_RUN: ${{ vars.SCHEDULED_INGESTION_DRY_RUN || 'true' }}
 
     steps:
       - name: Checkout repository
@@ -47,27 +54,39 @@ jobs:
 
       - name: Execute Ingestion Run
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          OPENCHARGEMAP_API_KEY: ${{ secrets.OPENCHARGEMAP_API_KEY }}
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
+          OPENCHARGEMAP_API_KEY: ${{ secrets.STAGING_OPENCHARGEMAP_API_KEY }}
         run: |
           EXTRA_ARGS=""
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+          DRY_RUN="${{ inputs.dry_run }}"
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            DRY_RUN="$SCHEDULED_INGESTION_DRY_RUN"
+          fi
+          if [ "$DRY_RUN" != "true" ] && [ "$ALLOW_STAGING_WRITES" != "true" ]; then
+            echo "Refusing non-dry-run ingestion: set ALLOW_STAGING_WRITES=true on the staging environment." >&2
+            exit 2
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
             EXTRA_ARGS="$EXTRA_ARGS --dry-run"
           fi
-          SOURCE="${{ github.event.inputs.source || 'open_charge_map' }}"
-          LIMIT="${{ github.event.inputs.limit || '50' }}"
-          SCOPE="${{ github.event.inputs.scope || 'mumbai' }}"
+          SOURCE="${{ inputs.source || 'open_charge_map' }}"
+          LIMIT="${{ inputs.limit || '50' }}"
+          SCOPE="${{ inputs.scope || 'mumbai' }}"
           python -m backend.ingestion.runner --source "$SOURCE" --limit "$LIMIT" --scope "$SCOPE" --run-once $EXTRA_ARGS
 
       - name: Execute Warehouse ETL
         if: success()
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           ETL_ARGS=""
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+          DRY_RUN="${{ inputs.dry_run }}"
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            DRY_RUN="$SCHEDULED_INGESTION_DRY_RUN"
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
             ETL_ARGS="--dry-run"
           fi
           python -m backend.warehouse.etl --job all $ETL_ARGS
@@ -75,13 +94,35 @@ jobs:
       - name: Execute Warehouse Data Quality Checks
         if: success()
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
         run: |
-          python -m backend.warehouse.quality
+          DQ_ARGS=""
+          DRY_RUN="${{ inputs.dry_run }}"
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            DRY_RUN="$SCHEDULED_INGESTION_DRY_RUN"
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
+            DQ_ARGS="--dry-run"
+          fi
+          python -m backend.warehouse.quality $DQ_ARGS
 
       - name: Measure Warehouse Data Maturity
         if: success()
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
         run: |
-          python -m backend.warehouse.maturity
+          MATURITY_ARGS=""
+          DRY_RUN="${{ inputs.dry_run }}"
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            DRY_RUN="$SCHEDULED_INGESTION_DRY_RUN"
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
+            MATURITY_ARGS="--dry-run"
+          fi
+          python -m backend.warehouse.maturity $MATURITY_ARGS
+
+      - name: Failure diagnostics
+        if: failure()
+        run: |
+          echo "Pipeline failed; inspect the preceding sanitized stage logs and ingestion_runs records."
+          echo "Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
