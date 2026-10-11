@@ -18,6 +18,10 @@ from typing import Any, Callable, Optional
 
 from dotenv import load_dotenv
 
+from backend.ingestion.persistence import _scrub_secrets, connect_database
+from backend.ingestion.scheduling import IngestionRunState
+from backend.warehouse.accounting import record_stage_run
+
 logger = logging.getLogger("chargeplus.warehouse.quality")
 
 
@@ -242,22 +246,54 @@ def run_all_checks(conn: Any) -> QualityReport:
     return report
 
 
+def _record_quality_run(conn: Any, started_at: datetime, report: QualityReport) -> str:
+    result = report.to_dict()
+    failed = [f for f in report.findings if not f.passed and f.severity != "INFO"]
+    return record_stage_run(
+        conn,
+        source_name="warehouse_dq",
+        scope="warehouse:quality",
+        started_at=started_at,
+        state=IngestionRunState.FAILED if failed else IngestionRunState.SUCCEEDED,
+        error_summary="; ".join(f"{f.rule_id}: {f.detail}" for f in failed[:3]) or None,
+        metadata={
+            "passed": result["passed"],
+            "finding_count": len(report.findings),
+            "failed_count": len(failed),
+        },
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="ChargePlus warehouse data quality checks (Phase 4.5, read-only).")
     parser.add_argument("--json", action="store_true", help="Machine-readable JSON output")
+    parser.add_argument("--dry-run", action="store_true", help="Do not persist stage accounting")
     args = parser.parse_args()
 
     load_dotenv(".env.local")
     load_dotenv(".env")
-    import psycopg2
-
     db_url = os.getenv("DATABASE_URL")
     if not db_url:
         print("DATABASE_URL is not configured.", file=sys.stderr)
         sys.exit(1)
-    conn = psycopg2.connect(db_url)
+    started_at = datetime.now(timezone.utc)
+    try:
+        conn = connect_database(db_url)
+    except Exception as ex:
+        print(f"Database connection failed: {_scrub_secrets(str(ex))}", file=sys.stderr)
+        sys.exit(1)
+    accounting_error: Optional[Exception] = None
+    run_id: Optional[str] = None
     try:
         report = run_all_checks(conn)
+        if args.dry_run:
+            run_id = None
+        else:
+            try:
+                run_id = _record_quality_run(conn, started_at, report)
+            except Exception as ex:
+                accounting_error = ex
+                logger.error("DQ stage accounting failed: %s", _scrub_secrets(str(ex)))
     finally:
         conn.close()
 
@@ -271,6 +307,11 @@ def main() -> None:
             mark = "PASS" if f.passed else f"FAIL [{f.severity}]"
             print(f"  {f.rule_id} ({mark}): {f.detail}")
 
+    if run_id:
+        print(f"warehouse_dq_run_id: {run_id}")
+    if accounting_error is not None:
+        print(f"Stage accounting failed: {accounting_error}", file=sys.stderr)
+        sys.exit(1)
     if not rep_dict["passed"]:
         sys.exit(1)
 
