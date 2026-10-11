@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
-import maplibregl from "maplibre-gl";
+import { useEffect, useRef, useCallback, useState } from "react";
+import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Station } from "@/data/types";
 import { MUMBAI_CENTER } from "@/data/stations";
 import { toStationGeoJSON } from "@/data/exploreQuery";
-import { PlusIcon, MinusIcon, CompassIcon, PinIcon } from "./Icon";
+import { PlusIcon, MinusIcon, CompassIcon, PinIcon, AlertTriangleIcon } from "./Icon";
 import { cx, escapeHtml, isValidCoordinate } from "@/lib/util";
+import { useI18n } from "@/i18n/I18nProvider";
 
 export type MapLibreMapProps = {
   stations: Station[];
@@ -46,6 +47,8 @@ export function MapLibreMap({
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const stationsRef = useRef(stations);
   const onSelectRef = useRef(onSelect);
+  const [mapError, setMapError] = useState(false);
+  const { t } = useI18n();
 
   useEffect(() => {
     stationsRef.current = stations;
@@ -73,6 +76,13 @@ export function MapLibreMap({
 
     mapRef.current = map;
 
+    // A style/tile failure before the style is ready leaves an empty canvas with
+    // no feedback, so surface it in the UI instead of failing silently.
+    map.on("error", (event) => {
+      console.error("MapLibre map error:", event.error);
+      if (!map.isStyleLoaded()) setMapError(true);
+    });
+
     // Compact attribution
     map.addControl(
       new maplibregl.AttributionControl({ compact: true }),
@@ -80,6 +90,7 @@ export function MapLibreMap({
     );
 
     map.on("load", () => {
+      setMapError(false);
       // Build GeoJSON features for valid stations
       const featureStations = singleStation ? [singleStation] : stationsRef.current;
       const geojson = toStationGeoJSON(featureStations);
@@ -360,6 +371,8 @@ export function MapLibreMap({
 
     const popupNode = document.createElement("div");
     popupNode.className = "p-2 text-ink-900 font-sans";
+    popupNode.setAttribute("role", "group");
+    popupNode.setAttribute("aria-label", `${st.name}, ${statusText}`);
     popupNode.innerHTML = `
       <div class="flex items-center justify-between gap-2">
         <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[10.5px] font-semibold ${statusBadgeClass}">
@@ -372,7 +385,7 @@ export function MapLibreMap({
       <p class="mt-1.5 line-clamp-1 text-[13px] font-semibold text-ink-900">${escapeHtml(st.name)}</p>
       <p class="text-[11.5px] text-ink-600">${escapeHtml(st.operator)} · ${escapeHtml(st.area)}</p>
       <div class="mt-2 flex justify-end">
-        <a href="/station/${encodeURIComponent(st.id)}" class="inline-flex items-center rounded-full bg-coral-600 px-3 py-1 text-[11px] font-medium text-white hover:bg-coral-700">
+        <a href="/station/${encodeURIComponent(st.id)}" class="inline-flex items-center rounded-full bg-coral-600 px-3 py-1 text-[11px] font-medium text-ink-900 hover:bg-coral-700">
           View details →
         </a>
       </div>
@@ -428,6 +441,18 @@ export function MapLibreMap({
       )}
     >
       <div ref={containerRef} className="h-full w-full" />
+
+      {/* Style/tile load failure — never leave a silent blank map */}
+      {mapError && (
+        <div
+          role="alert"
+          className="absolute inset-0 z-0 flex flex-col items-center justify-center gap-1 bg-white/95 px-4 text-center"
+        >
+          <AlertTriangleIcon size={20} className="text-coral-700" />
+          <p className="text-[13px] font-semibold text-ink-900">{t("errors.map.title")}</p>
+          <p className="text-[12px] text-ink-600">{t("errors.map.body")}</p>
+        </div>
+      )}
 
       {/* City identification badge */}
       <div className="pointer-events-none absolute left-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-medium text-ink-700 shadow-card backdrop-blur-sm">

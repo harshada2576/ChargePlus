@@ -1,0 +1,14 @@
+# ChargePlus local Supabase configuration.
+# This project_id is local-only and is not a cloud project reference.
+project_id = "chargeplus-local"
+
+[db]
+major_version = 17
+
+[db.migrations]
+enabled = true
+
+[db.seed]
+# All deterministic reference rows are owned by their migrations. No fabricated
+# operational data is loaded during a reset.
+enabled = false

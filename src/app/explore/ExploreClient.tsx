@@ -50,7 +50,8 @@ export function ExploreClient() {
   const [locError, setLocError] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+  const desktopSearchInputRef = useRef<HTMLInputElement>(null);
 
   const [retryNonce, setRetryNonce] = useState(0);
   const loadStations = useCallback(() => {
@@ -65,7 +66,10 @@ export function ExploreClient() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       if (params.get("focus") === "search") {
-        searchInputRef.current?.focus();
+        const input = window.matchMedia("(min-width: 768px)").matches
+          ? desktopSearchInputRef.current
+          : mobileSearchInputRef.current;
+        input?.focus();
       }
     }
   }, []);
@@ -155,6 +159,8 @@ export function ExploreClient() {
 
   return (
     <div className="bg-ink-50">
+      {/* Page title — visual search row stays first, heading exposed to SR only */}
+      <h1 className="sr-only">{t("explore.title")}</h1>
       {/* Mobile search & filter row */}
       <div className="sticky top-14 z-20 border-b border-ink-100 bg-white/95 px-3 pb-3 pt-3 backdrop-blur md:hidden">
         <SearchBar
@@ -163,7 +169,7 @@ export function ExploreClient() {
           onUseLocation={requestLocation}
           locating={locating}
           placeholder={t("common.searchPlaceholder")}
-          inputRef={searchInputRef}
+          inputRef={mobileSearchInputRef}
         />
         <div className="mt-2.5 flex items-center gap-2">
           <Button
@@ -219,7 +225,7 @@ export function ExploreClient() {
               onUseLocation={requestLocation}
               locating={locating}
               placeholder={t("common.searchPlaceholder")}
-              inputRef={searchInputRef}
+              inputRef={desktopSearchInputRef}
             />
             <div className="mt-3 flex items-center gap-2">
               <Button
@@ -230,7 +236,7 @@ export function ExploreClient() {
               >
                 {t("common.filters")}
                 {activeChips.length > 0 && (
-                  <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-coral-600 px-1.5 text-[11px] font-medium text-white">
+                  <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-coral-600 px-1.5 text-[11px] font-medium text-ink-900">
                     {activeChips.length}
                   </span>
                 )}
@@ -266,9 +272,9 @@ export function ExploreClient() {
           {/* Recommendations */}
           {recommendations.length > 0 && !loading && !error && (
             <div className="mt-3">
-              <h3 className="px-1 text-[12px] font-semibold uppercase tracking-wider text-ink-600">
+              <h2 className="px-1 text-[12px] font-semibold uppercase tracking-wider text-ink-600">
                 {t("station.rec.title")}
-              </h3>
+              </h2>
               <div className="mt-2 space-y-2">
                 {recommendations.map((r) => {
                   const st = filtered.find((s) => s.id === r.stationId)!;
@@ -322,9 +328,9 @@ export function ExploreClient() {
                 <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
                   <AlertTriangleIcon size={20} />
                 </span>
-                <h3 className="mt-3 text-[15.5px] font-semibold text-ink-900">
+                <h2 className="mt-3 text-[15.5px] font-semibold text-ink-900">
                   {t("errors.network.title")}
-                </h3>
+                </h2>
                 <p className="mt-1 text-[13px] text-ink-600">
                   {t("errors.network.body")}
                 </p>
@@ -338,11 +344,30 @@ export function ExploreClient() {
               <EmptyResults onClear={() => { setFilters(DEFAULT_EXPLORE_FILTERS); setQuery(""); }} />
             ) : (
               filtered.map((s) => (
-                <button
+                <div
                   key={s.id}
-                  onClick={() => setSelectedId(s.id)}
+                  role="group"
+                  tabIndex={0}
+                  aria-label={s.name}
+                  onClick={(event) => {
+                    if (
+                      event.target instanceof Element &&
+                      event.target.closest("a,button,input,select,textarea")
+                    ) {
+                      return;
+                    }
+                    setSelectedId(s.id);
+                  }}
+                  onKeyDown={(event) => {
+                    if (
+                      (event.key === "Enter" || event.key === " ") &&
+                      event.target === event.currentTarget
+                    ) {
+                      event.preventDefault();
+                      setSelectedId(s.id);
+                    }
+                  }}
                   className="block w-full text-left"
-                  aria-pressed={visibleSelectedId === s.id}
                 >
                   <div
                     className={cx(
@@ -352,7 +377,7 @@ export function ExploreClient() {
                   >
                     <StationCard station={s} userLocation={userLoc} />
                   </div>
-                </button>
+                </div>
               ))
             )}
           </div>
@@ -413,7 +438,7 @@ function SearchBar({
         onClick={onUseLocation}
         disabled={locating}
         aria-label={t("common.useMyLocation")}
-        className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-coral-600 px-3.5 text-[13px] font-medium text-white shadow-card hover:bg-coral-700 disabled:bg-coral-300"
+        className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-coral-600 px-3.5 text-[13px] font-medium text-ink-900 shadow-card hover:bg-coral-700 disabled:bg-coral-300"
       >
         {locating ? (
           <span
@@ -449,6 +474,8 @@ function SortMenu({
       <button
         type="button"
         onClick={() => setOpen(!open)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
         className="inline-flex h-10 items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3.5 text-[13px] font-medium text-ink-800 hover:bg-ink-50"
       >
         <SortIcon size={14} />
@@ -464,6 +491,8 @@ function SortMenu({
           {(Object.keys(options) as SortKey[]).map((k) => (
             <li key={k}>
               <button
+                role="option"
+                aria-selected={value === k}
                 onClick={() => {
                   onChange(k);
                   setOpen(false);
@@ -509,9 +538,9 @@ function EmptyResults({ onClear }: { onClear: () => void }) {
       <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-apricot-100 text-coral-700">
         <SearchIcon size={20} />
       </span>
-      <h3 className="mt-3 text-[15.5px] font-semibold text-ink-900">
+      <h2 className="mt-3 text-[15.5px] font-semibold text-ink-900">
         {t("explore.noResults.title")}
-      </h3>
+      </h2>
       <p className="mt-1 text-[13px] text-ink-600">{t("explore.noResults.body")}</p>
       <div className="mt-4">
         <Button variant="secondary" size="md" onClick={onClear}>

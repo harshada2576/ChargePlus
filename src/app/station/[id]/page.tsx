@@ -1,4 +1,4 @@
-import { fetchStationById, fetchStations } from "@/data/stations";
+import { fetchStationById } from "@/data/stations";
 import { listApprovedReviews } from "@/lib/reviews";
 import { supabase } from "@/lib/supabase";
 import { StationDetail } from "./StationDetail";
@@ -14,9 +14,4 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   // section honestly empty rather than blocking the canonical record.
   const reviews = await listApprovedReviews(supabase, station.id).catch(() => []);
   return <StationDetail station={station} reviews={reviews} />;
-}
-
-export async function generateStaticParams() {
-  const stations = await fetchStations();
-  return stations.map((s) => ({ id: s.id }));
 }

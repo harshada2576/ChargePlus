@@ -16,7 +16,7 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClass: Record<Variant, string> = {
   primary:
-    "bg-coral-600 text-white hover:bg-coral-700 active:bg-coral-700",
+    "bg-coral-600 text-ink-900 hover:bg-coral-700 active:bg-coral-700",
   ghost:
     "bg-transparent text-ink-700 hover:bg-ink-100 active:bg-ink-200",
   subtle:

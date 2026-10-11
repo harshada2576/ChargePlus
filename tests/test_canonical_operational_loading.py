@@ -41,7 +41,9 @@ from unittest.mock import MagicMock, patch
 import uuid
 
 import psycopg2
-from dotenv import load_dotenv
+
+from tests.db_target_guard import require_disposable_target
+
 
 from backend.ingestion.constants import (
     AvailabilityStatus,
@@ -1429,11 +1431,14 @@ class TestCanonicalOperationalLoading(unittest.TestCase):
 
     def test_37_live_database_persistence_and_clean_rollback(self):
         """L37: Verifies persistence against live Supabase PostgreSQL with clean transaction rollback."""
-        load_dotenv(".env.local")
-        load_dotenv(".env")
         db_url = os.getenv("DATABASE_URL")
         if not db_url:
             self.skipTest("DATABASE_URL is not configured; skipping live database integration test.")
+
+        try:
+            require_disposable_target(db_url, test_id="test_37_live_database")
+        except RuntimeError as e:
+            self.skipTest("REFUSED live-database write target: %s" % e)
 
         try:
             live_conn = psycopg2.connect(db_url, connect_timeout=5)

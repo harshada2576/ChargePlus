@@ -1,0 +1,14 @@
+﻿ChargePlus dev-deps remediation - verification run
+timestamp: 
+2026-10-09T20:37:43.0661960+05:30
+head: 
+2ed89056a9f4eca17d98dbe88535987139e214cf
+override: 
+{"@esbuild-kit/core-utils":{"esbuild":"0.25.11"}}
+
+npm test            exit=0  # tests 126 | # pass 126 | # fail 0
+npm run typecheck   exit=0
+npm run lint        exit=0
+npm ls esbuild      exit=0  (0 = no invalid/missing esbuild in tree)
+npm audit --json    exit=1  (1 expected while findings remain)  totals={"info":0,"low":0,"moderate":0,"high":5,"critical":0,"total":5}
+npm audit --omit=dev exit=0  totals={"info":0,"low":0,"moderate":0,"high":0,"critical":0,"total":0}

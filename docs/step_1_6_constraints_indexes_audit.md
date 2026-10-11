@@ -146,7 +146,7 @@ All 12 validation requirements were verified:
 - Migration files:
   - `supabase/migrations/20260918000001_step_1_3_core_operational_schema.sql`
   - `supabase/migrations/20260922000001_step_1_4_analytics_warehouse_schema.sql`
-  - `supabase/migrations/20260922000001_step_1_5_ml_metadata_schema.sql`
+  - `supabase/migrations/20260922000002_step_1_5_ml_metadata_schema.sql` (renamed pre-Phase-4 R3; was `...22000001...`)
   - `supabase/migrations/20260923000001_step_1_6_constraints_indexes.sql`
   - `supabase/migrations/20260924000001_step_1_7_rls_security_policies.sql`
 - Documentation:

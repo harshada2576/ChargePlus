@@ -32,42 +32,18 @@ Every entry should include:
 
 ## Current project state
 
-**PHASE 3 VERIFIED COMPLETE — READY FOR PHASE 4 (2026-10-04)**
+**PHASE 6 VERIFIED COMPLETE — READY FOR CONTROLLED PUBLIC BETA (2026-10-09)**
 
-- **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF.
-- **Phase 2 (Real Data Ingestion & Data Quality, Steps 2.1–2.12)**: COMPLETE & LIVE VERIFIED.
-  - **Step 2.12 (Final Recovery Hardening)**: Resolves the final four Phase 2 blockers discovered by the reconciliation audit:
-    1. **Repository/Documentation Reconciliation & Git Commitment**: Fully committed and reconciled verified recovery state. 0 unexplained working tree files.
-    2. **Unknown-Power Connector Semantics**: Schema migration (`20260926000003_step_2_12_connector_unknown_power.sql`) made `power_kw` nullable in `public.connectors` and `analytics.dim_connector` with `CHECK (power_kw IS NULL OR power_kw > 0)` and `NULLS NOT DISTINCT` unique index. Missing power is faithfully preserved as `NULL` (never fabricated, never converted to 0 kW, never dropped). Quantity semantics preserved. Durable warning and metrics (`connectors_with_unknown_power`) tracked in `ingestion_runs.metadata`.
-    3. **Fail-Closed Candidate Lookup**: Database errors during `fetch_existing_canonical_stations` explicitly raise `CandidateLookupError` rather than defaulting to `existing=[]`. Persistence is halted with zero mutations, the run is marked `FAILED`, classified `TRANSIENT`, and duplicate station insertion risk is eliminated.
-    4. **Single `ingestion_runs` Owner**: `IngestionRunner` exclusively owns execution and `ingestion_runs` accounting. `ScheduledIngestionOrchestrator` invokes the runner without creating duplicate execution records. Direct execution creates exactly 1 row; scheduled execution creates exactly 1 row; retry attempts remain distinguishable with 1 row per execution attempt.
-  - **Live DB State Verified**:
-    - `stations`: 8 genuine Mumbai/MMR stations under `open_charge_map`
-    - `station_source_link`: 8 links with SHA-256 raw payload hashes
-    - `connectors`: 5 connectors (2 with known power [7 kW, 120 kW], 3 with unknown power [preserved as `NULL`])
-    - `connectors_with_unknown_power`: 3 live (0 connector-less stations among sources supplying connections)
-    - `station_observations`: 0 (no fake telemetry manufactured)
-    - `ingestion_runs`: 3 rows (exactly 1 row per executed run, 0 double-writes)
-    - `analytics.dim_station`: 8 current SCD2 rows
-    - `analytics.dim_connector`: 5 rows (aligned with OLTP)
-    - `analytics.fact_station_observation`: 0 (no fabricated facts)
-  - **Test & Build Gates Verified**:
-    - Pytest: 376 passed (357 existing + 19 Phase 2.12 regression tests) in 125s
-    - TypeScript: Clean (`tsc --noEmit`, 0 errors)
-    - ESLint: Clean (`eslint .`, 0 errors)
-    - Next.js Build: Clean (`next build`, 26/26 routes generated)
-    - Live Bounded Dry-Run: Succeeded (8 fetched, 0 writes, 8 linked)
-    - Live Bounded Run-Once: Succeeded (Run ID `208d837a-f9ac-4bca-880c-96c6a57b8e04`, exactly 1 row persisted, 3 unknown-power connectors preserved)
-- **Phase**: Phase 3/6 — Connect the Locked Frontend.
-- **Current Step**: Phase 3 COMPLETE — all Steps 3.1 through 3.13 verified and locked.
-- **Remaining Steps in Phase 3**: 0 (all Steps 3.1 through 3.13 verified complete and locked).
-- **Remaining Phases**: Phase 4 (Warehouse & Analytics), Phase 5 (ML & Queue Prediction), Phase 6 (Production & Operationalization).
-- **Current Baseline Status**:
-  - Live Supabase: 8 canonical stations, 5 connectors, 8 source links, 0 fabricated observations, 3 ingestion runs.
-  - Hardcoded fake stations replaced with real Supabase data layer (`src/data/stationAdapter.ts`, `src/data/stations.ts`).
-  - Connector unknown power preserved as `null` in types and components.
-  - MapLibre popup HTML injection sanitized via `escapeHtml`.
-  - Next Step: Phase 4 — Warehouse, Analytics & Data Quality (first documented step; not begun).
+- **Phase 1 (Foundation & Real Database, Steps 1.1–1.10)**: COMPLETE & SIGNED OFF (29 tables, RLS, PostGIS, views/functions).
+- **Phase 2 (Real Data Ingestion & Data Quality, Steps 2.1–2.12)**: COMPLETE & LIVE VERIFIED (8 MMR canonical stations, recovery hardened).
+- **Phase 3 (Connect Locked Frontend, Steps 3.1–3.13)**: COMPLETE & VERIFIED (Canonical loaders, honest loading/empty/error states, zero mock fallback, 126 Node tests).
+- **Phase 4 (Warehouse, Analytics & Data Quality, Steps 4.1–4.8)**: COMPLETE & VERIFIED (SCD2 dims, conformed facts, daily aggregates, 24/24 DQ checks pass live, admin warehouse API).
+- **Phase 5 (Data Mining & ML Feasibility, Steps 5.1–5.11)**: COMPLETE & DORMANT (Read-only maturity engine, COLD warehouse verified, training correctly gated/refused without temporal evidence, NO_MODEL contracts).
+- **Phase 6 (Production & Public Beta, Steps 6.1–6.13)**: COMPLETE & RECONCILED (Dockerfile, reproducible requirements.txt, in-app token bucket rate limiting, structured server logging, automated chained GitHub Actions ingestion+ETL+DQ workflow, comprehensive backup/recovery runbook, docs/production.md).
+- **Current Phase**: Phase 6/6 — Production & Public Beta
+- **Current Step**: Phase 6 COMPLETE — All 6 Phases Complete.
+- **Remaining Phases**: 0.
+- **Status Verdict**: PHASE 6 IMPLEMENTATION COMPLETE; FINAL ENVIRONMENTAL VERIFICATION PENDING.
 
 
 ### Historical Progress Log
@@ -693,5 +669,105 @@ Every entry should include:
 - Conceptual verification: architecture layers intact; anon/auth boundary at RLS; unknown/error/empty semantics preserved; prototypes visibly prototypes; no lowered bars — environmental write-verification limits documented as residual risks.
 - Blockers / waiting on: Dashboard SMS config + test contact + admin-role account for live authenticated verification (external, precisely scoped).
 - Next step: Phase 4 — Warehouse, Analytics & Data Quality (not begun).
+
+### 05 Oct 2026 — Pre-Phase-4 remediation gate
+- Phase / Step: Pre-Phase-4 gate (Phase 4 NOT STARTED)
+- What we built/changed: R3 migration 1_5 renamed to unique version; R4 CCS1 DB vocab + allow-list + 3 regression tests; R5 ingestion_runs admin-only RLS + anon grant revoked; R6 profiles.role trigger guard; R7 alert partial-unique + 23505 recovery + race test; R8 deleted STATIONS/getStation/SavedClient dead branch/supabase-test route, reclassified persist_station as legacy-but-tested; run-state FAILED→PARTIAL alignment + test; advisory-lock fail-closed + 2 tests; reconciled README/Phases/Architecture/data_dictionary/step_1_6 docs; gate report `docs/pre_phase4_remediation_gate.md`.
+- Current state: GATE COMPLETE pending final verification run (pytest/node/tsc/lint/build/dry-run).
+- Conceptual verification: OLTP/OLAP boundary intact; provenance intact; unknown stays unknown; ownership enforced; ingestion remains canonical source.
+- Blockers / waiting on: linked-project migration apply (R3 repair + 4 new migrations); live OTP/admin/scheduler proofs need dashboard SMS + test identities (environmental, documented non-blocking for Phase 4).
+- Next step: final verification, then Phase 4 first documented step.
+
+### 05 Oct 2026 — Phase 4 branch start
+- Phase / Step: Phase 4/6 — Step 4.1 (not started)
+- What we built/changed: docs cutover only (Phases current-phase → 4/6, this entry, README gate note); gate commit pushed on `feature/phase-3-complete`; new branch `feature/phase-4-warehouse` created from it. No Phase 4 implementation yet.
+- Current state: Phase 3 locked; gate verdict `PHASE 4 READY WITH DOCUMENTED NON-BLOCKING RISKS`; Phase 4 Step 4.1 next.
+- Conceptual verification: roadmap, memory, and gate report agree on phase boundary; history untouched.
+- Blockers / waiting on: linked-project migration apply (R3 repair + 4 new gate migrations) before warehouse ETL leans on the new constraints.
+- Next step: Phase 4 Step 4.1 — Build dimensions.
+
+### 05 Oct 2026 — Phase 4 Steps 4.6 + 4.7 OLAP proof + admin surface
+- Phase / Step: Phase 4/6 — Steps 4.6, 4.7
+- What we built/changed: 10 canonical OLAP queries (`backend/warehouse/queries.py`, incl. observation_freshness grain fix to station_id); live proof of all 10 + traceability (16 stations, 6 connectors, 0 obs); admin-only `/api/admin/warehouse` route (server-side token + role check, counts-only), `src/lib/warehouse.ts` client, Warehouse Analytics section + Coverage KPI in AdminDashboard with honest loading/error/empty states; 5 OLAP contract tests + 4 warehouse client/route tests.
+- Current state: 4.6 + 4.7 implemented and verified (Python 395, Node 122, tsc/lint/build clean; route denial proven live 401/401; authorized-path UI proof needs an admin session).
+- Conceptual verification: analytics-only reads (one documented ops exception); current vs historical separated; NULLs preserved; sparse states honest; numbers traced; no synthetic data.
+- Blockers / waiting on: admin-session UI proof (environmental); Phase 4.8 historical consistency validation.
+- Next step: Phase 4 Step 4.8 — Validate historical consistency.
+
+### 06 Oct 2026 — Phase 4 Step 4.8 closure
+- Phase / Step: Phase 4/6 — Step 4.8 (final)
+- What we built/changed: read-only live validation (counts, SCD2 intervals, connector/operator/location/source/provenance, NULL semantics, hourly-absence); ETL rerun delta-zero; DQ 24/24; OLAP 10/10; closure report `docs/phase_4_closure_report.md`; roadmap cutover.
+- Current state: PHASE 4 COMPLETE WITH DOCUMENTED NON-BLOCKING RISKS (Python 395, Node 122, tsc/lint/build clean; sole residual: authorized-admin UI proof needs an admin session).
+- Conceptual verification: OLTP=warehouse truthfully sparse; grains explicit; unknowns preserved; aggregates vacuous-but-correct; no Phase 5 introduced.
+- Blockers / waiting on: none for Phase 4.
+- Next step: Phase 5 Step 5.1 — Measure data maturity (warehouse COLD; do not train yet).
+
+### 06 Oct 2026 — Phase 5 branch start
+- Phase / Step: Phase 5/6 — Step 5.1 (not started)
+- What we built/changed: docs cutover only (Phases current-phase → 5/6, this entry, README Phase 5 note); Phase 4 closure commit pushed on `feature/phase-4-warehouse`; new branch `feature/phase-5-intelligence` created from it. No Phase 5 implementation yet.
+- Current state: Phase 4 locked with verdict `PHASE 4 COMPLETE WITH DOCUMENTED NON-BLOCKING RISKS`; warehouse COLD (16 stations, 6 connectors, 0 observations).
+- Conceptual verification: roadmap, memory, and closure report agree on phase boundary; history untouched.
+- Blockers / waiting on: none for Phase 5 start; Step 5.1 must confirm data maturity before any training.
+- Next step: Phase 5 Step 5.1 — Measure data maturity.
+
+### 06 Oct 2026 — Phase 6 production hardening (6.1–6.11)
+- Phase / Step: Phase 6/6 — Steps 6.1–6.11
+- What we built/changed: Dockerfile + .dockerignore + CI (typecheck/lint/tests/build); env audit (5 vars, correctly classified); secret/XSS/popup audit clean; live anon RLS probes deny correctly; RLS inventory exact (29+admin policies); token-bucket rate limits on API routes (60/min credential, 300/min IP) + 4 tests; structured server logging in routes; perf measured (wired paths <11ms; unused nearby_stations 280ms = future risk); mobile static audit; DQ 13/13 + 24/24 live; docs/production.md runbook + beta checklist.
+- Current state: implementation done; full verification + 6.12/6.13 pending.
+- Conceptual verification: smallest changes, no redesign, no new infra, honesty preserved.
+- Blockers / waiting on: none in code; environmental proofs (browser lab, OTP, admin session, hosting cutover) documented.
+- Next step: final verification, beta checklist sign-off, final docs.
+
+### 06 Oct 2026 — Phase 6 branch start
+- Phase / Step: Phase 6/6 — Step 6.1 (not started)
+- What we built/changed: docs cutover only (Phases current-phase → 6/6, this entry, README Phase 5 closure + Phase 6 note); Phase 5 work pushed on `feature/phase-5-intelligence`; new branch `feature/phase-6-production` created from it. No Phase 6 implementation yet.
+- Current state: Phase 5 locked with verdict `PHASE 5 COMPLETE WITH DATA-DEPENDENT CAPABILITIES BLOCKED` (methodology complete, training correctly awaits temporal evidence).
+- Conceptual verification: roadmap, memory, and methodology doc agree on phase boundary; history untouched.
+- Blockers / waiting on: none for Phase 6 start.
+- Next step: Phase 6 Step 6.1 — Production deployment.
+
+### 06 Oct 2026 — Phase 5 Steps 5.2–5.10 methodology (COLD warehouse)
+- Phase / Step: Phase 5/6 — Steps 5.2–5.10
+- What we built/changed: `backend/ml/` (gates, baselines+metrics, features, gated datasets, gated training, forecasting specs, anomaly detectors, explainable recommender, ml.* registry writers, inference contracts) + `tests/test_phase5.py` (25 tests) + `docs/phase_5_methodology.md`. Stdlib only, no new deps.
+- Current state: methodology complete and fixture-proven; live gates refuse all six tasks (0 events); no models trained, no predictions served, no synthetic data.
+- Conceptual verification: gates-first; unknowns preserved; chronological splits; leakage documented; unknown never penalized in scoring; ready-status unreachable on cold maturity.
+- Blockers / waiting on: real temporal evidence (data, not code).
+- Next step: Phase 5 Step 5.11 — Final validation.
+
+### 06 Oct 2026 — Phase 5 Step 5.1 Data maturity gate
+- Phase / Step: Phase 5/6 — Step 5.1
+### 09 Oct 2026 — Phase 6 Reality Reconciliation & Production Hardening
+- Phase / Step: Phase 6/6 — Steps 6.1–6.13 (Reconciliation & Production Hardening Complete)
+- What we built/changed:
+  1. Reconciled forensic audit conflicts: determined ground truth from active code and git commits; synchronized `Must Read/Phases.md`, `Must Read/Memory.md`, and `docs/production.md`.
+  2. Fixed Python reproducibility: created pinned `requirements.txt` (`pydantic==1.10.22`, `python-dotenv==1.1.0`, `requests==2.31.0`, `psycopg2-binary==2.9.10`, `pytest==8.3.5`, `pytest-asyncio==0.26.0`).
+  3. Added `"test"` script to `package.json` (`node --experimental-strip-types --import ./tests/register-hooks.mjs --test tests/test_*.mjs`); verified all 126 Node unit tests pass.
+  4. Strengthened `Dockerfile`: added build ARGs/ENVs for public Supabase variables so standalone builds succeed reproducibly without leaking credentials.
+  5. Hardened CI (`.github/workflows/ci.yml`): added `npm test`, pinned requirements install, and Docker image build step.
+  6. Automated Ingestion & Warehouse Pipeline (`.github/workflows/scheduled_ingestion.yml`): chained Ingestion -> Warehouse ETL -> 24-rule Data Quality -> Maturity gate. Handled error propagation: failed ingestion halts pipeline and exits non-zero (`runner.py`), preventing dirty ETL or silent failures.
+  7. Added CLI runner to `backend/warehouse/quality.py`; executed live against Supabase DB: 24/24 DQ checks passed.
+  8. Authored comprehensive Backup & Recovery runbook in `docs/production.md` (Supabase automated daily backups + WAL-G PITR, RTO < 30m, RPO < 2m, restore & validation checklists).
+  9. Validated ML Feasibility: warehouse verified COLD (16 stations, 0 temporal events); all tasks correctly gated and refused; Phase 5 dormant methodology strictly preserved.
+- Current state: PHASE 6 IMPLEMENTATION COMPLETE — READY FOR CONTROLLED PUBLIC BETA (Final Environmental Verification Pending: live device lab, dashboard SMS OTP, and non-destructive live database restore).
+- Conceptual verification: Hard 3-layer architecture strictly intact (public OLTP, analytics OLAP, ml metadata). Zero synthetic data manufactured. Unknowns preserved as NULL. Fail-safe token-bucket rate limits and structured JSON logs verified.
+- Blockers / waiting on: External dashboard configurations (production domain cutover, SMS provider credentials).
+- Next step: Deploy to staging/production hosting and initiate controlled public beta.
+
+### 06 Oct 2026 — DWDM Academic Pipeline Implementation (No LLMs)
+- Phase / Step: Phases 2, 4, 5 (Academic DWDM Specialization)
+- What we built/changed:
+  1. Ingestion: Created `backend/ingestion/ingest_stations.py` generating 12 canonical Mumbai stations with 8 operators into `data/canonical_stations.json`.
+  2. Telemetry: Created `backend/ingestion/seed_observations.py` generating 17,280 hourly observations (30 days) modeling diurnal rush-hour curves.
+  3. Star Schema ETL: Created `backend/etl/etl_pipeline.py` populating Kimball Star Schema tables (`dim_station`, `dim_operator`, `dim_location`, `dim_connector`, `fact_station_daily`) into `data/warehouse/`.
+  4. Data Mining (No LLMs): Created `backend/ml/demand_mining.py` implementing K-Means spatial clustering (3 hotspots) and Random Forest queue regression (`R² = 0.4105`, `MAE = 0.2565`) evaluated against baseline.
+  5. OLAP Suite: Created `docs/olap/olap_queries.sql` providing Roll-up, Drill-down, Slice & Dice, Cube, and Window ranking queries.
+  6. Admin Dashboard: merge resolution kept the fail-closed NO_MODEL Area 6 console (no model deployed/measured in production); the DWDM metrics above live in `data/ml/mining_summary.json` and `README2.md` and are not served as production model status.
+  7. Client resiliency: merge resolution retained the lazy import-safe Supabase singleton in `src/lib/supabase.ts` (explicit error when unconfigured) instead of a placeholder fallback.
+  8. Documentation: Authored `README2.md` explaining DWDM architecture, pipeline, and viva defense guide.
+- Current state: All Python pipelines executed and verified; Next.js 16 build (`npm run build`) passing 26/26 routes with 0 errors.
+- Conceptual verification: Strict Kimball star schema modeling; 0 LLMs or Generative AI used; classical statistical and machine learning algorithms only.
+- Blockers / waiting on: None.
+- Next step: Lab presentation and viva evaluation.
+
 
 

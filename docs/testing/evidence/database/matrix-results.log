@@ -1,0 +1,80 @@
+DROP TABLE
+CREATE TABLE
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+BEGIN
+INSERT 0 1
+ROLLBACK
+DO
+DO
+DO
+DO
+DO
+DO
+DO
+                                     ?column?                                     
+----------------------------------------------------------------------------------
+ M10 | PASS | A sees own pending + B approved | 2
+ M11 | PASS | A cannot self-approve review | 42501
+ M12 | PASS | admin moderates review | 1 row
+ M13 | PASS | A inserts own alert | inserted
+ M14 | PASS | A cannot insert alert as B | 42501
+ M15 | PASS | non-admin SELECT ingestion_runs -> 0 | 0
+ M16 | PASS | admin SELECT ingestion_runs allowed | executed
+ M17 | PASS | service_role bypasses RLS | 2 stations
+ M18 | PASS | service_role analytics denied (ETL separation) | 42501
+ M19 | PASS | anon calls get_author_display_name | User A
+ M1a | PASS | anon sees public stations only | 1 public visible
+ M1b | PASS | anon cannot see private stations | 0
+ M1c | PASS | anon INSERT stations denied | 42501
+ M1d | PASS | anon SELECT ingestion_runs denied | 42501
+ M1e | PASS | anon analytics SELECT denied | 42501
+ M2 | PASS | user A sees own profile | 1
+ M20 | PASS | anon calls nearby_stations | executed
+ M21 | PASS | A cannot insert profile for other id | 42501
+ M22 | PASS | authenticated UPDATE stations denied | 42501
+ M23 | PASS | A sees own user_report | 1
+ M24 | PASS | B cannot update A user_report | 0 rows
+ M25 | PASS | transaction rollback discards insert | 0 after rollback
+ M26 | PASS | FK blocks operator delete with stations | 23503
+ M27 | PASS | duplicate alert rejected by unique index | 23505
+ M28 | PASS | NULL-station alerts can repeat | 2 rows
+ M29 | PASS | duplicate connector rejected | 23505
+ M3 | PASS | A cannot see B profile | 0
+ M30 | PASS | duplicate favorite rejected | 23505
+ M31 | PASS | single station_available alert survives (post-concurrency) | 1 row
+ M4 | PASS | A cannot update B profile | 0 rows
+ M5 | PASS | role escalation blocked | 42501:permission denied for table profiles
+ M6 | PASS | A updates own display_name | 1 row
+ M7 | PASS | B sees only own favorites (0) | 0
+ M8 | PASS | A sees own favorite | 1
+ M9 | PASS | B sees approved + own, not A pending | 1
+(35 rows)
+
+
