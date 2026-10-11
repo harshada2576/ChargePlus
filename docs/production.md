@@ -2,7 +2,7 @@
 
 ## 1. Deployment
 
-- **Web Runtime:** Docker image (`Dockerfile`, Node 22) or any Node 22 host.
+- **Web Runtime:** Docker image (`Dockerfile`, Node 22, deployment-only and optional) or any Node 22 host. Docker is not used in development or CI.
   Build: `npm ci && npm run build`. Start: `npm run start` (port 3000).
   Pre-configured build args (`ARG NEXT_PUBLIC_SUPABASE_URL`, `ARG NEXT_PUBLIC_SUPABASE_ANON_KEY`)
   allow standalone Docker builds to succeed reproducibly without leaking secrets.
@@ -10,16 +10,20 @@
   `pydantic==1.10.22`, `python-dotenv==1.2.2`, `requests==2.33.0`,
   `psycopg2-binary==2.9.10`, `pytest==9.0.3`, `pytest-asyncio==1.4.0`.
 - **Scheduled Automation:** GitHub Actions (`.github/workflows/scheduled_ingestion.yml`)
-  runs the end-to-end pipeline every 6 hours:
+  defines a six-hour schedule and a manual dispatch:
   `Ingestion (runner.py)` → `Warehouse ETL (etl.py)` → `Data Quality (quality.py)` → `Maturity Gate (maturity.py)`.
+  Scheduled execution is disabled unless `SCHEDULED_INGESTION_ENABLED=true` is
+  configured. The job targets the `staging-ingestion` environment and uses
+  `STAGING_*` secrets; dry-run is the default. The workflow file must be on the
+  default branch for GitHub's scheduler to load it. This repository configuration
+  does not claim that a live workflow has executed.
 - **CI/CD:** `.github/workflows/ci.yml` runs full validation on every commit:
-  Node typecheck (`tsc --noEmit`), ESLint (`eslint .`), Node unit tests (`npm test` — 126 tests),
-  Next.js production build (`npm run build`), Python test suite (`pytest tests/` — 432 unit tests),
-  and Docker build verification (`docker build -t chargeplus:ci .`).
-- **Rollback:** Redeploy previous Docker image tag. Migrations are non-destructive and
+  Node typecheck (`tsc --noEmit`), ESLint (`eslint .`), Node unit tests (`npm test` — 135 tests: 134 pass, 1 environment-gated skip),
+  Next.js production build (`npm run build` — 21 routes), Python test suite (`pytest tests/ -q --ignore=tests/test_canonical_postgres_integration.py` — 462 passed, 3 skipped; live-PostgreSQL module excluded locally). Container image builds are a deployment-time concern only, not a CI gate.
+- **Rollback:** Redeploy previous image tag (or previous Node build). Migrations are non-destructive and
   idempotent (`IF NOT EXISTS` / `ON CONFLICT` / guarded blocks). Reverse migrations are applied
   forward via new migration files, never by mutating applied history.
-- **Migrations:** Applied in filename order via `supabase db push`.
+- **Migrations:** Applied in filename order via `supabase db push` against a Supabase-managed database only (required: `anon`/`authenticated`/`service_role` roles, `auth` schema, PostGIS/pgcrypto — bare PostgreSQL is not sufficient). For a clean local clone use `supabase start` + `supabase db reset` per `supabase/README.md`. Execution of the current migration text is unverified (BLOCKED — not executed).
 
 ## 2. Environment & Secrets Classification
 
@@ -35,6 +39,7 @@ Rules:
 1. Only `NEXT_PUBLIC_*` is bundled into client code.
 2. Server-only keys (`DATABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENCHARGEMAP_API_KEY`) never reach the browser.
 3. `.env*.local` is strictly git-ignored.
+4. `.env*.bak` backups and `.playwright-mcp/` browser artifacts are git-ignored (local-only, never committed).
 4. Python logger scrubs credentials via `_scrub_secrets`.
 
 ## 3. Domain & Authentication Checklist (Supabase Dashboard)
@@ -51,7 +56,7 @@ Rules:
 - **XSS & Markup Safety:** MapLibre popup contents sanitized via `escapeHtml`; URL params encoded.
 - **Authentication & Authorization:** Phone/Email OTP via Supabase Auth; admin endpoints enforce server-side token verification and `profiles.role = 'admin'`.
 - **Role Escalation Defense:** Column-level privilege restriction + BEFORE UPDATE trigger `trg_profiles_role_guard` prevents non-admin callers from self-promoting.
-- **RLS Coverage:** RLS enabled on all 29 core tables + `public.ingestion_runs`. Exactly 29 public RLS policies, 1 admin-only policy on `ingestion_runs`, and 0 client policies on `analytics` and `ml` (default deny-all to client roles; ETL bypasses via service role).
+- **RLS Coverage:** RLS enabled on all 29 core tables + `public.ingestion_runs`. Exactly 29 public RLS policies on the 11 operational tables, plus on `ingestion_runs` 1 admin-only SELECT policy and 1 service_role write policy (31 public policies total), and 0 client policies on `analytics` and `ml` (default deny-all to client roles; ETL bypasses via service role).
 
 ## 5. Abuse Controls & Rate Limiting
 
@@ -69,8 +74,20 @@ Rules:
   - Every run is tracked in `public.ingestion_runs` (`SUCCEEDED`, `PARTIAL`, `FAILED`, `CANCELLED`).
   - Runner fails closed and exits with non-zero exit code on failure, preventing silent data stagnation.
   - Failures are surfaced live in the `/admin` console dashboard.
-- **Automated Workflow Alerts:** GitHub Actions sends automated failure notification emails to repository administrators when `scheduled_ingestion.yml` fails.
-- **External Monitoring Recommendation:** Connect `/api/health` to an uptime monitor (BetterStack, UptimeRobot, or AWS Route 53 Health Checks) for 1-minute interval pinging with PagerDuty/SMS alerts.
+- **Workflow Failure Diagnostics:** A failed run emits a sanitized diagnostic step
+  linking the GitHub Actions run. This is log/run-history visibility, not an
+  external notification. Configure and test a repository-owned notification
+  destination separately before claiming alerting coverage.
+- **External Monitoring Recommendation:** Connect `/api/health` to an uptime monitor (BetterStack, UptimeRobot, or AWS Route 53 Health Checks) for 1-minute interval pinging with PagerDuty/SMS alerts. No destination is configured by this repository.
+
+### Alert coverage: implemented vs external (all external rows BLOCKED until configured)
+
+| Signal | Implemented in repo | Requires external config |
+|---|---|---|
+| Ingestion/ETL/DQ/maturity failure | Non-zero exit + sanitized failure-diagnostics step with run URL | Notification delivery (email/Slack/PagerDuty) to repo owners |
+| `/api/health` DB-down (`health.db_unreachable`) | JSON log line + HTTP 500 | Uptime monitor pinging + paging |
+| Auth/OTP delivery failure | Server-side error returned to client | SMS provider (Twilio/MessageBird) + Supabase config |
+| Database errors (RLS denials, constraint violations) | Structured server logs, no secret leakage | Log aggregation + alert rules |
 
 ## 7. Automated Ingestion & Warehouse Pipeline
 
@@ -92,15 +109,63 @@ Warehouse ETL (etl.py)
        ↓ (only if ETL succeeds)
 Warehouse Data Quality Checks (quality.py)
   - Runs all 24 DQ rules (referential integrity, duplicate grains, aggregates, null semantics, reconciliation)
+  - Records a stage result as source_name='warehouse_dq'
        ↓ (only if DQ passes)
 Warehouse Data Maturity Check (maturity.py)
   - Assesses temporal observation depth and gates ML feasibility
+  - Records a stage result as source_name='warehouse_maturity'
 ```
 
 Failure Guarantees:
 - If ingestion fails, warehouse ETL is **skipped** (no corruption of analytics facts).
 - If ETL fails, data quality checks halt and workflow fails.
+- If DQ fails, maturity is skipped and the workflow exits non-zero.
+- A zero-result ingestion (source returned no records) is recorded as `PARTIAL`
+  with an explicit error summary, never `SUCCEEDED`: an empty response is
+  indistinguishable from a source outage, so the run must not claim success.
+- Stage accounting (ETL/DQ/maturity) is fail-closed: if the
+  `public.ingestion_runs` write fails, the stage exits non-zero instead of
+  reporting success with a lost audit record.
+- COLD/WARMING/READY are evidence states; COLD is not an execution failure.
 - All writes are idempotent with `ON CONFLICT` constraints.
+- Shared bounded DB connect (`backend/ingestion/persistence.py:connect_database`, used by
+  ingestion persistence, ETL, DQ, maturity): 10s connect, 30s statement, 10s lock timeout.
+  Ceiling: the 30s statement timeout can kill long ETL fact/daily builds on a large
+  warehouse — smoke-test staging before raising limits.
+- `--dry-run` (runner, ETL, DQ, maturity) skips `public.ingestion_runs` writes and reports
+  `run_id: null`; the scheduled workflow propagates the dry-run flag to all four stages.
+- Runner CLI exits non-zero on any non-`SUCCEEDED` state (including `PARTIAL`), so a
+  zero-record `PARTIAL` run fails the workflow step by design (fail-closed).
+- `public.ingestion_runs` is reused for warehouse stages (`source_id=None`,
+  `scope=warehouse:*`, `source_name=warehouse_etl|warehouse_dq|warehouse_maturity`;
+  historic table COMMENT still reads "scheduled and manual"). The `/admin` console selects
+  `ingestion_runs` unfiltered, so warehouse stage rows appear next to source runs.
+
+### Staging operator checklist (workflow stays disabled by default; do not trigger yet)
+
+1. Create/select the `staging-ingestion` environment; set `STAGING_DATABASE_URL`,
+   `STAGING_SUPABASE_SERVICE_ROLE_KEY`, `STAGING_OPENCHARGEMAP_API_KEY` as
+   environment secrets (never commit them). Leave `SCHEDULED_INGESTION_ENABLED`
+   unset and `ALLOW_STAGING_WRITES=false`, `SCHEDULED_INGESTION_DRY_RUN=true`.
+2. Validate the environment: confirm the secrets point at the disposable
+   staging project (not production) via the Supabase dashboard project ref.
+3. Run once via `workflow_dispatch` with `dry_run=true`; review ingestion
+   source/limit/scope, ETL, DQ (24 rules), maturity, and accounting outcomes in
+   the run logs and `public.ingestion_runs`.
+4. Authorize a staging write separately and explicitly: set
+   `ALLOW_STAGING_WRITES=true`, re-run with `dry_run=false`, verify rows, then
+   revert the flag. Each non-dry-run requires fresh authorization.
+5. Failure triage: a failed run exits non-zero with a sanitized diagnostic step
+   linking the run (see Failure diagnostics step). Check stage logs in order
+   (ingestion → ETL → DQ → maturity), fix the failing stage's input/config,
+   and re-run; never mark a failed run successful by editing history.
+
+### Manual staging E2E (blocked — no staging environment configured)
+
+OTP/auth login, station search/map render, filters, station details, favorites,
+reports/reviews submission, admin console + access restrictions, and one
+dry-run ingestion→ETL→DQ→maturity cycle. Record run IDs, screenshots/log
+excerpts, and pass/fail per step in the §13 evidence checklist.
 
 ## 8. Backup & Disaster Recovery Runbook
 
@@ -144,7 +209,25 @@ Failure Guarantees:
    - Verify `/api/health` returns `{"ok": true}`.
 - **Verification Status:** Documentation and verification procedures complete; live production destructive restore verification classified as **ENVIRONMENTAL** (preserving live database state).
 
-## 9. Performance Characteristics (Measured Live)
+### Restore-rehearsal checklist (blocked — requires a disposable target)
+
+1. Provision a separate disposable Supabase project (never production, never the
+   staging-ingestion project holding valuable data).
+2. Take a fresh backup (`supabase db dump`), record start time, restore into the
+   disposable target, record end time (duration evidence).
+3. Verify: all 14 migrations accounted for (`supabase migration list`), run
+   `supabase/verify_final_state.sql` (all checks match expected), spot-check
+   `analytics.dim_date`=3288 / `dim_time`=96, `/api/health` returns `{"ok": true}`.
+4. Record results (duration, check outputs, pass/fail) in the §13 evidence
+   checklist. A rehearsal that skips step 3 is not a rehearsal.
+
+## 9. Performance Characteristics (Unverified — do not quote as measured)
+
+> No supporting evidence for the figures below exists in this repository
+> (verified 2026-10-11: no latency evidence under `docs/testing/evidence/`).
+> Treat them as historical single-sample observations, not certified
+> measurements. Certify via a staging performance harness (throughput, error
+> rate, p50/p95/p99, CPU/memory) before any beta/production claim.
 
 - `v_station_current_state`: ~11 ms latency (16 stations, spatial + connector join).
 - `v_station_connectors`: < 1 ms latency.
@@ -177,6 +260,20 @@ Failure Guarantees:
 | Warehouse Data Quality (24 rules) | PASS | PASS | PASS | PASS | PASS (24/24 PASS) | PASS |
 | ML Feasibility & Gating | PASS | PASS | PASS | PASS | PASS (COLD pass) | PASS (Correctly Blocked) |
 | Frontend UX & Responsive Layout | PASS | PASS | PASS | PASS | ENVIRONMENTAL (Device lab) | PASS |
-| Docker Containerization | PASS | PASS | PASS | PASS | ENVIRONMENTAL (Local daemon) | PASS |
+| Docker image (deployment-only, optional; not in dev/CI) | PASS | PASS | PASS | Removed (Docker-free CI) | ENVIRONMENTAL (No daemon) | PASS |
 | Rate Limiting & Logging | PASS | PASS | PASS | PASS | PASS | PASS |
 | Backup & Recovery Runbook | PASS | PASS | PASS | PASS | ENVIRONMENTAL (Live restore) | PASS |
+
+## 13. Release Evidence Checklist (all rows BLOCKED until executed with evidence)
+
+| Gate | Owner | Action | Evidence required |
+|---|---|---|---|
+| Migration clean-apply + repeatability | DBA/operator | Route B on disposable project (§8, `supabase/README.md`) | `db push` logs, `verify_final_state.sql` outputs, `migration list` |
+| RLS/role matrix 35 cases | DBA/operator | `docs/testing/ROLE_MATRIX.md` on disposable project | per-case ALLOW/DENY log, counts restored |
+| Canonical integration suite (6 tests) | Operator | Guard-verified disposable target only | pytest output, target-identity record |
+| Staging dry-run + authorized write | Operator | §7 checklist | workflow run IDs, `ingestion_runs` rows |
+| Staging manual E2E | QA | §7 E2E steps | step-by-step pass/fail + screenshots |
+| Restore rehearsal | DBA/operator | §8 rehearsal checklist | duration, verification outputs |
+| Alert delivery | Operator | Configure monitor + notification; trigger test failure | delivered alert artifact |
+| SMS/OTP provider | Operator | Configure Twilio/MessageBird; end-to-end OTP login | successful OTP login log |
+| Measured performance | Perf owner | Staging harness (p50/p95/p99, error rate) | harness report (replaces §9 estimates) |
