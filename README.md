@@ -205,19 +205,20 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to explore t
 | Command | Description |
 | :--- | :--- |
 | `npm run dev` | Launches the Next.js development server with hot reloading |
-| `npm run build` | Builds the production bundle using Turbopack |
+| `npm run build` | Builds the production bundle using Turbopack (23 routes compiled) |
 | `npm run start` | Starts the production server |
 | `npm run typecheck` | Runs TypeScript compiler checks without emitting code (`tsc --noEmit`) |
 | `npm run lint` | Runs ESLint analysis across the frontend codebase |
-| `python -m pytest tests/ -v` | Runs the full Python test suite (376 tests: contracts, adapters, persistence, resolution, normalization, validation, deduplication, operational loading, freshness & provenance, scheduled ingestion, coverage audit, recovery hardening) |
-| `node --experimental-strip-types tests/test_station_adapter.mjs` | Runs frontend station adapter domain unit tests (8 tests: status, pricing, hours, null power, HTML escape) |
+| `npm test` | Runs the full Node.js unit & integration suite (135 tests: adapters, queries, navigation, auth, detail, accessibility) |
+| `python -m pytest tests/ -v` | Runs the full Python test suite (687 tests: canonical contracts, secondary adapters, deduplication, persistence, warehouse, ML, CPO, spatial clustering) |
+| `python -m tests.db_target_guard --preflight` | Preflight verification of `DATABASE_URL` target disposability (fail-closed guard against cloud writes) |
 | `python -m backend.ingestion.audit --scope mumbai` | Runs the Step 2.11 deterministic Mumbai coverage & data quality audit against the live database |
 
 ---
 
 ## 🗄️ Database Management & Project Roadmap
 
-The **authoritative schema is `supabase/migrations/*.sql`** (Phase 1 Steps 1.3–1.8 established the 3-layer PostgreSQL database: `public` operational OLTP, `analytics` canonical OLAP warehouse, and `ml` metadata schemas; Phase 2 Step 2.10 established `public.ingestion_runs` audit log).
+The **authoritative schema is `supabase/migrations/*.sql`** (Phase 1 Steps 1.3–1.8 established the 3-layer PostgreSQL database: `public` operational OLTP, `analytics` canonical OLAP warehouse, and `ml` metadata schemas; Phase 2 Step 2.10 established `public.ingestion_runs` audit log; Pre-Phase-4 and Phase-4 migrations established vocabulary extensions and constraint safeguards).
 
 Apply migrations to a linked Supabase project:
 
@@ -228,23 +229,8 @@ supabase db push
 
 ### Roadmap Status
 - **Phase 1 (Foundation & Database):** 100% COMPLETE & LIVE VERIFIED (29 tables with RLS enabled, 29 public RLS policies, 4 views with `security_invoker = true`, 2 functions, 28 constraints, 45 explicit indexes, zero cross-layer FKs).
-- **Phase 2 (Real Data Ingestion & Data Quality):** COMPLETE & SIGNED OFF
-  - **Step 2.1 — Canonical Input Contract:** COMPLETE & LOCKED (17/17 tests).
-  - **Step 2.2 — Source Adapters & OCM Ingestion:** COMPLETE & LOCKED (37/37 cumulative).
-  - **Step 2.3 — Connect First Live Data Source:** COMPLETE & LOCKED (52/52 cumulative).
-  - **Step 2.4 — Cross-Source Entity Resolution:** COMPLETE & LOCKED (67/67 cumulative).
-  - **Step 2.5 — Normalize Fields:** COMPLETE & LOCKED (97/97 cumulative).
-  - **Step 2.6 — Validate Records:** COMPLETE & LOCKED (137/137 cumulative).
-  - **Step 2.7 — Canonical Station Decision Layer:** COMPLETE & LOCKED (176/176 cumulative).
-  - **Step 2.8 — Persist Deduplicated Canonical Stations & Connectors:** COMPLETE & LOCKED (219/219 cumulative).
-  - **Step 2.9 — Record Freshness/Provenance:** COMPLETE & LOCKED (252/252 cumulative).
-  - **Step 2.10 — Schedule/Repeat Ingestion:** COMPLETE & LOCKED (284/284 cumulative).
-  - **Step 2.11 — Mumbai Coverage Audit & Phase 2 Sign-off:** COMPLETE & LOCKED (`backend/ingestion/audit.py`, live audit against Supabase DB at `as_of=2026-09-26T06:30:00Z`, 2 canonical stations in MMR, 348/348 cumulative tests passing, report at `docs/step_2_11_mumbai_coverage_and_data_quality_audit.md`).
-  - **Step 2.12 — Recovery Hardening & Final Phase 2 Closure:** COMPLETE & SIGNED OFF (Unknown-power connectors preserved as NULL, fail-closed candidate lookup, single ingestion_runs owner, 376/376 cumulative tests passing, live DB verified with 8 MMR stations, 5 connectors, 0 fabricated facts).
-- **Phase 3 (Connect the Locked Frontend):** COMPLETE & LOCKED (Steps 3.1–3.13; see `docs/phase_3_closure_report.md`)
-  - **Step 3.1 — Replace hardcoded station dataset:** COMPLETE & LOCKED (Replaced 330-line fake seed dataset with real canonical Supabase stations, authored domain adapter `src/data/stationAdapter.ts`, async loaders `fetchStations` and `fetchStationById`, sanitized MapLibre popup HTML injection via `escapeHtml`, preserved unknown power as NULL, 8 unit tests in `tests/test_station_adapter.mjs`).
-  - **Steps 3.2–3.13 — Connect Explore/map, search/filter, station detail, navigation, auth/OTP, profiles, favorites, reports, reviews, alerts, admin, loading/empty/error states:** COMPLETE & LOCKED (per-step reports `docs/step_3_*_report.md`, 117/117 Node tests).
-- **Pre-Phase-4 remediation gate:** COMPLETE (see `docs/pre_phase4_remediation_gate.md`) — migration versioning fixed, CCS1 vocabulary extended, `ingestion_runs` admin-only, `profiles.role` trigger guard, alert uniqueness, run-state alignment, advisory-lock fail-closed, dead code quarantined. Live OTP delivery + recurring GitHub Actions execution remain environment-dependent (documented, non-blocking for Phase 4).
-- **Phase 4 (Warehouse, Analytics & Data Quality):** COMPLETE WITH DOCUMENTED NON-BLOCKING RISKS (Steps 4.1–4.8; see `docs/phase_4_closure_report.md`) — canonical ETL + 24 DQ rules + 10 live-proven OLAP queries + admin warehouse surface; warehouse honestly sparse (16 stations, 6 connectors, 0 observations; COLD).
-- **Phase 5 (Data Mining, Forecasting & Recommendations):** COMPLETE WITH DATA-DEPENDENT CAPABILITIES BLOCKED — Steps 5.1–5.11 verified (`backend/ml/` gates-first methodology, see `docs/phase_5_methodology.md`); gates refuse all six tasks live (0 temporal events, COLD); no models trained, no predictions served, no synthetic data.
-- **Phase 6 (Production & Public Beta):** NOT STARTED — work begins on branch `feature/phase-6-production` at Step 6.1 (Production deployment).
+- **Phase 2 (Real Data Ingestion & Data Quality):** COMPLETE & SIGNED OFF (Steps 2.1–2.12; multi-source ingestion with OCM, OSM Overpass, and data.gov.in adapters, canonical deduplication, recovery hardening, and freshness decay engine).
+- **Phase 3 (Connect the Locked Frontend):** COMPLETE & LOCKED (Steps 3.1–3.13; canonical loaders, honest pricing/power states, explore map, search/filter, detail, navigation, auth OTP, profiles, reviews, reports, alerts, admin warehouse surface, 134/135 Node tests passing).
+- **Phase 4 (Warehouse, Analytics & Data Quality):** COMPLETE & VERIFIED (Steps 4.1–4.8; Kimball star schema, SCD2 dimensions, conformed observation facts, daily aggregates, 24/24 DQ checks passing).
+- **Phase 5 (Data Mining, Forecasting & Spatial Clustering):** COMPLETE (Steps 5.1–5.11; K-Means demand clustering, Random Forest queue regression, DBSCAN Haversine density clustering in `backend/ml/spatial_clustering.py`, coverage gap analysis, maturity-gated training and fail-closed inference API).
+- **Phase 6 (Production & Public Beta):** COMPLETE & HARDENED (Production Dockerfile, pinned `requirements.txt`, rate limiting, structured logging, CI workflows, and disaster recovery runbook; controlled beta ready).
