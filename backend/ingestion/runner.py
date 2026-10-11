@@ -550,9 +550,23 @@ class IngestionRunner:
             # Runner owns execution + run accounting. Scheduler controls when; runner controls what.
             if not dry_run and persistence and getattr(persistence, "conn", None):
                 try:
-                    if runner_exception is not None or summary.persistence_errors:
+                    # State semantics aligned with ScheduledIngestionOrchestrator
+                    # (pre-Phase-4 fix): FAILED only when the run itself raised
+                    # (fail-closed candidate lookup, crash). Validation
+                    # rejections/quarantines and per-record persistence notes
+                    # mean the run completed with exclusions -> PARTIAL.
+                    if runner_exception is not None:
                         run_state = IngestionRunState.FAILED
-                    elif summary.records_rejected > 0 or summary.records_quarantined > 0:
+                    elif summary.records_fetched == 0:
+                        # Zero fetched records are indistinguishable from an
+                        # upstream outage at the source, so never record
+                        # SUCCEEDED: flag it for operator inspection.
+                        run_state = IngestionRunState.PARTIAL
+                    elif (
+                        summary.records_rejected > 0
+                        or summary.records_quarantined > 0
+                        or summary.persistence_errors
+                    ):
                         run_state = IngestionRunState.PARTIAL
                     else:
                         run_state = IngestionRunState.SUCCEEDED
@@ -560,6 +574,10 @@ class IngestionRunner:
                     err_summary = None
                     if runner_exception is not None:
                         err_summary = _scrub_secrets(str(runner_exception))
+                    elif summary.records_fetched == 0:
+                        err_summary = (
+                            "Source returned zero records; an empty response is indistinguishable from a source outage."
+                        )
                     elif summary.persistence_errors:
                         err_summary = "; ".join(summary.persistence_errors[:3])
 
@@ -761,6 +779,9 @@ def main() -> None:
                 print(json.dumps(run.to_dict(), indent=2))
             else:
                 print(f"Run ID: {run.run_id} | State: {run.state.value} | Fetched: {run.records_fetched} | Persisted: {run.stations_persisted}")
+            if run.state != IngestionRunState.SUCCEEDED:
+                logger.error("Scheduled ingestion run ended in unsuccess state: %s", run.state.value)
+                sys.exit(1)
         else:
             summary = runner.run(
                 dry_run=args.dry_run,

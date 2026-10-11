@@ -99,6 +99,47 @@ test("disabling an unconfigured condition persists nothing", async () => {
   assert.deepEqual(calls, []);
 });
 
+test("concurrent insert race (23505) updates the winner instead of duplicating", async () => {
+  const winner = { id: "w-1", station_id: ST, alert_type: "station_available", is_enabled: false };
+  const calls = [];
+  const racedDb = {
+    from(table) {
+      return {
+        select: () => ({
+          eq: () => ({
+            order: async () => {
+              calls.push(["select", table]);
+              return { data: [winner], error: null };
+            },
+          }),
+        }),
+        insert: () => ({
+          select: () => ({
+            maybeSingle: async () => {
+              calls.push(["insert", table]);
+              return { data: null, error: { code: "23505", message: "duplicate key" } };
+            },
+          }),
+        }),
+        update: (patch) => ({
+          eq: () => ({
+            eq: async () => {
+              calls.push(["update", table, patch]);
+              return { error: null };
+            },
+          }),
+        }),
+      };
+    },
+  };
+  const out = await setAlert(
+    racedDb, { userId: UID, stationId: ST, uiType: "available", enabled: true }, []
+  );
+  assert.equal(out.id, "w-1");
+  assert.equal(out.enabled, true);
+  assert.ok(calls.some(([op]) => op === "update"));
+});
+
 test("validation and failures never fake success", async () => {
   await assert.rejects(setAlert(mockDb({}), { userId: "", stationId: ST, uiType: "available", enabled: true }), /signed-in/);
   await assert.rejects(setAlert(mockDb({}), { userId: UID, stationId: "bad", uiType: "available", enabled: true }), /valid station/);

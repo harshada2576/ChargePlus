@@ -8,6 +8,7 @@ import type { LanguageCode } from "@/i18n/types";
 import { supabase } from "@/lib/supabase";
 import { updateDisplayName } from "@/lib/profiles";
 import { BrandMark } from "@/components/BrandMark";
+import { Button } from "@/components/Button";
 import {
   ChevronRightIcon,
   SavedIcon,
@@ -93,11 +94,9 @@ export function ProfileClient() {
           <h2 className="mt-3 text-[17px] font-semibold text-ink-900">{t("auth.welcome")}</h2>
           <p className="mt-1 text-[13.5px] text-ink-600">{t("auth.subtitle")}</p>
           <div className="mt-5 flex justify-center">
-            <Link href="/login">
-              <button className="inline-flex h-11 items-center rounded-full bg-coral-600 px-5 text-[14px] font-medium text-white hover:bg-coral-700">
-                {t("profile.signIn")}
-              </button>
-            </Link>
+            <Button variant="primary" size="md" href="/login">
+              {t("profile.signIn")}
+            </Button>
           </div>
         </div>
       </div>
@@ -136,7 +135,7 @@ export function ProfileClient() {
                     type="button"
                     onClick={saveName}
                     disabled={savingName}
-                    className="inline-flex h-9 items-center rounded-full bg-coral-600 px-4 text-[13px] font-medium text-white hover:bg-coral-700 disabled:bg-coral-300"
+                    className="inline-flex h-9 items-center rounded-full bg-coral-600 px-4 text-[13px] font-medium text-ink-900 hover:bg-coral-700 disabled:bg-coral-300 disabled:text-ink-900"
                   >
                     {t("common.save")}
                   </button>

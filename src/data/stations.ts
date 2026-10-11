@@ -4,7 +4,21 @@ import {
   type DbStationRow,
   type DbConnectorRow,
 } from "./stationAdapter";
-import { supabase } from "@/lib/supabase";
+
+let defaultClient: StationDbClient | null = null;
+
+/**
+ * Resolve the production Supabase client on first use only. Importing this
+ * module must never construct a production client: tests import these loaders
+ * and inject their own client, so no environment is required at import time.
+ */
+async function getDefaultClient(): Promise<StationDbClient> {
+  if (!defaultClient) {
+    const { supabase } = await import("@/lib/supabase");
+    defaultClient = supabase;
+  }
+  return defaultClient;
+}
 
 export const MUMBAI_CENTER = { lat: 19.076, lng: 72.8777 };
 
@@ -15,6 +29,10 @@ const ARGS = Math.PI / 180;
  * Canonical station baseline derived from the authoritative PostgreSQL database.
  * No fabricated availability (connector available is null without telemetry),
  * unknown power preserved as null, and factual physical quantities preserved.
+ *
+ * Retained ONLY as a test negative-control (tests/test_explore_map.mjs).
+ * Production code must use fetchStations / fetchStationById (live Supabase
+ * views) — nothing in src/ may import this snapshot.
  */
 export const CANONICAL_STATIONS: Station[] = [
   {
@@ -203,9 +221,6 @@ export const CANONICAL_STATIONS: Station[] = [
   },
 ];
 
-/** Authoritative station export, matching canonical database records */
-export const STATIONS: Station[] = CANONICAL_STATIONS;
-
 /** Zero fabricated reviews. Empty array represents honest cold-start state. */
 export const REVIEWS: Review[] = [];
 
@@ -228,11 +243,17 @@ export type StationDbClient = {
  * Throws on query failure — never falls back to CANONICAL_STATIONS.
  */
 export async function fetchStations(
-  client: StationDbClient = supabase
+  client?: StationDbClient
 ): Promise<Station[]> {
+  const db = client ?? (await getDefaultClient());
+  if (!db) {
+    throw new Error(
+      "fetchStations: Supabase client not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, or pass a client explicitly."
+    );
+  }
   const [stationsRes, connectorsRes] = await Promise.all([
-    client.from("v_station_current_state").select("*"),
-    client.from("v_station_connectors").select("*"),
+    db.from("v_station_current_state").select("*"),
+    db.from("v_station_connectors").select("*"),
   ]);
 
   if (stationsRes.error) {
@@ -267,14 +288,20 @@ export async function fetchStations(
  */
 export async function fetchStationById(
   id: string,
-  client: StationDbClient = supabase
+  client?: StationDbClient
 ): Promise<Station | null> {
+  const db = client ?? (await getDefaultClient());
+  if (!db) {
+    throw new Error(
+      "fetchStationById: Supabase client not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, or pass a client explicitly."
+    );
+  }
   if (!UUID_RE.test(id)) {
     return null;
   }
   const [stationRes, connectorsRes] = await Promise.all([
-    client.from("v_station_current_state").select("*").eq("id", id).maybeSingle(),
-    client.from("v_station_connectors").select("*").eq("station_id", id),
+    db.from("v_station_current_state").select("*").eq("id", id).maybeSingle(),
+    db.from("v_station_connectors").select("*").eq("station_id", id),
   ]);
 
   if (stationRes.error) {
@@ -297,14 +324,8 @@ export async function fetchStationById(
 }
 
 /**
- * Synchronous station lookup from canonical dataset.
- */
-export function getStation(id: string): Station | undefined {
-  return CANONICAL_STATIONS.find((s) => s.id === id);
-}
-
-/**
  * Retrieve reviews for a station (honest zero reviews until Step 3.10).
+ * Retained for test use (tests/test_station_detail.mjs).
  */
 export function getReviewsForStation(id: string): Review[] {
   return REVIEWS.filter((r) => r.stationId === id);

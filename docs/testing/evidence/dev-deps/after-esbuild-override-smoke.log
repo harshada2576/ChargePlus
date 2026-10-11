@@ -1,0 +1,9 @@
+﻿esbuild override smoke test (@esbuild-kit/core-utils -> esbuild 0.25.11)
+timestamp: 2026-10-09T20:40:45+05:30
+
+core-utils nested esbuild: 0.25.11
+transformSync(ts->js) OK: true
+transformSync exit=0
+drizzle-kit --help exit=0; first lines:
+Usage:
+  drizzle-kit [command]

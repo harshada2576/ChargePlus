@@ -1,4 +1,4 @@
-name: Scheduled Ingestion Workflow
+name: Scheduled Ingestion & Warehouse Pipeline
 
 on:
   schedule:
@@ -22,16 +22,20 @@ on:
         description: 'Dry run (no database writes)'
         required: true
         type: boolean
-        default: false
+        default: true
 
 jobs:
-  ingest:
-    name: Run Ingestion Pipeline
+  pipeline:
+    name: Run Ingestion, Warehouse ETL & Quality Pipeline
+    if: github.event_name == 'workflow_dispatch' || vars.SCHEDULED_INGESTION_ENABLED == 'true'
+    environment: staging-ingestion
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    # Least privilege: ingestion only needs to read the repo checkout.
+    timeout-minutes: 20
     permissions:
       contents: read
+    env:
+      ALLOW_STAGING_WRITES: ${{ vars.ALLOW_STAGING_WRITES || 'false' }}
+      SCHEDULED_INGESTION_DRY_RUN: ${{ vars.SCHEDULED_INGESTION_DRY_RUN || 'true' }}
 
     steps:
       - name: Checkout repository
@@ -46,25 +50,85 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pydantic python-dotenv requests psycopg2-binary pytest pytest-asyncio
+          pip install -r requirements.txt
 
       - name: Execute Ingestion Run
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          OPENCHARGEMAP_API_KEY: ${{ secrets.OPENCHARGEMAP_API_KEY }}
-          # Secondary sources are manual/dry-run until validated; the runner
-          # refuses unattended scheduling for them. Secrets are passed through
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
+          OPENCHARGEMAP_API_KEY: ${{ secrets.STAGING_OPENCHARGEMAP_API_KEY }}
+          # Secondary sources stay manual/dry-run until validated; the runner
+          # refuses unattended non-dry-run scheduling for them. Passed through
           # so authorized manual workflow_dispatch runs can use them.
-          OSM_OVERPASS_ENDPOINT: ${{ secrets.OSM_OVERPASS_ENDPOINT }}
-          DATAGOVIN_API_KEY: ${{ secrets.DATAGOVIN_API_KEY }}
-          DATAGOVIN_RESOURCE_ID: ${{ secrets.DATAGOVIN_RESOURCE_ID }}
+          OSM_OVERPASS_ENDPOINT: ${{ secrets.STAGING_OSM_OVERPASS_ENDPOINT }}
+          DATAGOVIN_API_KEY: ${{ secrets.STAGING_DATAGOVIN_API_KEY }}
+          DATAGOVIN_RESOURCE_ID: ${{ vars.STAGING_DATAGOVIN_RESOURCE_ID }}
         run: |
           EXTRA_ARGS=""
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+          DRY_RUN="${{ inputs.dry_run }}"
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            DRY_RUN="$SCHEDULED_INGESTION_DRY_RUN"
+          fi
+          if [ "$DRY_RUN" != "true" ] && [ "$ALLOW_STAGING_WRITES" != "true" ]; then
+            echo "Refusing non-dry-run ingestion: set ALLOW_STAGING_WRITES=true on the staging environment." >&2
+            exit 2
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
             EXTRA_ARGS="$EXTRA_ARGS --dry-run"
           fi
-          SOURCE="${{ github.event.inputs.source || 'open_charge_map' }}"
-          LIMIT="${{ github.event.inputs.limit || '50' }}"
-          SCOPE="${{ github.event.inputs.scope || 'mumbai' }}"
+          SOURCE="${{ inputs.source || 'open_charge_map' }}"
+          LIMIT="${{ inputs.limit || '50' }}"
+          SCOPE="${{ inputs.scope || 'mumbai' }}"
           python -m backend.ingestion.runner --source "$SOURCE" --limit "$LIMIT" --scope "$SCOPE" --run-once $EXTRA_ARGS
+
+      - name: Execute Warehouse ETL
+        if: success()
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          ETL_ARGS=""
+          DRY_RUN="${{ inputs.dry_run }}"
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            DRY_RUN="$SCHEDULED_INGESTION_DRY_RUN"
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
+            ETL_ARGS="--dry-run"
+          fi
+          python -m backend.warehouse.etl --job all $ETL_ARGS
+
+      - name: Execute Warehouse Data Quality Checks
+        if: success()
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          DQ_ARGS=""
+          DRY_RUN="${{ inputs.dry_run }}"
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            DRY_RUN="$SCHEDULED_INGESTION_DRY_RUN"
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
+            DQ_ARGS="--dry-run"
+          fi
+          python -m backend.warehouse.quality $DQ_ARGS
+
+      - name: Measure Warehouse Data Maturity
+        if: success()
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          MATURITY_ARGS=""
+          DRY_RUN="${{ inputs.dry_run }}"
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            DRY_RUN="$SCHEDULED_INGESTION_DRY_RUN"
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
+            MATURITY_ARGS="--dry-run"
+          fi
+          python -m backend.warehouse.maturity $MATURITY_ARGS
+
+      - name: Failure diagnostics
+        if: failure()
+        run: |
+          echo "Pipeline failed; inspect the preceding sanitized stage logs and ingestion_runs records."
+          echo "Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"

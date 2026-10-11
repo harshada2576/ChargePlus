@@ -202,7 +202,10 @@ class TestUnattendedSchedulingGuard:
         orchestrator = ScheduledIngestionOrchestrator(runner=runner)
         config = ScheduleConfig(source_id="open_charge_map", enabled=True, limit=1)
         run = orchestrator.execute_scheduled_run(config, fixtures_data=[])
-        assert run.state == IngestionRunState.SUCCEEDED
+        # Zero fetched records are indistinguishable from a source outage, so
+        # the orchestrator reports PARTIAL (never SUCCEEDED on empty).
+        assert run.state == IngestionRunState.PARTIAL
+        assert "zero records" in (run.error_summary or "")
 
     def test_33_orchestrator_forwards_source_id(self):
         runner = MagicMock()

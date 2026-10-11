@@ -1,0 +1,13 @@
+pydantic==1.10.22
+python-dateutil==2.8.2
+python-dotenv==1.2.2
+requests==2.33.0
+psycopg2-binary==2.9.10
+pytest==9.0.3
+pytest-asyncio==1.4.0
+# Phase 5 ML training/inference (backend/ml/training.py, inference.py).
+# Pinned to the locally verified versions; training refuses to run without them.
+numpy==2.2.6
+pandas==2.3.3
+scikit-learn==1.7.2
+scipy==1.16.2

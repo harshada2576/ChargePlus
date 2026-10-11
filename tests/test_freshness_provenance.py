@@ -40,8 +40,9 @@ import os
 import unittest
 import uuid
 
-from dotenv import load_dotenv
 import psycopg2
+
+from tests.db_target_guard import require_disposable_target
 
 from backend.ingestion.constants import (
     CONTRACT_VERSION,
@@ -705,11 +706,14 @@ class TestFreshnessAndProvenance(unittest.TestCase):
     # --------------------------------------------------------------------------
     def test_33_live_database_provenance_and_clean_rollback(self):
         """Section 20: Verifies provenance against live PostgreSQL with clean rollback and zero pollution."""
-        load_dotenv(".env.local")
-        load_dotenv(".env")
         db_url = os.getenv("DATABASE_URL")
         if not db_url:
             self.skipTest("DATABASE_URL is not configured; skipping live database provenance test.")
+
+        try:
+            require_disposable_target(db_url, test_id="test_33_live_database")
+        except RuntimeError as e:
+            self.skipTest("REFUSED live-database write target: %s" % e)
 
         try:
             live_conn = psycopg2.connect(db_url, connect_timeout=5)

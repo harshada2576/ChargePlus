@@ -7,9 +7,12 @@
  * there is no delivery mechanism yet (schema comment, notification deferred),
  * and nothing here claims a notification was sent.
  *
- * No unique constraint covers (user, station, type), so writes are
- * list-then-write: update the matching row, insert when absent. Callers must
- * serialize toggles per station (pending lock) to avoid double-insert races.
+ * Station-scoped rows are unique per (user, station, type) at the
+ * database layer (uq_alerts_user_station_type, pre-Phase-4 R7), so writes
+ * are list-then-write with 23505 recovery: update the matching row,
+ * insert when absent, and on a concurrent-insert race re-read and update
+ * the winner. Callers still serialize toggles per station (pending lock)
+ * to keep the common path race-free.
  */
 
 export type UiAlertType = "available" | "lessBusy";
@@ -123,6 +126,18 @@ export async function setAlert(
     })
     .select("id,station_id,alert_type,is_enabled")
     .maybeSingle();
+  if (error && (error as { code?: string }).code === "23505") {
+    // Concurrent insert won the race for (user, station, type):
+    // re-read and update the winning row instead of duplicating it.
+    const raced = await listAlerts(client, input.userId);
+    const winner = raced.find(
+      (a) => a.stationId === input.stationId && a.uiType === input.uiType
+    );
+    if (!winner || !winner.id) {
+      throw new Error(`setAlert error: ${error.message}`);
+    }
+    return setAlert(client, input, raced);
+  }
   if (error || !data) {
     throw new Error(`setAlert error: ${error?.message ?? "no record returned"}`);
   }

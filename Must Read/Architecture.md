@@ -273,7 +273,7 @@ Fact grains:
 - `fact_user_report` = one crowdsourced user status report
 - `fact_review` = one driver experience rating and commentary review
 - `fact_station_daily` = one station/day analytical aggregate
-*(Note: ML model metadata, training runs, and inference predictions are housed in the dedicated `ml.*` schema (`ml.models`, `ml.prediction_runs`, etc.), not as a warehouse fact).*
+*(Note: ML model metadata, training runs, and inference predictions are housed in the dedicated `ml.*` schema (`ml.model_versions`, `ml.prediction_runs`, etc.), not as a warehouse fact).*
 
 ## 8. ML / recommendation boundary
 

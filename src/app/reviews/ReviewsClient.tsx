@@ -109,11 +109,9 @@ export function ReviewsClient() {
             Share your feedback on charger speeds, wait times, and location accessibility to guide others.
           </p>
           <div className="mt-5">
-            <Link href="/explore">
-              <Button size="md" variant="primary" iconLeft={<ExploreIcon size={16} />}>
-                Explore stations to review
-              </Button>
-            </Link>
+            <Button size="md" variant="primary" href="/explore" iconLeft={<ExploreIcon size={16} />}>
+              Explore stations to review
+            </Button>
           </div>
         </div>
       ) : (
