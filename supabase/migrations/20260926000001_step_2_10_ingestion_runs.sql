@@ -4,6 +4,15 @@
 -- ============================================================
 -- Tracks ingestion workflow runs, attempt counts, execution metrics,
 -- error summaries, and operational states for data quality audits.
+--
+-- Access posture (see the two follow-up hardenings, which only re-assert this):
+--   authenticated: SELECT restricted to public.profiles.role = 'admin'
+--   service_role : ALL (Python scheduler / ETL writer, BYPASSRLS)
+--   anon         : nothing (table grants revoked by 20260926000002)
+--
+-- IDEMPOTENCY: DROP POLICY IF EXISTS / CREATE TABLE IF NOT EXISTS / CREATE INDEX IF NOT
+-- EXISTS make the file safe to replay for partial-failure recovery.
+-- Under Supabase CLI this file runs once via supabase_migrations history.
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS public.ingestion_runs (
@@ -44,16 +53,26 @@ CREATE INDEX IF NOT EXISTS idx_ingestion_runs_state
 -- Enable Row-Level Security
 ALTER TABLE public.ingestion_runs ENABLE ROW LEVEL SECURITY;
 
--- Read policy: Allow public/authenticated read access for operations console & monitoring
-CREATE POLICY "Allow public read access to ingestion_runs" 
-  ON public.ingestion_runs 
-  FOR SELECT 
-  USING (true);
+-- Read policy: ingestion-run accounting is operator information, so reads are admin-only
+-- (same EXISTS (profiles.role = 'admin') pattern as Step 1.7 data_sources/station_source_link).
+-- It is written directly in its final least-privilege form on purpose: if this file is ever
+-- replayed (partial-failure recovery), it must not re-introduce a world-readable policy.
+-- The follow-up hardenings (20260926000002 grants, pre-phase-4 R5) only re-assert the same
+-- posture, so replaying any of them is a no-op.
+DROP POLICY IF EXISTS "Allow public read access to ingestion_runs" ON public.ingestion_runs;
+DROP POLICY IF EXISTS "ingestion_runs_select_admin" ON public.ingestion_runs;
+CREATE POLICY "ingestion_runs_select_admin" ON public.ingestion_runs
+  FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM public.profiles p
+    WHERE p.id = auth.uid() AND p.role = 'admin'
+  ));
 
--- Write policy: Only service_role can insert/update run records
-CREATE POLICY "Allow service_role write access to ingestion_runs" 
-  ON public.ingestion_runs 
-  FOR ALL 
-  TO service_role 
-  USING (true) 
+-- Write policy: Only service_role can insert/update run records (BYPASSRLS writer)
+DROP POLICY IF EXISTS "Allow service_role write access to ingestion_runs" ON public.ingestion_runs;
+CREATE POLICY "Allow service_role write access to ingestion_runs"
+  ON public.ingestion_runs
+  FOR ALL
+  TO service_role
+  USING (true)
   WITH CHECK (true);
