@@ -348,11 +348,21 @@ class IngestionRunner:
         if self.persistence_service:
             persistence = self.persistence_service
             owns_persistence = False
-        elif dry_run and not self.db_url:
-            persistence = IngestionPersistenceService(None)
+        elif dry_run:
+            if self.db_url:
+                try:
+                    persistence = IngestionPersistenceService(self.db_url)
+                except Exception as conn_err:
+                    logger.warning(
+                        "Dry-run could not connect to database (%s); falling back to offline in-memory persistence service.",
+                        _scrub_secrets(str(conn_err)),
+                    )
+                    persistence = IngestionPersistenceService(None)
+            else:
+                persistence = IngestionPersistenceService(None)
             owns_persistence = True
         else:
-            if not dry_run and not self.db_url:
+            if not self.db_url:
                 raise RuntimeError(
                     "DATABASE_URL is not configured in .env.local or environment. Cannot persist records."
                 )
