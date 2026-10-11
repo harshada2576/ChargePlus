@@ -8,6 +8,39 @@
 **Working tree at campaign start:** only the prior uncommitted `docs/testing/` evidence directory was present.  
 **Release decision:** **CONDITIONAL GO** for a non-production review/staging scope only. This is **not** a production release approval.
 
+> **Addendum 2026-10-11 (emergency release pass, same branch, uncommitted tree):**
+> historical results above are preserved as-is. Current-snapshot verification:
+> `npm test` 134 pass / 1 skip of 135 (exit 0); `npm run typecheck` exit 0;
+> `npm run lint` exit 0; `npm run build` exit 0 (21 routes);
+> `python -m pytest tests/ -q --ignore=tests/test_canonical_postgres_integration.py`
+> 439 passed, 3 skipped (exit 0). Prior counts (126 / 432 / 25 routes) are
+> superseded by these figures. Migration-sequence execution against an isolated
+> PostgreSQL instance remains **BLOCKED — not executed** (Docker prohibited).
+>
+> **Addendum 2026-10-11 (Docker-removal pass):** Docker is no longer a project
+> dependency: the `docker` CI job is removed from `.github/workflows/ci.yml`
+> (native Node/Python jobs unchanged), `Dockerfile`/`.dockerignore` are retained
+> as deployment-only option, and DB-writing tests now fail closed on unverified
+> targets via `tests/db_target_guard.py`. Docker-based evidence rows above
+> remain historical. Migration clean-apply, repeatability, integration suite,
+> and role matrix on current migration text remain **BLOCKED — NOT EXECUTED**;
+> see `supabase/README.md` for the Docker-free verification routes.
+>
+> **Addendum 2026-10-11 (pre-release closure pass):** guard hardened
+> (`tests/db_target_guard.py`: allowlist + `CHARGEPLUS_DISPOSABLE_DB=1` intent +
+> `CHARGEPLUS_DISPOSABLE_PROJECT_REF` match for Supabase hosts; placeholders
+> always refused; errors carry host only, never credentials) with 14
+> deterministic tests (`tests/test_db_target_guard.py`); 9 static migration
+> invariant tests (`tests/test_migration_static_invariants.py`: order, 29+2
+> policy counts, zero analytics/ml policies, RLS enablement, cross-layer FK
+> rule, reference-data grounding, R5 final posture); read-only
+> `supabase/verify_final_state.sql`; 35-case `docs/testing/ROLE_MATRIX.md`
+> (prepared, not executed); `DATABASE_RECOVERY_GUIDE.md` corrected (per-file
+> history, replay limits, backup-first for non-disposable targets).
+> Current safe-suite figures: `npm test` 134 pass / 1 skip of 135 (exit 0);
+> Python 462 passed, 3 skipped, exit 0 (includes 23 new guard/static tests);
+> typecheck/lint/build exit 0 (21 routes).
+
 ## Scope and evidence rules
 
 This report replaces the unavailable `testing_release_certification.md` referenced by the campaign request. Historical claims were not used without current runner evidence. A test is marked PASS only when it executed and passed; unavailable infrastructure is marked BLOCKED. No production load, fault injection, OTP delivery, destructive migration, or production restore was attempted.
@@ -41,6 +74,16 @@ Evidence files are under [`docs/testing/evidence/`](./evidence/):
 | [`dev-deps/after-exit-codes.txt`](./evidence/dev-deps/after-exit-codes.txt) | Verification exit codes: test 126/126 exit 0, typecheck/lint/`npm ls esbuild` exit 0, runtime audit exit 0 |
 | [`dev-deps/after-npm-ci.log`](./evidence/dev-deps/after-npm-ci.log) | Isolated `npm ci` from `package.json`+lockfile; exit 0, override honored (CI contract intact) |
 | [`dev-deps/after-esbuild-override-smoke.log`](./evidence/dev-deps/after-esbuild-override-smoke.log) | Override smoke: `@esbuild-kit/core-utils` `transformSync` and `drizzle-kit --help`; exit 0 |
+| [`database/phase6-summary.txt`](./evidence/database/phase6-summary.txt) | Phase 6 disposable-DB certification summary: identity, bootstrap, schema, matrix, concurrency, recovery, regression; includes harness wipe-attempt history |
+| [`database/historical-wipe-failure-A-migrate-apply.log`](./evidence/database/historical-wipe-failure-A-migrate-apply.log) | Discarded attempt A (22:00:40): wipe exit=3, `DROP TABLE spatial_ref_sys` blocked by postgis; dirty re-apply over leftovers — NOT used for any claim |
+| [`database/historical-wipe-failure-B-clean-cycle1.log`](./evidence/database/historical-wipe-failure-B-clean-cycle1.log) | Discarded attempt B (22:01:58): wipe exit=3, `DROP VIEW geography_columns` blocked by postgis; stubs and step_1_7/1_8/2_10 exit=3 — NOT used for any claim |
+| [`database/migration-apply-cycle1.log`](./evidence/database/migration-apply-cycle1.log) | Clean bootstrap (cycle 1, 22:03:52, after harness fix): wipe exit=0, only extension-owned `spatial_ref_sys` remained, stubs exit=0, 14 migrations exit 0, zero "already exists" notices |
+| [`database/migration-apply-cycle2-repeatability.log`](./evidence/database/migration-apply-cycle2-repeatability.log) | Repeatability (cycle 2, 22:10:55): second full wipe+apply cycle from scratch, identical counts, 0 failures |
+| [`database/schema-verification.log`](./evidence/database/schema-verification.log) | Catalog verification: RLS 30, policies 31 public / 0 warehouse, seeds 3288/96, unique indexes, grants |
+| [`database/matrix-results.log`](./evidence/database/matrix-results.log) | 35/35 PASS: anon/own-row/cross-user/admin/escalation/service_role/SECURITY DEFINER/concurrency/rollback (ran 22:22:48, after cycle 2) |
+| [`database/supabase-db-reset-D1.log`](./evidence/database/supabase-db-reset-D1.log) | Defect D1: `supabase db reset` fails at step_1_7 (legacy-table precondition); manual ordered `psql` apply used instead |
+
+The earlier working notes that recorded a failed `harness_wipe.sql` (`spatial_ref_sys`) describe discarded attempts A and B above, before the wipe script was corrected to exclude extension-owned objects. Both were preserved verbatim for audit; neither contributed to the certified results. The certified evidence is cycles 1 and 2 only. All logs are byte-identical copies (MD5-verified) of the runner output in `%TEMP%\opencode\`.
 
 PowerShell reported some Unix-style test warnings as `NativeCommandError` because stderr was merged into stdout; the runner exit codes in each artifact are authoritative.
 
@@ -50,7 +93,7 @@ PowerShell reported some Unix-style test warnings as `NativeCommandError` becaus
 |---|---:|---:|---|
 | Node test runner (`tests/test_*.mjs`) | 126 tests | 126 | PASS |
 | Python safe suite | 438 collected | 432 | PASS; live PostgreSQL module excluded |
-| PostgreSQL integration module | 6 tests | 6 | PASS, environment-qualified |
+| PostgreSQL integration module | 6 tests | 6 | PASS on verified disposable target (`localhost:54600`) |
 | TypeScript | n/a | n/a | PASS |
 | ESLint | n/a | n/a | PASS |
 | Production build | 25 routes generated | n/a | PASS |
@@ -63,14 +106,14 @@ The Python safe-suite count is lower than collection because `tests/test_canonic
 |---|---|---|---|---|---|---|
 | U-01 application logic | `tests/test_*.mjs` | `npm test` | Local Node runner, mocked dependencies | All tests pass; 126/126 | PASS | `node-test.log` |
 | U-02 ingestion, validation, ETL, maturity | `tests/*.py` except live module | `python -m pytest tests -q --ignore=tests/test_canonical_postgres_integration.py` | Local Python fixtures/fakes | 432 pass | PASS | `python-test.log` |
-| I-01 PostgreSQL persistence and cleanup | `tests/test_canonical_postgres_integration.py` | `python -m pytest tests/test_canonical_postgres_integration.py -q` | Configured `DATABASE_URL`; target not independently verified | 6 pass in 125.50 s | PASS* | `postgres-integration.log`; *not production-qualified |
+| I-01 PostgreSQL persistence and cleanup | `tests/test_canonical_postgres_integration.py` | `python -m pytest tests/test_canonical_postgres_integration.py -q` | Verified disposable local target (`localhost:54600`); cloud `DATABASE_URL` excluded from this phase | 6 pass; supersedes prior unverified-target run | PASS | `evidence/database/phase6-summary.txt` |
 | S-01 server route/build contract | Next production build | `npm run build` | Local production compiler | Build and all 25 routes complete | PASS | `build.log` |
 | E2E-01 anonymous landing | Chrome at `http://localhost:3000/` | Start `npm run dev`, open `/` | Local dev server, real browser | Hero, search links, navigation and pilot content rendered | PASS | `browser-homepage.txt` |
 | E2E-02 anonymous discovery/search/filter/station details | Existing unit/route tests; real browser multi-route run | `npm test`; browser `/explore`, `/search`, `/station/[id]` | Browser run became unreliable during concurrent Next compilation; no stable evidence | Runtime pass not established | BLOCKED | Requires stable server session and isolated browser run |
 | E2E-03 auth states, favorites, reports/reviews, admin | `tests/test_auth_otp.mjs`, `test_favorites.mjs`, `test_reports.mjs`, `test_reviews.mjs`, `test_admin.mjs` | Included in `npm test` | Mocked Supabase/auth | Negative/error mappings pass; real identity flow not exercised | PARTIAL | `node-test.log`; requires disposable auth project |
 | BB-01 API/user-facing negative and boundary behavior | Node route/library tests | `npm test` | Mocked DB and auth failures | Invalid IDs, missing sessions, denied writes reject honestly | PASS | `node-test.log` |
 | WB-01 branch/error/idempotency/retry paths | Python ingestion/warehouse tests | Safe Python command above | Fakes and deterministic fixtures | Error, retry, dry-run, duplicate and maturity branches pass | PASS | `python-test.log` |
-| DB-01 constraints, RLS, rollback, concurrency, migration compatibility | Supabase migrations and live integration | `supabase status`; live module command | Docker/Supabase unavailable; live target unverified | Cannot certify isolated role/RLS/rollback/concurrency | BLOCKED | Docker daemon unavailable; disposable PostgreSQL/Supabase required |
+| DB-01 constraints, RLS, rollback, concurrency, migration compatibility | 14 migrations applied to disposable `supabase_db_supadb` container (PostgreSQL 17.6, port 54600); 35-test role matrix; two-session concurrency; transactional-recovery injection | `psql -v ON_ERROR_STOP=1` ordered apply; role tests via `set_config('request.jwt.claims')` + `SET ROLE`; `python -m pytest tests/test_canonical_postgres_integration.py -q` with `DATABASE_URL=postgresql://postgres:postgres@localhost:54600/postgres` | Disposable local Docker only; cloud `DATABASE_URL` never mutated | Clean bootstrap exit 0 x14 twice (two earlier dirty-wipe attempts discarded and preserved as historical logs); 35/35 matrix PASS; concurrency unique-violation correct; integration 6/6 pass on disposable target | PASS | `evidence/database/`; defect D1 (`supabase db reset` legacy-precondition) documented; repo migrations untouched |
 | SEC-01 JavaScript runtime dependencies | npm audit | `npm audit --omit=dev --json` | Local lockfile, registry advisory data | Expected zero known vulns; actual 0 | PASS | `npm-audit-final.json` |
 | SEC-02 Python dependencies | pip-audit | `pip-audit -r requirements.txt` | Pinned requirements | Expected zero known vulns; actual none | PASS | `pip-audit-final.log` |
 | SEC-03 JavaScript development dependencies | npm audit | `npm audit --json` | Local lockfile; not shipped in production image | Expected zero known vulns; baseline 9 (4 moderate, 5 high) reduced to 5 high (moderates resolved by scoped esbuild override); 5 high have no available upstream fix | PARTIAL / exception required | `npm-audit-all-final.json`, `evidence/dev-deps/after-audit-full.json`; see residual risk |
@@ -138,9 +181,12 @@ These are release-blocking until dependency owners review compatibility and upgr
 1. **Resolved:** runtime JavaScript findings; final `npm audit --omit=dev` is clean.
 2. **Resolved:** Python findings; final `pip-audit -r requirements.txt` is clean.
 3. **Partially resolved:** development-only npm findings reduced from 9 to 5. The 4 moderate `esbuild` findings were fixed with a scoped `overrides` entry (no version downgrades). The 5 high `eslint-config-next`/`braces` findings remain an open exception: no patched `braces` release exists and npm's suggested fix is an incompatible downgrade.
-3. **Environment gap:** Docker/Supabase daemon unavailable, preventing isolated DB/RLS/migration and destructive resilience/backup tests.
+3. **Environment gap (partially resolved):** Docker was unavailable at campaign start; it was started this session and a disposable Supabase PostgreSQL 17.6 container (`supabase_db_supadb`, `localhost:54600`) was provisioned. Migrations, RLS-by-role, concurrency, rollback, and integration tests now have verified-disposable evidence. Backup/restore rehearsal and load testing remain unserved by any authorized target.
 4. **Evidence gap:** real multi-route browser E2E, supported-browser/mobile, and automated accessibility measurements are not certified.
-5. **Evidence qualification:** the live PostgreSQL module passed but used a configured local `DATABASE_URL`; because target identity was not independently verified, it must be repeated against an explicitly disposable database.
+5. **Evidence qualification (resolved):** the live PostgreSQL module previously passed only against an unverified configured `DATABASE_URL`. It has now been re-run and passed (6/6) against the verified disposable container; the prior run is superseded. The cloud project was never mutated.
+6. **Defect D1 — `supabase db reset` fails on clean bootstrap:** `step_1_7` asserts nine legacy public tables exist (`dim_date`, `fact_charging_session`, …) but no migration creates them, so `db reset` aborts with `relation "public.dim_date" does not exist` (SQLSTATE 42P01). Repository migrations were left untouched per scope; a documented harness stub (single-column, zero-row, RLS-disabled tables) supplies the precondition and the ordered `psql` apply then succeeds end-to-end. Repo follow-up: either create the legacy tables in an earlier migration or relax the step_1_7 assertions.
+7. **Defect D2 — step_2_10 policy not idempotent:** `CREATE POLICY "Allow service_role write access to ingestion_runs"` lacks `DROP POLICY IF EXISTS`, so the file is not re-runnable on an existing database (fails with "policy already exists"). Safe under the Supabase CLI once-only history; the harness applies each file exactly once per cycle.
+8. **Defect D3 — RLS-count assertions are order-sensitive:** step_1_7/step_1_8 assert exactly 29 RLS-enabled tables; after step_2_10 adds `ingestion_runs` the correct count is 30. Re-applying step_1_7 out of order (after step_2_10) fails its assertion. Correct for the single ordered bootstrap the CLI enforces; documented for anyone hand-applying out of sequence.
 
 No application assertion was weakened and no application defect was fixed during this evidence campaign.
 
@@ -163,10 +209,21 @@ supabase status
 
 For browser smoke, start `npm run dev`, then open `http://localhost:3000/` in Chrome. Do not point live integration, load, fault-injection, backup, or restore procedures at production.
 
+Phase 6 disposable-DB reproduction (local container only; never substitute the cloud `DATABASE_URL`):
+
+```powershell
+# container: supabase_db_supadb, image public.ecr.aws/supabase/postgres:17.6.1.005, port 54600
+docker exec supabase_db_supadb psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q -f /tmp/mig/harness_wipe.sql
+docker exec supabase_db_supadb psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q -f /tmp/mig/harness_legacy_stubs.sql
+# then apply the 14 files in /tmp/mig (2026*.sql) in filename order, one psql -f each
+$env:DATABASE_URL = 'postgresql://postgres:postgres@localhost:54600/postgres'
+python -m pytest tests/test_canonical_postgres_integration.py -q
+```
+
 ## Prioritized remaining actions
 
 1. Decide and document an approved remediation or exception for the 5 remaining high development-only npm findings (`braces`/`micromatch`/`fast-glob` chain). No patched `braces` release exists yet; revisit when upstream ships one, and do not downgrade Next/ESLint tooling blindly.
-2. Provision a disposable Supabase/PostgreSQL project, verify its project/database identity, and rerun migrations, RLS-by-role, rollback, concurrency, ingestion, and warehouse tests.
+2. ~~Provision a disposable Supabase/PostgreSQL project, verify its identity, and rerun migrations, RLS-by-role, rollback, concurrency, ingestion, and warehouse tests.~~ **Done this campaign** (`supabase_db_supadb` container, 14 migrations, 35/35 matrix, 6/6 integration). Remaining from this item: fix D1 in-repo (legacy-table precondition) and D2 (policy idempotency) so `supabase db reset` works without harness stubs; optionally make step_1_7/1_8 RLS-count assertions order-tolerant (D3).
 3. Run the real browser matrix for anonymous discovery, filters, station details, auth states, favorites, reports/reviews, admin denial, stale/error/empty states, Edge, and mobile viewports.
 4. Add an authorized staging performance harness reporting throughput, error rate, p50/p95/p99 latency, and CPU/memory; run load, stress, spike, endurance, timeout and partial-failure scenarios.
 5. Perform an isolated backup/restore rehearsal and record RPO/RTO.
