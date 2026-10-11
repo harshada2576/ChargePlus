@@ -6,8 +6,6 @@ import { useSession } from "@/state/SessionProvider";
 import { Button } from "./Button";
 import { StarFilledIcon, StarIcon } from "./Icon";
 import { useToast } from "./Toast";
-import { supabase } from "@/lib/supabase";
-import { submitReview } from "@/lib/reviews";
 
 export function StationReviewForm({
   stationId,
@@ -18,34 +16,25 @@ export function StationReviewForm({
 }) {
   const { t } = useI18n();
   const { show } = useToast();
-  const { user } = useSession();
+  const { addReview } = useSession();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function submit() {
-    if (submitting) return;
+  function submit() {
     setError(null);
     if (rating < 1) {
       setError("Required");
       return;
     }
-    if (!user) {
-      setError(t("auth.prompt.body"));
-      return;
-    }
     setSubmitting(true);
-    try {
-      // Success only after the server confirms (insert or own-row update).
-      await submitReview(supabase, { userId: user.id, stationId, rating, comment });
+    setTimeout(() => {
+      addReview({ stationId, rating, comment: comment.trim() });
       show(t("station.review.success"));
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not submit. Try again.");
-    } finally {
       setSubmitting(false);
-    }
+      onClose();
+    }, 400);
   }
 
   return (

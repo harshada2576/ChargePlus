@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { cx } from "@/lib/util";
 
@@ -16,7 +16,6 @@ type Props = {
   /** Show the drag handle (only for bottom placement) */
   showHandle?: boolean;
   className?: string;
-  ariaLabel?: string;
 };
 
 export function BottomSheet({
@@ -27,57 +26,21 @@ export function BottomSheet({
   placement = "bottom",
   showHandle = true,
   className,
-  ariaLabel,
 }: Props) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const titleId = useId();
-  // Kept in a ref so an inline onClose closure cannot re-arm the focus effect
-  // on every parent render (that would yank focus back to the first control).
-  const onCloseRef = useRef(onClose);
-
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  });
 
   useEffect(() => {
     if (!open) return;
-    const previousFocus = document.activeElement as HTMLElement | null;
-    const focusable = () =>
-      ref.current?.querySelector<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      );
-    requestAnimationFrame(() => (focusable() ?? ref.current)?.focus());
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onCloseRef.current();
-      if (e.key !== "Tab" || !ref.current) return;
-      const items = Array.from(
-        ref.current.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        )
-      );
-      if (items.length === 0) {
-        e.preventDefault();
-        ref.current.focus();
-        return;
-      }
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
+      if (e.key === "Escape") onClose();
     }
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
-      previousFocus?.focus();
     };
-  }, [open]);
+  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -86,8 +49,7 @@ export function BottomSheet({
       className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
       role="dialog"
       aria-modal="true"
-      aria-labelledby={title ? titleId : undefined}
-      aria-label={!title ? ariaLabel : undefined}
+      aria-labelledby={title ? "bottom-sheet-title" : undefined}
     >
       <button
         type="button"
@@ -98,7 +60,6 @@ export function BottomSheet({
       />
       <div
         ref={ref}
-        tabIndex={-1}
         className={cx(
           "relative z-10 w-full bg-white shadow-sheet",
           placement === "bottom"
@@ -114,7 +75,7 @@ export function BottomSheet({
         )}
         {title && (
           <div className="flex items-center justify-between gap-3 px-5 pt-3 pb-2 sm:pt-4">
-            <h2 id={titleId} className="text-[16px] font-semibold text-ink-900">
+            <h2 id="bottom-sheet-title" className="text-[16px] font-semibold text-ink-900">
               {title}
             </h2>
           </div>

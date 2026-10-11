@@ -22,9 +22,9 @@ export function SiteFooter() {
         </div>
 
         <div>
-          <h2 className="text-[12px] font-semibold uppercase tracking-wider text-ink-700">
+          <h4 className="text-[12px] font-semibold uppercase tracking-wider text-ink-700">
             ChargePlus
-          </h2>
+          </h4>
           <ul className="mt-3 space-y-2 text-[13.5px]">
             <li>
               <Link href="/explore" className="hover:text-coral-700">
@@ -50,9 +50,9 @@ export function SiteFooter() {
         </div>
 
         <div>
-          <h2 className="text-[12px] font-semibold uppercase tracking-wider text-ink-700">
+          <h4 className="text-[12px] font-semibold uppercase tracking-wider text-ink-700">
             Legal
-          </h2>
+          </h4>
           <ul className="mt-3 space-y-2 text-[13.5px]">
             <li>
               <Link href="/privacy" className="hover:text-coral-700">
@@ -68,9 +68,9 @@ export function SiteFooter() {
         </div>
 
         <div>
-          <h2 className="text-[12px] font-semibold uppercase tracking-wider text-ink-700">
+          <h4 className="text-[12px] font-semibold uppercase tracking-wider text-ink-700">
             Language
-          </h2>
+          </h4>
           <div className="mt-3">
             <LanguageSwitcher />
           </div>

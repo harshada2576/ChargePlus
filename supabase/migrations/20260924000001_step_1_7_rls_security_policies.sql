@@ -14,9 +14,6 @@
 --   public.dim_time, public.dim_vehicle, public.dim_weather,
 --   public.fact_charging_session, public.fact_station_daily_agg
 --   (UNTOTUCHED — RLS remains disabled, zero policies, zero changes).
---   These are PRE-EXISTING objects: no migration in this repository creates them, so on a
---   fresh local bootstrap they do not exist at all. Section 4 therefore asserts their state
---   only when they are present, and never creates placeholder tables for them.
 --
 -- Defense-in-Depth Security Strategy:
 --   1. Schema & Table Grants: Revoke truncate/trigger/references; revoke client
@@ -350,11 +347,6 @@ CREATE POLICY "alerts_delete_own" ON public.alerts
 -- ============================================================================
 -- 4. ATOMIC SELF-VERIFYING ASSERTIONS BLOCK
 -- ============================================================================
--- Assertions are scoped BY TABLE NAME (never "count everything in the schema") for two
--- reasons: (a) later migrations that add tables/policies (step 2.10 ingestion_runs) can
--- never make this step fail when re-applied out of order, and (b) the frozen legacy
--- public tables are pre-existing objects that NO migration creates, so a fresh local
--- bootstrap simply has none of them. No placeholder legacy tables are created here.
 DO $$
 DECLARE
   v_rls_count INTEGER;
@@ -367,33 +359,19 @@ DECLARE
   v_dim_time_count INTEGER;
   v_stations_count INTEGER;
   v_legacy_count INTEGER;
-  v_legacy_present INTEGER;
-  v_legacy_name TEXT;
 BEGIN
-  -- 1. Assert all 29 tables this step owns have RLS enabled (11 public + 12 analytics + 6 ml)
+  -- 1. Assert exactly 29 active tables have RLS enabled (11 public + 12 analytics + 6 ml)
   SELECT count(*) INTO v_rls_count
   FROM pg_class c
   JOIN pg_namespace n ON n.oid = c.relnamespace
-  WHERE c.relrowsecurity = true
-    AND (
-      (n.nspname = 'public' AND c.relname IN (
-         'profiles', 'operators', 'stations', 'connectors', 'data_sources',
-         'station_source_link', 'station_observations', 'user_reports', 'reviews',
-         'favorites', 'alerts'))
-      OR (n.nspname = 'analytics' AND c.relname IN (
-         'dim_station', 'dim_operator', 'dim_location', 'dim_connector', 'dim_date',
-         'dim_time', 'dim_source', 'dim_weather', 'fact_station_observation',
-         'fact_user_report', 'fact_review', 'fact_station_daily'))
-      OR (n.nspname = 'ml' AND c.relname IN (
-         'features', 'datasets', 'experiments', 'model_versions', 'metrics',
-         'prediction_runs'))
-    );
+  WHERE n.nspname IN ('public', 'analytics', 'ml')
+    AND c.relkind = 'r'
+    AND c.relrowsecurity = true;
   IF v_rls_count <> 29 THEN
     RAISE EXCEPTION 'CRITICAL: Active RLS table count mismatch (expected 29, got %)', v_rls_count;
   END IF;
 
-  -- 2. Assert zero legacy tables have RLS enabled (legacy public dim_*/fact_* remain untouched).
-  -- Catalog-only query: correct whether or not the legacy tables exist in this database.
+  -- 2. Assert zero legacy tables have RLS enabled (legacy public dim_*/fact_* remain untouched)
   SELECT count(*) INTO v_legacy_rls_count
   FROM pg_class c
   JOIN pg_namespace n ON n.oid = c.relnamespace
@@ -407,16 +385,10 @@ BEGIN
     RAISE EXCEPTION 'CRITICAL: Legacy tables RLS violation (expected 0, got %)', v_legacy_rls_count;
   END IF;
 
-  -- 3. Assert exactly 29 policies on the 11 public operational tables this step owns.
-  -- (Scoped by table name so later public tables such as ingestion_runs do not shift it.)
+  -- 3. Assert exactly 29 policies created in public schema
   SELECT count(*) INTO v_policy_count
   FROM pg_policies
-  WHERE schemaname = 'public'
-    AND tablename IN (
-      'profiles', 'operators', 'stations', 'connectors', 'data_sources',
-      'station_source_link', 'station_observations', 'user_reports', 'reviews',
-      'favorites', 'alerts'
-    );
+  WHERE schemaname = 'public';
   IF v_policy_count <> 29 THEN
     RAISE EXCEPTION 'CRITICAL: Public policy count mismatch (expected 29, got %)', v_policy_count;
   END IF;
@@ -459,34 +431,11 @@ BEGIN
     RAISE EXCEPTION 'CRITICAL: Data insertion detected on public.stations (count=%)', v_stations_count;
   END IF;
 
-  -- 8. Assert legacy tables remain at 0 rows.
-  -- These are pre-existing objects that no migration creates, so a fresh bootstrap has none
-  -- of them; the row-count check runs only for the tables that are actually present and
-  -- skips (with a notice) the ones that are absent. It never fabricates placeholder tables.
-  SELECT count(*) INTO v_legacy_present
-  FROM information_schema.tables
-  WHERE table_schema = 'public'
-    AND table_name IN (
-      'dim_date', 'dim_location', 'dim_station', 'dim_tariff', 'dim_time',
-      'dim_vehicle', 'dim_weather', 'fact_charging_session', 'fact_station_daily_agg'
-    );
-  IF v_legacy_present < 9 THEN
-    RAISE NOTICE 'Step 1.7: % of 9 frozen legacy public tables exist in this database; row-count assertions below run only for the tables present (fresh bootstrap has none)', v_legacy_present;
+  -- 8. Assert legacy tables remain at 0 rows
+  SELECT count(*) INTO v_legacy_count FROM public.dim_date;
+  IF v_legacy_count <> 0 THEN
+    RAISE EXCEPTION 'CRITICAL: Data mutation on legacy public.dim_date (count=%)', v_legacy_count;
   END IF;
-
-  FOREACH v_legacy_name IN ARRAY ARRAY[
-    'dim_date', 'dim_location', 'dim_station', 'dim_tariff', 'dim_time',
-    'dim_vehicle', 'dim_weather', 'fact_charging_session', 'fact_station_daily_agg'
-  ]
-  LOOP
-    IF EXISTS (SELECT 1 FROM information_schema.tables
-               WHERE table_schema = 'public' AND table_name = v_legacy_name) THEN
-      EXECUTE format('SELECT count(*) FROM public.%I', v_legacy_name) INTO v_legacy_count;
-      IF v_legacy_count <> 0 THEN
-        RAISE EXCEPTION 'CRITICAL: Data mutation on legacy public.% (row count %)', v_legacy_name, v_legacy_count;
-      END IF;
-    END IF;
-  END LOOP;
 END $$;
 
 COMMIT;

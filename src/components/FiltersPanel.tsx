@@ -5,7 +5,6 @@ import { BottomSheet } from "./BottomSheet";
 import { Button } from "./Button";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { ConnectorType, FiltersState } from "@/data/types";
-import { DEFAULT_EXPLORE_FILTERS } from "@/data/exploreQuery";
 import { cx } from "@/lib/util";
 
 const ALL_CONNECTORS: ConnectorType[] = ["CCS2", "CCS1", "CHAdeMO", "Type 2", "Type 1", "Bharat AC001"];
@@ -26,6 +25,11 @@ export function FiltersPanel({ open, onClose, value, onChange }: Props) {
   const { t } = useI18n();
   const [draft, setDraft] = useState<FiltersState>(value);
 
+  // sync draft when opening
+  function syncOpen() {
+    setDraft(value);
+  }
+
   function toggleConnector(c: ConnectorType) {
     setDraft((d) => ({
       ...d,
@@ -36,7 +40,18 @@ export function FiltersPanel({ open, onClose, value, onChange }: Props) {
   }
 
   function reset() {
-    setDraft({ ...DEFAULT_EXPLORE_FILTERS });
+    setDraft({
+      distanceKm: 0,
+      connectorTypes: [],
+      minPowerKw: 0,
+      openNow: false,
+      availableOnly: false,
+      fastCharging: false,
+      freeOnly: false,
+      lessBusy: false,
+      maxPrice: 0,
+      minChargers: 0,
+    });
   }
 
   function apply() {

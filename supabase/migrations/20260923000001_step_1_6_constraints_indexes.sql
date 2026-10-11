@@ -423,33 +423,16 @@ $$;
 DO $$
 DECLARE
   v_seeded_row_count INTEGER;
-  v_table_exists INTEGER;
 BEGIN
-  -- 2. Assert NO rows were inserted into operational or ML tables (DDL-only verification).
-  -- Skip if the table does not exist (e.g. if a prior migration was not applied).
-  SELECT count(*) INTO v_table_exists
-  FROM information_schema.tables
-  WHERE table_schema = 'public' AND table_name = 'stations';
-  IF v_table_exists > 0 THEN
-    SELECT count(*) INTO v_seeded_row_count FROM public.stations;
-    IF v_seeded_row_count > 0 THEN
-      RAISE EXCEPTION 'CRITICAL: Data seeding violation — public.stations contains rows';
-    END IF;
-  ELSE
-    RAISE NOTICE 'Step 1.6: public.stations does not exist; skipping seeded row assertion';
+  -- 2. Assert NO rows were inserted into operational or ML tables (DDL-only verification)
+  SELECT count(*) INTO v_seeded_row_count FROM public.stations;
+  IF v_seeded_row_count > 0 THEN
+    RAISE EXCEPTION 'CRITICAL: Data seeding violation — public.stations contains rows';
   END IF;
 
-  -- Check ml.features only if the ml schema and table exist.
-  SELECT count(*) INTO v_table_exists
-  FROM information_schema.tables
-  WHERE table_schema = 'ml' AND table_name = 'features';
-  IF v_table_exists > 0 THEN
-    SELECT count(*) INTO v_seeded_row_count FROM ml.features;
-    IF v_seeded_row_count > 0 THEN
-      RAISE EXCEPTION 'CRITICAL: Data seeding violation — ml.features contains rows';
-    END IF;
-  ELSE
-    RAISE NOTICE 'Step 1.6: ml.features does not exist; skipping seeded row assertion';
+  SELECT count(*) INTO v_seeded_row_count FROM ml.features;
+  IF v_seeded_row_count > 0 THEN
+    RAISE EXCEPTION 'CRITICAL: Data seeding violation — ml.features contains rows';
   END IF;
 END $$;
 

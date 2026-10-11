@@ -58,7 +58,6 @@ const en: Translations = {
   "common.sort.recommended": "Recommended",
   "common.filters": "Filters",
   "common.resultsCount": "{count} stations",
-  "common.skipToContent": "Skip to main content",
 
   "nav.home": "Home",
   "nav.explore": "Explore",
@@ -253,8 +252,6 @@ const en: Translations = {
   "errors.network.body": "Check your connection and try again.",
   "errors.station.title": "We couldn't load this station.",
   "errors.station.body": "Please try again.",
-  "errors.map.title": "The map couldn't be loaded.",
-  "errors.map.body": "You can still browse the station list below.",
 
   "footer.find": "Find charging stations",
   "footer.about": "About",
@@ -513,8 +510,6 @@ const hi: Translations = merge(en, {
   "errors.network.body": "कनेक्शन जांचें और फिर कोशिश करें।",
   "errors.station.title": "यह स्टेशन लोड नहीं हो सका।",
   "errors.station.body": "कृपया फिर कोशिश करें।",
-  "errors.map.title": "मैप लोड नहीं हो सका।",
-  "errors.map.body": "आप अभी भी नीचे स्टेशन की सूची देख सकते हैं।",
 
   "footer.find": "चार्जिंग स्टेशन खोजें",
   "footer.about": "हमारे बारे में",
@@ -776,8 +771,6 @@ const mr: Translations = merge(en, {
   "errors.network.body": "कनेक्शन तपासा आणि पुन्हा प्रयत्न करा.",
   "errors.station.title": "हे स्टेशन लोड करता आले नाही.",
   "errors.station.body": "कृपया पुन्हा प्रयत्न करा.",
-  "errors.map.title": "नकाशा लोड करता आला नाही.",
-  "errors.map.body": "तुम्ही अजूनही खाली स्थानकांची यादी पाहू शकता.",
 
   "footer.find": "चार्जिंग स्टेशन शोधा",
   "footer.about": "आमच्याबद्दल",

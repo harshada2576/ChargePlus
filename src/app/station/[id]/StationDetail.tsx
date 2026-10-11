@@ -5,9 +5,10 @@ import type { Station } from "@/data/types";
 import {
   getAvailableChargers,
   getMaxPowerKw,
+  getReviewsForStation,
   getTotalChargers,
+  REVIEWS,
 } from "@/data/stations";
-import type { ApprovedReview } from "@/lib/reviews";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/state/SessionProvider";
 import { useToast } from "@/components/Toast";
@@ -24,12 +25,12 @@ import {
   AlertTriangleIcon,
 } from "@/components/Icon";
 import { Link } from "@/i18n/Link";
-import { cx, externalMapUrl, isValidCoordinate } from "@/lib/util";
+import { cx } from "@/lib/util";
 import { StationReportForm } from "@/components/StationReportForm";
 import { StationReviewForm } from "@/components/StationReviewForm";
 import { MapLibreMap } from "@/components/MapLibreMap";
 
-export function StationDetail({ station, reviews }: { station: Station; reviews: ApprovedReview[] }) {
+export function StationDetail({ station }: { station: Station }) {
   const { t } = useI18n();
   const { isAuthed, toggleSaved, isSaved } = useSession();
   const { show: showToast } = useToast();
@@ -40,24 +41,14 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
   const [authPromptOpen, setAuthPromptOpen] = useState<null | "review" | "report" | "save">(null);
 
   const saved = isSaved(station.id);
-  // Directions (in-app sheet and external map links) require real coordinates.
-  // Without them the actions are omitted; area/address text still renders.
-  const hasCoords = isValidCoordinate(station.lat, station.lng);
+  const reviews = getReviewsForStation(station.id);
 
-  async function handleSave() {
+  function handleSave() {
     if (!isAuthed) {
       setAuthPromptOpen("save");
       return;
     }
-    const res = await toggleSaved(station.id);
-    if (res === "login-required") {
-      setAuthPromptOpen("save");
-      return;
-    }
-    if (res === "error") {
-      showToast(t("errors.network.body"));
-      return;
-    }
+    toggleSaved(station.id);
     showToast(saved ? t("common.removed") : "Station saved");
   }
 
@@ -119,19 +110,17 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
         </header>
 
         {/* Navigate CTA */}
-        {hasCoords && (
-          <div className="mt-5">
-            <Button
-              block
-              size="lg"
-              variant="primary"
-              iconLeft={<NavIcon size={18} />}
-              onClick={() => setNavOpen(true)}
-            >
-              {t("station.navigate")}
-            </Button>
-          </div>
-        )}
+        <div className="mt-5">
+          <Button
+            block
+            size="lg"
+            variant="primary"
+            iconLeft={<NavIcon size={18} />}
+            onClick={() => setNavOpen(true)}
+          >
+            {t("station.navigate")}
+          </Button>
+        </div>
 
         {/* Location Mini-Map */}
         <section className="mt-6 overflow-hidden rounded-[20px] border border-ink-100 bg-white p-4 shadow-card">
@@ -140,26 +129,22 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
               <h2 className="text-[15px] font-semibold text-ink-900">{station.area}</h2>
               <p className="truncate text-[12.5px] text-ink-600">{station.address}</p>
             </div>
-            {hasCoords && (
-              <button
-                onClick={() => setNavOpen(true)}
-                className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-coral-700 hover:underline"
-              >
-                <NavIcon size={14} />
-                {t("station.navigate")}
-              </button>
-            )}
+            <button
+              onClick={() => setNavOpen(true)}
+              className="inline-flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-coral-700 hover:underline"
+            >
+              <NavIcon size={14} />
+              {t("station.navigate")}
+            </button>
           </div>
-          {hasCoords && (
-            <div className="h-44 w-full overflow-hidden rounded-[14px]">
-              <MapLibreMap
-                stations={[station]}
-                singleStation={station}
-                showControls={false}
-                interactive={true}
-              />
-            </div>
-          )}
+          <div className="h-44 w-full overflow-hidden rounded-[14px]">
+            <MapLibreMap
+              stations={[station]}
+              singleStation={station}
+              showControls={false}
+              interactive={true}
+            />
+          </div>
         </section>
 
         {/* Charging now */}
@@ -171,11 +156,11 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
             <StatusBadge status={station.status} />
           </div>
           <p className="mt-2 text-[13.5px] text-ink-700">
-            {station.status === "unknown" || getAvailableChargers(station) == null || getTotalChargers(station) == null
+            {station.status === "unknown"
               ? t("station.availabilityUnavailable")
               : t("station.availableOf", {
-                  available: getAvailableChargers(station)!,
-                  total: getTotalChargers(station)!,
+                  available: getAvailableChargers(station),
+                  total: getTotalChargers(station),
                 })}
           </p>
           <p className="mt-1 text-[12.5px] text-ink-500">
@@ -201,11 +186,11 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
                 <div>
                   <p className="text-[14.5px] font-semibold text-ink-900">{c.type}</p>
                   <p className="mt-0.5 inline-flex items-center gap-1.5 text-[12.5px] text-ink-600">
-                    <BoltIcon size={12} /> {c.powerKw != null ? `${c.powerKw} kW` : "—"}
+                    <BoltIcon size={12} /> {c.powerKw} kW
                   </p>
                 </div>
                 <p className="text-[13px] text-ink-700">
-                  {station.status === "unknown" || c.available == null
+                  {station.status === "unknown"
                     ? t("station.availabilityUnavailable")
                     : c.available > 0
                     ? `${c.available} ${t("common.open")}`
@@ -220,13 +205,13 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
         <section className="mt-4 rounded-[20px] border border-ink-100 bg-white p-5 shadow-card">
           <h2 className="text-[15px] font-semibold text-ink-900">{t("station.price")}</h2>
           <p className="mt-2 text-[20px] font-semibold text-ink-900">
-            {station.isFree === true
+            {station.isFree
               ? "Free"
               : station.pricePerKwh == null
               ? t("station.priceUnavailable")
               : t("station.perKwh", { price: station.pricePerKwh })}
           </p>
-          {station.isFree === true && (
+          {station.isFree && (
             <p className="mt-1 text-[12.5px] text-ink-600">Public charging — please park considerately.</p>
           )}
         </section>
@@ -267,7 +252,7 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
           <div className="flex items-center justify-between">
             <h2 className="text-[15px] font-semibold text-ink-900">{t("station.reviews.title")}</h2>
             <Button variant="secondary" size="sm" onClick={handleReview}>
-              {t("station.review.submit")}
+              {t("common.save")}
             </Button>
           </div>
           {reviews.length === 0 ? (
@@ -287,17 +272,9 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
                       </span>
                     ))}
                   </div>
-                  {r.comment && (
-                    <p className="mt-2 text-[13.5px] text-ink-800">{r.comment}</p>
-                  )}
+                  <p className="mt-2 text-[13.5px] text-ink-800">{r.comment}</p>
                   <p className="mt-1.5 text-[12px] text-ink-500">
-                    {r.author}
-                    {r.createdAt &&
-                      ` · ${new Date(r.createdAt).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}`}
+                    {r.author} · {formatMinutesAgo(r.minutesAgo)}
                   </p>
                 </li>
               ))}
@@ -314,29 +291,27 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
       </div>
 
       {/* Navigate sheet */}
-      {hasCoords && (
-        <BottomSheet
-          open={navOpen}
-          onClose={() => setNavOpen(false)}
-          title={t("station.navigateWith")}
-          placement="bottom"
-        >
-          <ul className="space-y-2">
-            <NavApp
-              label={t("station.navigate.google")}
-              onClick={() => openExternalMap("google", station)}
-            />
-            <NavApp
-              label={t("station.navigate.apple")}
-              onClick={() => openExternalMap("apple", station)}
-            />
-            <NavApp
-              label={t("station.navigate.other")}
-              onClick={() => openExternalMap("geo", station)}
-            />
-          </ul>
-        </BottomSheet>
-      )}
+      <BottomSheet
+        open={navOpen}
+        onClose={() => setNavOpen(false)}
+        title={t("station.navigateWith")}
+        placement="bottom"
+      >
+        <ul className="space-y-2">
+          <NavApp
+            label={t("station.navigate.google")}
+            onClick={() => openExternalMap("google", station)}
+          />
+          <NavApp
+            label={t("station.navigate.apple")}
+            onClick={() => openExternalMap("apple", station)}
+          />
+          <NavApp
+            label={t("station.navigate.other")}
+            onClick={() => openExternalMap("geo", station)}
+          />
+        </ul>
+      </BottomSheet>
 
       {/* Report */}
       <BottomSheet
@@ -378,9 +353,11 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
           >
             {t("common.notNow")}
           </Button>
-          <Button variant="primary" size="md" block href="/login" className="flex-1">
-            {t("common.continue")}
-          </Button>
+          <Link href="/login" className="block flex-1">
+            <Button variant="primary" size="md" block>
+              {t("common.continue")}
+            </Button>
+          </Link>
         </div>
       </Modal>
     </div>
@@ -401,8 +378,17 @@ function NavApp({ label, onClick }: { label: string; onClick: () => void }) {
   );
 }
 
+function formatMinutesAgo(min: number): string {
+  if (min < 60) return `${Math.round(min / 60)} min ago`;
+  if (min < 60 * 24) return `${Math.round(min / 60)} hr ago`;
+  return `${Math.round(min / (60 * 24))} d ago`;
+}
+
 function openExternalMap(kind: "google" | "apple" | "geo", s: Station) {
-  const url = externalMapUrl(kind, s);
-  if (!url) return;
+  const { lat, lng } = s;
+  let url = "";
+  if (kind === "google") url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+  else if (kind === "apple") url = `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
+  else url = `geo:${lat},${lng}?q=${encodeURIComponent(s.name)}`;
   window.open(url, "_blank", "noopener,noreferrer");
 }

@@ -7,8 +7,6 @@ import { useSession } from "@/state/SessionProvider";
 import { useToast } from "@/components/Toast";
 import { Button } from "@/components/Button";
 import { cx } from "@/lib/util";
-import { supabase } from "@/lib/supabase";
-import { submitReport } from "@/lib/reports";
 
 export function StationReportForm({
   stationId,
@@ -18,7 +16,7 @@ export function StationReportForm({
   onClose: () => void;
 }) {
   const { t } = useI18n();
-  const { user } = useSession();
+  const { addReport } = useSession();
   const { show } = useToast();
 
   const [status, setStatus] = useState<Exclude<StationStatus, "unknown"> | null>(null);
@@ -59,30 +57,20 @@ export function StationReportForm({
     );
   }
 
-  async function submit() {
-    if (!status || submitting) return;
-    if (!user) {
-      setDone("error");
-      return;
-    }
+  function submit() {
+    if (!status) return;
     setSubmitting(true);
-    try {
-      // Success is shown only after the server confirms the insert.
-      // The row enters moderation as pending and never mutates station facts.
-      await submitReport(supabase, {
-        userId: user.id,
-        stationId,
-        status,
-        queue,
-        note: note.trim() || undefined,
-      });
-      setDone("success");
-      show("Report submitted");
-    } catch {
-      setDone("error");
-    } finally {
-      setSubmitting(false);
-    }
+    setTimeout(() => {
+      try {
+        addReport({ stationId, status, queue, note: note.trim() || undefined });
+        setDone("success");
+        show("Report submitted");
+      } catch {
+        setDone("error");
+      } finally {
+        setSubmitting(false);
+      }
+    }, 400);
   }
 
   const statuses: { value: Exclude<StationStatus, "unknown">; label: string; color: string }[] = [
