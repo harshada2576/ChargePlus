@@ -8,7 +8,7 @@ import { ChevronLeftIcon } from "@/components/Icon";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { supabase } from "@/lib/supabase";
-import { normalizeCode, sendOtp, verifyOtpCode } from "@/lib/auth";
+import { isDevOrDemoAuth, normalizeCode, sendOtp, verifyOtpCode } from "@/lib/auth";
 
 type Pending = { contact: string; kind: "phone" | "email" };
 
@@ -74,11 +74,13 @@ export function VerifyClient() {
     setSubmitting(true);
     setError(null);
     try {
-      // Real Supabase OTP verification; the session is established by the
-      // client and picked up via onAuthStateChange. Any code is rejected
-      // unless the provider confirms it — invalid codes never sign in.
+      // In dev/demo mode the in-process simulator verifies the code without a
+      // live Supabase call.  In production isDevOrDemoAuth() is false and the
+      // real provider is used; onAuthStateChange establishes the session.
       normalizeCode(digits.join(""));
-      await verifyOtpCode(supabase, pending.kind, pending.contact, digits.join(""));
+      await verifyOtpCode(supabase, pending.kind, pending.contact, digits.join(""), {
+        useSimulatorInDev: isDevOrDemoAuth(),
+      });
       sessionStorage.removeItem("chargeplus:otp:pending");
       show("Signed in");
       router.push("/profile");
@@ -93,7 +95,9 @@ export function VerifyClient() {
     if (!pending || resendIn > 0) return;
     setResendIn(30);
     try {
-      await sendOtp(supabase, pending.kind, pending.contact);
+      await sendOtp(supabase, pending.kind, pending.contact, {
+        useSimulatorInDev: isDevOrDemoAuth(),
+      });
       show("Code resent");
     } catch (err) {
       setError(err instanceof Error ? err.message : t("auth.otp.invalid"));

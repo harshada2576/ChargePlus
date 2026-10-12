@@ -1,6 +1,15 @@
 export type StationStatus = "available" | "busy" | "broken" | "unknown";
 export type QueueLevel = "none" | "short" | "medium" | "long";
 
+export type SourceCategory =
+  | "verified_live"
+  | "recent_observation"
+  | "historical"
+  | "simulated"
+  | "unknown";
+
+export type FreshnessState = "fresh" | "aging" | "stale" | "unknown";
+
 export type ConnectorType =
   | "CCS2"
   | "CCS1"
@@ -19,6 +28,16 @@ export type Connector = {
   total: number | null;
   /** number currently available; null if unknown */
   available: number | null;
+  /** underlying observation id tracing this connector status */
+  latestObservationId?: string | null;
+  /** observation time when status was captured */
+  latestObservedAt?: string | null;
+  /** observation age in minutes */
+  minutesSinceObservation?: number | null;
+  /** temporal freshness classification */
+  freshnessState?: FreshnessState;
+  /** provenance source category */
+  sourceCategory?: SourceCategory;
 };
 
 export type Station = {
@@ -48,6 +67,18 @@ export type Station = {
   reviewCount: number;
   /** Suggested busy windows — local hours like "7 PM – 9 PM" or empty */
   busyWindows: string[];
+  /** underlying station-level observation id */
+  latestObservationId?: string | null;
+  /** observation event timestamp (ISO-8601) */
+  latestObservedAt?: string | null;
+  /** provenance feed or upstream provider identifier */
+  sourceName?: string | null;
+  /** authoritative source category */
+  sourceCategory?: SourceCategory;
+  /** temporal freshness state */
+  freshnessState?: FreshnessState;
+  /** true when record originates from simulated demo / seed dataset */
+  isSimulated?: boolean;
 };
 
 export type Review = {

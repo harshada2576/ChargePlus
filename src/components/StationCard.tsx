@@ -118,6 +118,16 @@ export function StationCard({
               : t("station.perKwh", { price: station.pricePerKwh })}
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            {station.sourceCategory === "simulated" && (
+              <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10.5px] font-medium text-amber-800 border border-amber-200">
+                Demo
+              </span>
+            )}
+            {station.sourceCategory === "historical" && (
+              <span className="rounded bg-ink-100 px-1.5 py-0.5 text-[10.5px] font-medium text-ink-700">
+                Historical
+              </span>
+            )}
             <StatusBadge status={station.status} size="sm" />
             <span className="text-[11.5px] text-ink-500">
               {station.minutesSinceUpdate == null

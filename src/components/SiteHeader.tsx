@@ -27,9 +27,20 @@ export function SiteHeader() {
         >
           {t("common.skipToContent")}
         </a>
-        <Link href="/" className="shrink-0" aria-label={t("brand.name")}>
-          <BrandMark size="md" />
-        </Link>
+        <div className="flex items-center gap-2.5">
+          <Link href="/" className="shrink-0" aria-label={t("brand.name")}>
+            <BrandMark size="md" />
+          </Link>
+          {process.env.NEXT_PUBLIC_DEMO_MODE === "true" && (
+            <span
+              title="Running in Offline Demo Mode with synthetic seed data"
+              className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-900 shadow-xs"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+              DEMO MODE
+            </span>
+          )}
+        </div>
 
         {/* Desktop nav */}
         <nav aria-label="Primary" className="hidden flex-1 items-center justify-center md:flex">

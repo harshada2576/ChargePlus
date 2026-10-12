@@ -9,6 +9,10 @@ import {
   sendOtp,
   verifyOtpCode,
   signOut,
+  simulateDevSendOtp,
+  simulateDevVerifyOtp,
+  clearSimulatedSessions,
+  CONTROLLED_TEST_ACCOUNTS,
   AuthValidationError,
   AuthProviderError,
 } from "../src/lib/auth.ts";
@@ -127,4 +131,35 @@ test("signOut delegates to the provider", async () => {
   const calls = [];
   await signOut(mockAuth({ calls }));
   assert.deepEqual(calls, [["signout", null]]);
+});
+
+test("dev/demo simulator verifies controlled test accounts with rate/attempt limits", () => {
+  clearSimulatedSessions();
+  // 1. Controlled driver test account verifies with testCode
+  const contact = simulateDevSendOtp("phone", "9876543210");
+  assert.equal(contact.contact, CONTROLLED_TEST_ACCOUNTS.driverPhone);
+
+  // Wrong code fails and increments attempts
+  assert.throws(
+    () => simulateDevVerifyOtp("phone", "9876543210", "999999"),
+    /That code didn't work/
+  );
+
+  // Correct code succeeds and returns driver user id
+  const verified = simulateDevVerifyOtp("phone", "9876543210", "123456");
+  assert.equal(verified.userId, CONTROLLED_TEST_ACCOUNTS.driverUserId);
+  assert.equal(verified.contact.contact, "+919876543210");
+
+  // 2. Attempt limit protection (>3 attempts locks out session)
+  simulateDevSendOtp("email", "driver@chargeplus.internal");
+  assert.throws(() => simulateDevVerifyOtp("email", "driver@chargeplus.internal", "000001"), /That code didn't work/);
+  assert.throws(() => simulateDevVerifyOtp("email", "driver@chargeplus.internal", "000002"), /That code didn't work/);
+  assert.throws(() => simulateDevVerifyOtp("email", "driver@chargeplus.internal", "000003"), /That code didn't work/);
+  assert.throws(() => simulateDevVerifyOtp("email", "driver@chargeplus.internal", "000004"), /Too many failed verification attempts/);
+
+  // 3. Admin test account resolves admin user id
+  const adminContact = simulateDevSendOtp("phone", "9876543219");
+  assert.equal(adminContact.contact, CONTROLLED_TEST_ACCOUNTS.adminPhone);
+  const adminVerified = simulateDevVerifyOtp("phone", "9876543219", "123456");
+  assert.equal(adminVerified.userId, CONTROLLED_TEST_ACCOUNTS.adminUserId);
 });

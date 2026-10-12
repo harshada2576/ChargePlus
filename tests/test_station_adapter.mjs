@@ -6,6 +6,8 @@ import {
   deriveHours,
   deriveArea,
   deriveAddress,
+  deriveFreshnessState,
+  deriveSourceCategory,
   mapDbConnectorToConnector,
   mapDbStationToStation,
   normalizeConnectorType,
@@ -202,4 +204,76 @@ test("parseStationCoord does not coerce missing values to 0", () => {
   assert.equal(Number.isNaN(parseStationCoord("")), true);
   assert.equal(parseStationCoord(19.076), 19.076);
   assert.equal(parseStationCoord("72.877"), 72.877);
+});
+
+test("deriveFreshnessState enforces operational decay boundaries", () => {
+  assert.equal(deriveFreshnessState(null), "unknown");
+  assert.equal(deriveFreshnessState(undefined), "unknown");
+  assert.equal(deriveFreshnessState(-5), "unknown");
+  assert.equal(deriveFreshnessState(0), "fresh");
+  assert.equal(deriveFreshnessState(30), "fresh");
+  assert.equal(deriveFreshnessState(31), "aging");
+  assert.equal(deriveFreshnessState(120), "aging");
+  assert.equal(deriveFreshnessState(121), "stale");
+  assert.equal(deriveFreshnessState(1440), "stale");
+});
+
+test("deriveSourceCategory partitions source provenance correctly", () => {
+  // Simulated flag takes absolute precedence
+  assert.equal(deriveSourceCategory({ isSimulated: true, hasObservation: true, freshness: "fresh" }), "simulated");
+  // Missing observation resolves to unknown
+  assert.equal(deriveSourceCategory({ hasObservation: false, freshness: "unknown" }), "unknown");
+  // Stale observation is classified as historical evidence
+  assert.equal(deriveSourceCategory({ hasObservation: true, freshness: "stale" }), "historical");
+  // Verified live feed (CPO/OCPI/OICP)
+  assert.equal(deriveSourceCategory({ hasObservation: true, freshness: "fresh", sourceName: "Tata Power OCPI Feed" }), "verified_live");
+  // Recent observation from other sources
+  assert.equal(deriveSourceCategory({ hasObservation: true, freshness: "fresh", sourceName: "Community Driver Report" }), "recent_observation");
+});
+
+test("deriveStationStatus marks stale observations as unknown to prevent projecting false availability", () => {
+  // Fresh observation is available
+  assert.equal(deriveStationStatus("available", "operational", 15), "available");
+  // Stale observation (> 120 min) cannot claim live availability
+  assert.equal(deriveStationStatus("available", "operational", 180), "unknown");
+  // But a broken or out_of_service station remains broken even if stale
+  assert.equal(deriveStationStatus("broken", "operational", 180), "unknown");
+  assert.equal(deriveStationStatus("available", "out_of_service", 180), "broken");
+});
+
+test("mapDbConnectorToConnector and mapDbStationToStation retain observation IDs and provenance", () => {
+  const conn = mapDbConnectorToConnector({
+    id: "c-101",
+    station_id: "s-101",
+    connector_type: "CCS2",
+    power_kw: 60,
+    total_quantity: 2,
+    latest_available_connectors: 1,
+    latest_observation_id: "obs-abc-123",
+    latest_observed_at: "2026-10-12T12:00:00Z",
+    minutes_since_observation: 15,
+    source_name: "Live OCPI",
+  });
+
+  assert.equal(conn.latestObservationId, "obs-abc-123");
+  assert.equal(conn.latestObservedAt, "2026-10-12T12:00:00Z");
+  assert.equal(conn.freshnessState, "fresh");
+  assert.equal(conn.sourceCategory, "verified_live");
+
+  const st = mapDbStationToStation({
+    id: "s-101",
+    name: "Hub Station",
+    latitude: 19.1,
+    longitude: 72.8,
+    latest_observation_id: "obs-station-root",
+    latest_observed_at: "2026-10-12T12:00:00Z",
+    minutes_since_observation: 15,
+    source_name: "Live OCPI",
+    latest_availability_status: "available",
+  }, [conn]);
+
+  assert.equal(st.latestObservationId, "obs-station-root");
+  assert.equal(st.sourceCategory, "verified_live");
+  assert.equal(st.freshnessState, "fresh");
+  assert.equal(st.connectors[0].latestObservationId, "obs-abc-123");
 });

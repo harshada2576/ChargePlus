@@ -30,10 +30,10 @@
     "improvement_pct": 3.38
   },
   "feature_importance": {
-    "hour": 0.9009,
-    "day_of_week": 0.0318,
-    "is_weekend": 0.0092,
-    "total_connectors": 0.0174,
-    "is_commercial_hub": 0.0407
+    "hour": 0.8999,
+    "day_of_week": 0.032,
+    "is_weekend": 0.0079,
+    "total_connectors": 0.0159,
+    "is_commercial_hub": 0.0442
   }
 }

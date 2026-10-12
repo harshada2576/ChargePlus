@@ -168,7 +168,24 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
             <h2 className="text-[15px] font-semibold text-ink-900">
               {t("station.chargingNow")}
             </h2>
-            <StatusBadge status={station.status} />
+            <div className="flex items-center gap-2">
+              {station.sourceCategory === "simulated" && (
+                <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-amber-800 border border-amber-200">
+                  Simulated Demo
+                </span>
+              )}
+              {station.sourceCategory === "verified_live" && (
+                <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-800 border border-emerald-200">
+                  Verified Live
+                </span>
+              )}
+              {station.sourceCategory === "historical" && (
+                <span className="inline-flex items-center rounded-full bg-ink-100 px-2.5 py-0.5 text-[11px] font-medium text-ink-700 border border-ink-200">
+                  Historical
+                </span>
+              )}
+              <StatusBadge status={station.status} />
+            </div>
           </div>
           <p className="mt-2 text-[13.5px] text-ink-700">
             {station.status === "unknown" || getAvailableChargers(station) == null || getTotalChargers(station) == null
@@ -178,15 +195,37 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
                   total: getTotalChargers(station)!,
                 })}
           </p>
-          <p className="mt-1 text-[12.5px] text-ink-500">
-            {station.minutesSinceUpdate == null
-              ? t("station.availabilityUnavailable")
-              : station.minutesSinceUpdate < 1
-              ? t("station.updatedJustNow")
-              : station.minutesSinceUpdate < 60
-              ? t("station.updatedMinutesAgo", { n: station.minutesSinceUpdate })
-              : t("station.updatedEarlier")}
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-ink-500">
+            <span>
+              {station.minutesSinceUpdate == null
+                ? t("station.availabilityUnavailable")
+                : station.minutesSinceUpdate < 1
+                ? t("station.updatedJustNow")
+                : station.minutesSinceUpdate < 60
+                ? t("station.updatedMinutesAgo", { n: station.minutesSinceUpdate })
+                : t("station.updatedEarlier")}
+            </span>
+            {station.sourceName && (
+              <>
+                <span>•</span>
+                <span>Source: {station.sourceName}</span>
+              </>
+            )}
+            {station.latestObservationId && (
+              <>
+                <span>•</span>
+                <span className="font-mono text-[11px]">Obs #{station.latestObservationId.slice(0, 8)}</span>
+              </>
+            )}
+            {station.freshnessState && station.freshnessState !== "unknown" && (
+              <span className={`rounded px-1.5 py-0.2 text-[10.5px] font-medium ${
+                station.freshnessState === "fresh" ? "bg-emerald-50 text-emerald-700" :
+                station.freshnessState === "aging" ? "bg-amber-50 text-amber-700" : "bg-ink-100 text-ink-600"
+              }`}>
+                {station.freshnessState.toUpperCase()}
+              </span>
+            )}
+          </div>
         </section>
 
         {/* Chargers */}
@@ -199,10 +238,29 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
                 className="flex items-center justify-between gap-3 rounded-[14px] border border-ink-100 bg-ink-50/40 px-4 py-3"
               >
                 <div>
-                  <p className="text-[14.5px] font-semibold text-ink-900">{c.type}</p>
-                  <p className="mt-0.5 inline-flex items-center gap-1.5 text-[12.5px] text-ink-600">
-                    <BoltIcon size={12} /> {c.powerKw != null ? `${c.powerKw} kW` : "—"}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[14.5px] font-semibold text-ink-900">{c.type}</p>
+                    {c.sourceCategory === "simulated" && (
+                      <span className="rounded bg-amber-50 px-1.5 text-[10px] font-medium text-amber-700 border border-amber-200">
+                        Demo
+                      </span>
+                    )}
+                    {c.freshnessState === "stale" && (
+                      <span className="rounded bg-ink-100 px-1.5 text-[10px] font-medium text-ink-600">
+                        Stale
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-2 text-[12px] text-ink-600">
+                    <span className="inline-flex items-center gap-1">
+                      <BoltIcon size={12} /> {c.powerKw != null ? `${c.powerKw} kW` : "—"}
+                    </span>
+                    {c.latestObservationId && (
+                      <span className="font-mono text-[10.5px] text-ink-500">
+                        Obs #{c.latestObservationId.slice(0, 8)}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <p className="text-[13px] text-ink-700">
                   {station.status === "unknown" || c.available == null

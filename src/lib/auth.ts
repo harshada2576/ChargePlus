@@ -100,10 +100,126 @@ export function safeRedirect(target: string | null | undefined, fallback = "/pro
   return target;
 }
 
+export const CONTROLLED_TEST_ACCOUNTS = {
+  driverPhone: "+919876543210",
+  adminPhone: "+919876543219",
+  driverEmail: "driver@chargeplus.internal",
+  adminEmail: "admin@chargeplus.internal",
+  testCode: "123456",
+  driverUserId: "00000000-0000-0000-0000-000000000001",
+  adminUserId: "00000000-0000-0000-0000-000000000002",
+} as const;
+
+export function isDevOrDemoAuth(): boolean {
+  if (process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_DEMO_MODE !== "true") {
+    return false;
+  }
+  return (
+    process.env.NODE_ENV !== "production" ||
+    process.env.NEXT_PUBLIC_DEMO_MODE === "true"
+  );
+}
+
+type SimulatedSession = {
+  contact: string;
+  kind: OtpKind;
+  code: string;
+  expiresAt: number;
+  attempts: number;
+};
+
+const simulatedSessions = new Map<string, SimulatedSession>();
+
+export function clearSimulatedSessions(): void {
+  simulatedSessions.clear();
+}
+
+/**
+ * Local development and demo OTP dispatch simulator.
+ * Strictly prohibited and disabled in production.
+ */
+export function simulateDevSendOtp(kind: OtpKind, raw: string | null | undefined): AuthContact {
+  if (!isDevOrDemoAuth()) {
+    throw new AuthProviderError("Simulation is disabled in production environments.");
+  }
+  const contact = normalizeContact(kind, raw);
+  simulatedSessions.set(contact.contact, {
+    contact: contact.contact,
+    kind: contact.kind,
+    code: CONTROLLED_TEST_ACCOUNTS.testCode,
+    expiresAt: Date.now() + 5 * 60 * 1000,
+    attempts: 0,
+  });
+  return contact;
+}
+
+/**
+ * Local development and demo OTP verification simulator with expiry and attempt limiting.
+ * Strictly prohibited and disabled in production.
+ */
+export function simulateDevVerifyOtp(
+  kind: OtpKind,
+  rawContact: string | null | undefined,
+  rawCode: string | null | undefined
+): { userId: string; contact: AuthContact } {
+  if (!isDevOrDemoAuth()) {
+    throw new AuthProviderError("Simulation is disabled in production environments.");
+  }
+  const contact = normalizeContact(kind, rawContact);
+  const code = normalizeCode(rawCode);
+
+  const session = simulatedSessions.get(contact.contact);
+  if (!session) {
+    if (
+      (contact.contact === CONTROLLED_TEST_ACCOUNTS.driverPhone ||
+        contact.contact === CONTROLLED_TEST_ACCOUNTS.driverEmail ||
+        contact.contact === CONTROLLED_TEST_ACCOUNTS.adminPhone ||
+        contact.contact === CONTROLLED_TEST_ACCOUNTS.adminEmail) &&
+      code === CONTROLLED_TEST_ACCOUNTS.testCode
+    ) {
+      const isAdm =
+        contact.contact === CONTROLLED_TEST_ACCOUNTS.adminPhone ||
+        contact.contact === CONTROLLED_TEST_ACCOUNTS.adminEmail;
+      return {
+        userId: isAdm ? CONTROLLED_TEST_ACCOUNTS.adminUserId : CONTROLLED_TEST_ACCOUNTS.driverUserId,
+        contact,
+      };
+    }
+    throw new AuthProviderError("No active verification code found for this contact. Request a new code.");
+  }
+
+  if (Date.now() > session.expiresAt) {
+    simulatedSessions.delete(contact.contact);
+    throw new AuthProviderError("Verification code has expired. Request a new code.");
+  }
+
+  session.attempts += 1;
+  if (session.attempts > 3) {
+    simulatedSessions.delete(contact.contact);
+    throw new AuthProviderError("Too many failed verification attempts. Request a new code.");
+  }
+
+  if (code !== session.code) {
+    throw new AuthProviderError("That code didn't work. Check it and try again.");
+  }
+
+  simulatedSessions.delete(contact.contact);
+  const isAdm =
+    contact.contact === CONTROLLED_TEST_ACCOUNTS.adminPhone ||
+    contact.contact === CONTROLLED_TEST_ACCOUNTS.adminEmail;
+
+  return {
+    userId: isAdm ? CONTROLLED_TEST_ACCOUNTS.adminUserId : CONTROLLED_TEST_ACCOUNTS.driverUserId,
+    contact,
+  };
+}
+
 function safeMessage(err: { message?: string } | null | undefined, fallback: string): string {
   const msg = err?.message?.trim();
   if (!msg) return fallback;
-  // Provider messages are user-safe (no tokens); cap length defensively.
+  if (/sms.*provider.*not.*configured|phone.*provider.*not.*enabled/i.test(msg)) {
+    return "SMS provider is not configured. Please sign in using Email OTP or configure a supported SMS provider.";
+  }
   return msg.length > 200 ? fallback : msg;
 }
 
@@ -111,9 +227,15 @@ function safeMessage(err: { message?: string } | null | undefined, fallback: str
 export async function sendOtp(
   client: AuthClient,
   kind: OtpKind,
-  raw: string | null | undefined
+  raw: string | null | undefined,
+  options?: { useSimulatorInDev?: boolean }
 ): Promise<AuthContact> {
   const normalized = normalizeContact(kind, raw);
+
+  if (options?.useSimulatorInDev && isDevOrDemoAuth()) {
+    return simulateDevSendOtp(kind, raw);
+  }
+
   const { error } =
     normalized.kind === "phone"
       ? await client.auth.signInWithOtp({ phone: normalized.contact })
@@ -129,10 +251,16 @@ export async function verifyOtpCode(
   client: AuthClient,
   kind: OtpKind,
   rawContact: string | null | undefined,
-  rawCode: string | null | undefined
+  rawCode: string | null | undefined,
+  options?: { useSimulatorInDev?: boolean }
 ): Promise<{ userId: string; contact: AuthContact }> {
   const contact = normalizeContact(kind, rawContact);
   const token = normalizeCode(rawCode);
+
+  if (options?.useSimulatorInDev && isDevOrDemoAuth()) {
+    return simulateDevVerifyOtp(kind, rawContact, rawCode);
+  }
+
   const { data, error } =
     contact.kind === "phone"
       ? await client.auth.verifyOtp({ phone: contact.contact, token, type: "sms" })

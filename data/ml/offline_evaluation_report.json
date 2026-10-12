@@ -1,0 +1,237 @@
+{
+  "metadata": {
+    "generated_at": "2026-10-12T17:05:57.502610+00:00",
+    "pipeline": "backend.ml.demand_mining",
+    "is_synthetic_demonstration": true,
+    "is_production_forecast": false,
+    "production_gate_status": "COLD",
+    "production_gate_policy": "backend.ml.gates.DEFAULT_GATE_CONFIG (Fail-Closed: 0 real warehouse events)"
+  },
+  "dataset_provenance": {
+    "source_stations": "data/canonical_stations.json",
+    "source_observations": "data/observations.json",
+    "station_count": 12,
+    "observation_count": 17280,
+    "synthetic_generator": "backend/ingestion/seed_observations.py",
+    "data_limitations": "Synthetic Poisson/Gaussian simulated occupancy. Not validated against Indian CPO live hardware."
+  },
+  "evaluations": {
+    "legacy_random_split_reproduced": {
+      "description": "Reproduced historical benchmark with random train_test_split and global baseline lookup",
+      "notes": "Subject to temporal shuffle leakage across observation dates and global target leakage in baseline lookup",
+      "metrics": {
+        "baseline_mae": 0.2655,
+        "baseline_rmse": 0.3186,
+        "rf_mae": 0.2565,
+        "rf_rmse": 0.3133,
+        "r2_score": 0.4105,
+        "improvement_pct": 3.38
+      }
+    },
+    "honest_chronological_split": {
+      "description": "Strict 80% train / 20% test split ordered by timestamp with train-only baseline estimation",
+      "train_records": 13824,
+      "test_records": 3456,
+      "metrics": {
+        "baseline_mae": 0.2632,
+        "baseline_rmse": 0.3177,
+        "rf_mae": 0.2562,
+        "rf_rmse": 0.3139,
+        "r2_score": 0.3956,
+        "improvement_pct": 2.66
+      }
+    }
+  },
+  "clusters": [
+    {
+      "cluster_id": 0,
+      "station_count": 5,
+      "avg_demand_score": 69.37847222222221,
+      "avg_lat": 19.05222,
+      "avg_lng": 72.8806
+    },
+    {
+      "cluster_id": 1,
+      "station_count": 3,
+      "avg_demand_score": 59.6412037037037,
+      "avg_lat": 19.111433333333334,
+      "avg_lng": 72.87773333333332
+    },
+    {
+      "cluster_id": 2,
+      "station_count": 4,
+      "avg_demand_score": 77.52170138888889,
+      "avg_lat": 19.111175,
+      "avg_lng": 72.8814
+    }
+  ],
+  "feature_importance": {
+    "hour": 0.8999,
+    "day_of_week": 0.032,
+    "is_weekend": 0.0079,
+    "total_connectors": 0.0159,
+    "is_commercial_hub": 0.0442
+  },
+  "sample_predictions_vs_actual": [
+    {
+      "station_id": "5b4146cf-bd4b-5a8f-bdd3-5fafc26d0180",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 0.0,
+      "predicted_occupancy": 0.1983,
+      "absolute_error": 0.1983
+    },
+    {
+      "station_id": "65237036-1835-522e-a1bd-706b6048604b",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 0.5,
+      "predicted_occupancy": 0.1983,
+      "absolute_error": 0.3017
+    },
+    {
+      "station_id": "65237036-1835-522e-a1bd-706b6048604b",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 0.0,
+      "predicted_occupancy": 0.1983,
+      "absolute_error": 0.1983
+    },
+    {
+      "station_id": "2dc5087b-8e5b-55f6-b0be-c11814029d9a",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 0.5,
+      "predicted_occupancy": 0.1983,
+      "absolute_error": 0.3017
+    },
+    {
+      "station_id": "2dc5087b-8e5b-55f6-b0be-c11814029d9a",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 0.0,
+      "predicted_occupancy": 0.1983,
+      "absolute_error": 0.1983
+    },
+    {
+      "station_id": "5b219150-6902-54b1-8885-e728654e7891",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 0.5,
+      "predicted_occupancy": 0.1983,
+      "absolute_error": 0.3017
+    },
+    {
+      "station_id": "5b219150-6902-54b1-8885-e728654e7891",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 0.0,
+      "predicted_occupancy": 0.1983,
+      "absolute_error": 0.1983
+    },
+    {
+      "station_id": "9b16fcc6-31eb-5c05-8dea-56e416da6fcf",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 1.0,
+      "predicted_occupancy": 0.2835,
+      "absolute_error": 0.7165
+    },
+    {
+      "station_id": "9b16fcc6-31eb-5c05-8dea-56e416da6fcf",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 0.0,
+      "predicted_occupancy": 0.1983,
+      "absolute_error": 0.1983
+    },
+    {
+      "station_id": "424fb45f-00b5-57c7-8c1a-faec13076b75",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 0.0,
+      "predicted_occupancy": 0.2835,
+      "absolute_error": 0.2835
+    },
+    {
+      "station_id": "424fb45f-00b5-57c7-8c1a-faec13076b75",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 0.5,
+      "predicted_occupancy": 0.1983,
+      "absolute_error": 0.3017
+    },
+    {
+      "station_id": "5b4146cf-bd4b-5a8f-bdd3-5fafc26d0180",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 0.5,
+      "predicted_occupancy": 0.1983,
+      "absolute_error": 0.3017
+    },
+    {
+      "station_id": "f898aaeb-c112-54b2-b4d1-7039fed8093c",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 0.0,
+      "predicted_occupancy": 0.1983,
+      "absolute_error": 0.1983
+    },
+    {
+      "station_id": "649f973e-3c76-5620-b36d-99a7ff89102a",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 0.5,
+      "predicted_occupancy": 0.3039,
+      "absolute_error": 0.1961
+    },
+    {
+      "station_id": "649f973e-3c76-5620-b36d-99a7ff89102a",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 0.5,
+      "predicted_occupancy": 0.3039,
+      "absolute_error": 0.1961
+    },
+    {
+      "station_id": "f9dcb735-42a8-57b2-9718-df18dc9c0084",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 0.0,
+      "predicted_occupancy": 0.1961,
+      "absolute_error": 0.1961
+    },
+    {
+      "station_id": "f9dcb735-42a8-57b2-9718-df18dc9c0084",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 0.0,
+      "predicted_occupancy": 0.1983,
+      "absolute_error": 0.1983
+    },
+    {
+      "station_id": "1d483d3b-273b-5932-8370-328841bea34d",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 0.5,
+      "predicted_occupancy": 0.3039,
+      "absolute_error": 0.1961
+    },
+    {
+      "station_id": "f898aaeb-c112-54b2-b4d1-7039fed8093c",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 0.0,
+      "predicted_occupancy": 0.1983,
+      "absolute_error": 0.1983
+    },
+    {
+      "station_id": "fa6f0dfa-73a9-5b82-be87-5e18c15daca8",
+      "hour": 0,
+      "day_of_week": 4,
+      "actual_occupancy": 1.0,
+      "predicted_occupancy": 0.1805,
+      "absolute_error": 0.8195
+    }
+  ]
+}
