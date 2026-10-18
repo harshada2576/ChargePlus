@@ -232,7 +232,12 @@ export function AdminDashboard() {
       <main className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
         {/* KPI Strip — every value is measured; unmeasured phases show unavailable */}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-          <KpiCard label="Network Stations" value={String(stations.length)} sub={`${stations.filter((s) => s.status === "available").length} Available`} status="good" />
+          <KpiCard
+            label="Network Stations"
+            value={String(stations.length)}
+            sub={`${stations.filter((s) => !s.isSimulated).length} Live · ${stations.filter((s) => s.isSimulated).length} Demo (${stations.filter((s) => s.status === "available").length} Avail)`}
+            status="good"
+          />
           <KpiCard label="Pending Reports" value={String(pendingReports.length)} sub="Awaiting moderation" status={pendingReports.length > 0 ? "warn" : "good"} />
           <KpiCard label="Reviews Approved" value={approvedCount == null ? "—" : String(approvedCount)} sub="Published to drivers" status="neutral" />
           <KpiCard
@@ -241,7 +246,12 @@ export function AdminDashboard() {
             sub={warehouse ? (warehouse.observations > 0 ? "stations observed" : "No observations yet") : "Warehouse loading…"}
             status="neutral"
           />
-          <KpiCard label="Latest Ingestion" value={runs[0]?.state ?? "—"} sub={runs[0] ? `${runs[0].sourceName} · ${runs[0].scope}` : "No runs recorded"} status={runs[0]?.state === "FAILED" ? "warn" : "neutral"} />
+          <KpiCard
+            label="Latest Ingestion"
+            value={runs[0]?.state ?? "—"}
+            sub={runs[0] ? `${runs[0].sourceName} · ${runs[0].scope}${runs[0].isSimulated ? " (Demo)" : ""}` : "No runs recorded"}
+            status={runs[0]?.state === "FAILED" ? "warn" : "neutral"}
+          />
           <KpiCard label="Model Status" value="—" sub="No model deployed" status="neutral" />
         </section>
         {error && (
@@ -292,6 +302,7 @@ export function AdminDashboard() {
                     <th className="px-4 py-2.5">ID / Name</th>
                     <th className="px-4 py-2.5">Operator</th>
                     <th className="px-4 py-2.5">Area</th>
+                    <th className="px-4 py-2.5">Provenance</th>
                     <th className="px-4 py-2.5">Status</th>
                     <th className="px-4 py-2.5">Connectors</th>
                     <th className="px-4 py-2.5 text-right">Coordinates</th>
@@ -305,6 +316,17 @@ export function AdminDashboard() {
                       </td>
                       <td className="px-4 py-3 text-slate-400">{s.operator}</td>
                       <td className="px-4 py-3">{s.area}</td>
+                      <td className="px-4 py-3">
+                        {s.isSimulated ? (
+                          <span className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                            Demo
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            Live
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium capitalize ${
                           s.status === "available"
@@ -495,6 +517,7 @@ export function AdminDashboard() {
                       status={run.state === "SUCCEEDED" ? "Healthy" : run.state === "FAILED" ? "Failed" : run.state}
                       lag={run.durationSeconds != null ? `${run.durationSeconds}s run` : "—"}
                       rate={`${run.recordsAccepted} accepted / ${run.recordsFetched} fetched`}
+                      isSimulated={run.isSimulated}
                     />
                   ))
                 )}
@@ -703,17 +726,24 @@ function IngestionRow({
   status,
   lag,
   rate,
+  isSimulated,
 }: {
   name: string;
   status: string;
   lag: string;
   rate: string;
+  isSimulated?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/50 px-3 py-2.5 text-xs font-mono">
       <div className="flex items-center gap-2">
         <span className={`h-2 w-2 rounded-full ${status === "Healthy" ? "bg-emerald-400" : "bg-slate-600"}`} />
         <span className="text-slate-200">{name}</span>
+        {isSimulated && (
+          <span className="rounded bg-amber-500/20 px-1.5 py-0.2 text-[10px] text-amber-400 border border-amber-500/30">
+            DEMO RUN
+          </span>
+        )}
       </div>
       <div className="flex items-center gap-4 text-slate-400">
         <span>Lag: {lag}</span>

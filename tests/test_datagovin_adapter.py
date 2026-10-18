@@ -202,11 +202,14 @@ class TestDataGovInAdapter:
     # --- credential errors ---
 
     def test_23_fetch_raw_without_api_key_raises_credential_error(self):
-        adapter_no_key = DataGovInAdapter(api_key=None, resource_id="r1")
-        # Remove env var influence
+        # Remove env var influence BEFORE constructing: __init__ captures
+        # DATAGOVIN_API_KEY at construction time (and IngestionRunner
+        # load_dotenv(".env.local") may have injected a placeholder value
+        # when other test files ran first in the same process).
         import os
         env_backup = os.environ.pop("DATAGOVIN_API_KEY", None)
         try:
+            adapter_no_key = DataGovInAdapter(api_key=None, resource_id="r1")
             with pytest.raises(DataGovInCredentialError, match="API key required"):
                 adapter_no_key.fetch_raw()
         finally:
@@ -214,10 +217,11 @@ class TestDataGovInAdapter:
                 os.environ["DATAGOVIN_API_KEY"] = env_backup
 
     def test_24_fetch_raw_without_resource_id_raises_credential_error(self):
-        adapter_no_res = DataGovInAdapter(api_key="key", resource_id=None)
+        # Same construction-before-pop ordering guard as test_23.
         import os
         env_backup = os.environ.pop("DATAGOVIN_RESOURCE_ID", None)
         try:
+            adapter_no_res = DataGovInAdapter(api_key="key", resource_id=None)
             with pytest.raises(DataGovInCredentialError, match="resource_id not configured"):
                 adapter_no_res.fetch_raw()
         finally:

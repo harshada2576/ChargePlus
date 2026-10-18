@@ -1,0 +1,2066 @@
+{
+  "tables": [
+    {
+      "table_name": "alerts",
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()"
+        },
+        {
+          "column_name": "user_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "station_id",
+          "data_type": "uuid",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "alert_type",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "params",
+          "data_type": "jsonb",
+          "is_nullable": "NO",
+          "column_default": "'{}'::jsonb"
+        },
+        {
+          "column_name": "threshold_value",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "is_enabled",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "true"
+        },
+        {
+          "column_name": "last_triggered_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "station_id",
+          "ref_table": "stations",
+          "ref_column": "id"
+        },
+        {
+          "column_name": "user_id",
+          "ref_table": "profiles",
+          "ref_column": "id"
+        }
+      ],
+      "check_constraints": [
+        "CHECK ((alert_type = ANY (ARRAY['station_available'::text, 'station_status_change'::text, 'congestion_threshold'::text, 'nearby_station_change'::text])))",
+        "CHECK ((jsonb_typeof(params) = 'object'::text))",
+        "CHECK (((threshold_value IS NULL) OR (threshold_value >= (0)::numeric)))"
+      ]
+    },
+    {
+      "table_name": "connectors",
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()"
+        },
+        {
+          "column_name": "station_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "connector_type",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "charging_standard",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "power_kw",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "quantity",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "pricing_type",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "price_per_kwh",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "price_per_session",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "currency",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'INR'::text"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        },
+        {
+          "column_name": "price_estimate_per_kwh",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "price_estimate_raw",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "price_estimate_source",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "station_id",
+          "ref_table": "stations",
+          "ref_column": "id"
+        }
+      ],
+      "check_constraints": [
+        "CHECK ((connector_type = ANY (ARRAY['CCS2'::text, 'CCS1'::text, 'CHAdeMO'::text, 'Type 2'::text, 'Type 1'::text, 'GB/T'::text, 'Bharat AC001'::text, 'Bharat DC001'::text])))",
+        "CHECK (((power_kw IS NULL) OR (power_kw > (0)::numeric)))",
+        "CHECK (((char_length(currency) >= 1) AND (char_length(currency) <= 10)))",
+        "CHECK (((price_estimate_per_kwh IS NULL) OR ((price_estimate_per_kwh > (0)::numeric) AND (price_estimate_per_kwh <= (500)::numeric))))",
+        "CHECK (((price_estimate_raw IS NULL) OR (char_length(price_estimate_raw) <= 500)))",
+        "CHECK (((price_estimate_source IS NULL) OR (price_estimate_source = 'ocm_usage_cost'::text)))",
+        "CHECK (((price_per_kwh IS NULL) OR (price_per_kwh >= (0)::numeric)))",
+        "CHECK (((price_per_session IS NULL) OR (price_per_session >= (0)::numeric)))",
+        "CHECK ((quantity > 0))"
+      ]
+    },
+    {
+      "table_name": "data_sources",
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()"
+        },
+        {
+          "column_name": "name",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "source_type",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "base_url",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "source_priority",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "100"
+        },
+        {
+          "column_name": "is_active",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "true"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [],
+      "check_constraints": [
+        "CHECK (((char_length(name) >= 1) AND (char_length(name) <= 120)))",
+        "CHECK (((char_length(source_type) >= 1) AND (char_length(source_type) <= 120)))"
+      ]
+    },
+    {
+      "table_name": "dim_date",
+      "columns": [
+        {
+          "column_name": "date_key",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "full_date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "day_of_week",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "day_name",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "month",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "month_name",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "quarter",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "year",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "is_weekend",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "is_holiday",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": "false"
+        },
+        {
+          "column_name": "season",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      ],
+      "primary_key": [
+        "date_key",
+        "date_key"
+      ],
+      "foreign_keys": [],
+      "check_constraints": [
+        "CHECK (((day_of_week >= 1) AND (day_of_week <= 7)))",
+        "CHECK (((month >= 1) AND (month <= 12)))",
+        "CHECK (((quarter >= 1) AND (quarter <= 4)))"
+      ]
+    },
+    {
+      "table_name": "dim_location",
+      "columns": [
+        {
+          "column_name": "location_key",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('dim_location_location_key_seq'::regclass)"
+        },
+        {
+          "column_name": "location_id",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "city",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "zone_name",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "area_type",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "latitude",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "longitude",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "grid_substation_id",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      ],
+      "primary_key": [
+        "location_key",
+        "location_key"
+      ],
+      "foreign_keys": [],
+      "check_constraints": [
+        "CHECK (((area_type)::text = ANY ((ARRAY['Residential'::character varying, 'Commercial'::character varying, 'Highway'::character varying, 'Workplace'::character varying, 'Airport'::character varying, 'Transit Hub'::character varying])::text[])))"
+      ]
+    },
+    {
+      "table_name": "dim_station",
+      "columns": [
+        {
+          "column_name": "station_key",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('dim_station_station_key_seq'::regclass)"
+        },
+        {
+          "column_name": "station_id",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "station_name",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "operator",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "charger_type",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "num_ports",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "max_power_kw",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "installation_date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "effective_start_date",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": "CURRENT_DATE"
+        },
+        {
+          "column_name": "effective_end_date",
+          "data_type": "date",
+          "is_nullable": "YES",
+          "column_default": "'9999-12-31'::date"
+        },
+        {
+          "column_name": "is_current",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "true"
+        }
+      ],
+      "primary_key": [
+        "station_key",
+        "station_key"
+      ],
+      "foreign_keys": [],
+      "check_constraints": [
+        "CHECK (((charger_type)::text = ANY ((ARRAY['AC Level 2'::character varying, 'DC Fast Charger'::character varying, 'Ultra-Fast HPC'::character varying])::text[])))",
+        "CHECK ((max_power_kw > (0)::numeric))",
+        "CHECK ((num_ports > 0))"
+      ]
+    },
+    {
+      "table_name": "dim_tariff",
+      "columns": [
+        {
+          "column_name": "tariff_key",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('dim_tariff_tariff_key_seq'::regclass)"
+        },
+        {
+          "column_name": "tariff_id",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "tariff_name",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "tier_type",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "rate_per_kwh",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      ],
+      "primary_key": [
+        "tariff_key"
+      ],
+      "foreign_keys": [],
+      "check_constraints": [
+        "CHECK ((rate_per_kwh >= (0)::numeric))",
+        "CHECK (((tier_type)::text = ANY ((ARRAY['Off-Peak'::character varying, 'Standard'::character varying, 'Peak'::character varying, 'Critical Surge'::character varying])::text[])))"
+      ]
+    },
+    {
+      "table_name": "dim_time",
+      "columns": [
+        {
+          "column_name": "time_key",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "hour",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "minute",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "time_slot",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "is_peak_hours",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      ],
+      "primary_key": [
+        "time_key",
+        "time_key"
+      ],
+      "foreign_keys": [],
+      "check_constraints": [
+        "CHECK (((hour >= 0) AND (hour <= 23)))",
+        "CHECK (((minute >= 0) AND (minute <= 59)))"
+      ]
+    },
+    {
+      "table_name": "dim_vehicle",
+      "columns": [
+        {
+          "column_name": "vehicle_key",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('dim_vehicle_vehicle_key_seq'::regclass)"
+        },
+        {
+          "column_name": "vehicle_id",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "make",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "model",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "vehicle_type",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "battery_capacity_kwh",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "max_charge_rate_kw",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      ],
+      "primary_key": [
+        "vehicle_key"
+      ],
+      "foreign_keys": [],
+      "check_constraints": [
+        "CHECK ((battery_capacity_kwh > (0)::numeric))",
+        "CHECK ((max_charge_rate_kw > (0)::numeric))",
+        "CHECK (((vehicle_type)::text = ANY ((ARRAY['2-Wheeler'::character varying, '3-Wheeler'::character varying, 'Passenger Sedan/SUV'::character varying, 'Commercial Fleet/Bus'::character varying])::text[])))"
+      ]
+    },
+    {
+      "table_name": "dim_weather",
+      "columns": [
+        {
+          "column_name": "weather_key",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('dim_weather_weather_key_seq'::regclass)"
+        },
+        {
+          "column_name": "weather_id",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "temperature_celsius",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "humidity_pct",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "rainfall_mm",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": "0.0"
+        },
+        {
+          "column_name": "weather_condition",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      ],
+      "primary_key": [
+        "weather_key",
+        "weather_key"
+      ],
+      "foreign_keys": [],
+      "check_constraints": [
+        "CHECK (((humidity_pct >= 0) AND (humidity_pct <= 100)))"
+      ]
+    },
+    {
+      "table_name": "fact_charging_session",
+      "columns": [
+        {
+          "column_name": "session_key",
+          "data_type": "bigint",
+          "is_nullable": "NO",
+          "column_default": "nextval('fact_charging_session_session_key_seq'::regclass)"
+        },
+        {
+          "column_name": "session_id",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "station_key",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "location_key",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "vehicle_key",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "date_key",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "time_key",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "weather_key",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "tariff_key",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "start_timestamp",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "end_timestamp",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "duration_minutes",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "energy_consumed_kwh",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "peak_power_kw",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "session_cost",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "queue_time_minutes",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "0"
+        },
+        {
+          "column_name": "idle_time_minutes",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "0"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": "now()"
+        }
+      ],
+      "primary_key": [
+        "session_key"
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "date_key",
+          "ref_table": "dim_date",
+          "ref_column": "date_key"
+        },
+        {
+          "column_name": "location_key",
+          "ref_table": "dim_location",
+          "ref_column": "location_key"
+        },
+        {
+          "column_name": "station_key",
+          "ref_table": "dim_station",
+          "ref_column": "station_key"
+        },
+        {
+          "column_name": "tariff_key",
+          "ref_table": "dim_tariff",
+          "ref_column": "tariff_key"
+        },
+        {
+          "column_name": "time_key",
+          "ref_table": "dim_time",
+          "ref_column": "time_key"
+        },
+        {
+          "column_name": "vehicle_key",
+          "ref_table": "dim_vehicle",
+          "ref_column": "vehicle_key"
+        },
+        {
+          "column_name": "weather_key",
+          "ref_table": "dim_weather",
+          "ref_column": "weather_key"
+        }
+      ],
+      "check_constraints": [
+        "CHECK ((duration_minutes > (0)::numeric))",
+        "CHECK ((energy_consumed_kwh >= (0)::numeric))",
+        "CHECK ((peak_power_kw >= (0)::numeric))",
+        "CHECK ((session_cost >= (0)::numeric))"
+      ]
+    },
+    {
+      "table_name": "fact_station_daily_agg",
+      "columns": [
+        {
+          "column_name": "agg_id",
+          "data_type": "bigint",
+          "is_nullable": "NO",
+          "column_default": "nextval('fact_station_daily_agg_agg_id_seq'::regclass)"
+        },
+        {
+          "column_name": "station_key",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "date_key",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "location_key",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "total_sessions",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "total_energy_kwh",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "total_revenue",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "avg_duration_minutes",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "avg_queue_time_minutes",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "utilization_rate_pct",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      ],
+      "primary_key": [
+        "agg_id"
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "date_key",
+          "ref_table": "dim_date",
+          "ref_column": "date_key"
+        },
+        {
+          "column_name": "location_key",
+          "ref_table": "dim_location",
+          "ref_column": "location_key"
+        },
+        {
+          "column_name": "station_key",
+          "ref_table": "dim_station",
+          "ref_column": "station_key"
+        }
+      ],
+      "check_constraints": []
+    },
+    {
+      "table_name": "favorites",
+      "columns": [
+        {
+          "column_name": "user_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "station_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        }
+      ],
+      "primary_key": [
+        "user_id",
+        "station_id"
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "station_id",
+          "ref_table": "stations",
+          "ref_column": "id"
+        },
+        {
+          "column_name": "user_id",
+          "ref_table": "profiles",
+          "ref_column": "id"
+        }
+      ],
+      "check_constraints": []
+    },
+    {
+      "table_name": "ingestion_runs",
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()"
+        },
+        {
+          "column_name": "source_id",
+          "data_type": "uuid",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "source_name",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "scope",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "state",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "started_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        },
+        {
+          "column_name": "completed_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "duration_seconds",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "attempt_count",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "1"
+        },
+        {
+          "column_name": "records_fetched",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "0"
+        },
+        {
+          "column_name": "records_parsed",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "0"
+        },
+        {
+          "column_name": "records_accepted",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "0"
+        },
+        {
+          "column_name": "records_accepted_with_warnings",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "0"
+        },
+        {
+          "column_name": "records_quarantined",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "0"
+        },
+        {
+          "column_name": "records_rejected",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "0"
+        },
+        {
+          "column_name": "stations_persisted",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "0"
+        },
+        {
+          "column_name": "stations_updated",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "0"
+        },
+        {
+          "column_name": "stations_unchanged",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "0"
+        },
+        {
+          "column_name": "connectors_persisted",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "0"
+        },
+        {
+          "column_name": "observations_persisted",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "0"
+        },
+        {
+          "column_name": "error_summary",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "metadata",
+          "data_type": "jsonb",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "source_id",
+          "ref_table": "data_sources",
+          "ref_column": "id"
+        }
+      ],
+      "check_constraints": [
+        "CHECK ((attempt_count >= 1))",
+        "CHECK ((connectors_persisted >= 0))",
+        "CHECK ((observations_persisted >= 0))",
+        "CHECK ((records_accepted >= 0))",
+        "CHECK ((records_accepted_with_warnings >= 0))",
+        "CHECK ((records_fetched >= 0))",
+        "CHECK ((records_parsed >= 0))",
+        "CHECK ((records_quarantined >= 0))",
+        "CHECK ((records_rejected >= 0))",
+        "CHECK (((char_length(scope) >= 1) AND (char_length(scope) <= 255)))",
+        "CHECK (((char_length(source_name) >= 1) AND (char_length(source_name) <= 120)))",
+        "CHECK ((state = ANY (ARRAY['STARTED'::text, 'RUNNING'::text, 'SUCCEEDED'::text, 'PARTIAL'::text, 'FAILED'::text, 'CANCELLED'::text])))",
+        "CHECK ((stations_persisted >= 0))",
+        "CHECK ((stations_unchanged >= 0))",
+        "CHECK ((stations_updated >= 0))"
+      ]
+    },
+    {
+      "table_name": "operators",
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()"
+        },
+        {
+          "column_name": "name",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "slug",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "website_url",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "support_phone",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [],
+      "check_constraints": [
+        "CHECK (((slug IS NULL) OR (slug ~ '^[a-zA-Z0-9][a-zA-Z0-9_-]*$'::text)))",
+        "CHECK (((char_length(name) >= 1) AND (char_length(name) <= 200)))",
+        "CHECK (((slug IS NULL) OR ((char_length(slug) >= 1) AND (char_length(slug) <= 200))))"
+      ]
+    },
+    {
+      "table_name": "profiles",
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "display_name",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "role",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'user'::text"
+        },
+        {
+          "column_name": "preferred_language",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'en'::text"
+        },
+        {
+          "column_name": "home_city",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [],
+      "check_constraints": [
+        "CHECK (((display_name IS NULL) OR ((char_length(display_name) >= 1) AND (char_length(display_name) <= 120))))",
+        "CHECK ((preferred_language = ANY (ARRAY['en'::text, 'hi'::text, 'mr'::text])))",
+        "CHECK ((role = ANY (ARRAY['user'::text, 'admin'::text])))"
+      ]
+    },
+    {
+      "table_name": "reviews",
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()"
+        },
+        {
+          "column_name": "user_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "station_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "rating",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "comment",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "is_flagged",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "false"
+        },
+        {
+          "column_name": "moderation_status",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'pending'::text"
+        },
+        {
+          "column_name": "moderated_by",
+          "data_type": "uuid",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "moderated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "moderation_reason",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "station_id",
+          "ref_table": "stations",
+          "ref_column": "id"
+        },
+        {
+          "column_name": "user_id",
+          "ref_table": "profiles",
+          "ref_column": "id"
+        }
+      ],
+      "check_constraints": [
+        "CHECK ((((moderation_status = 'pending'::text) AND (moderated_at IS NULL) AND (moderation_reason IS NULL)) OR ((moderation_status = ANY (ARRAY['approved'::text, 'rejected'::text])) AND (moderated_at IS NOT NULL))))",
+        "CHECK (((moderation_status <> 'rejected'::text) OR (moderation_reason IS NOT NULL)))",
+        "CHECK ((moderation_status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))",
+        "CHECK (((rating >= 1) AND (rating <= 5)))"
+      ]
+    },
+    {
+      "table_name": "station_observations",
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()"
+        },
+        {
+          "column_name": "station_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "connector_id",
+          "data_type": "uuid",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "source_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "availability_status",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "queue_level",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "available_connectors",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "total_connectors",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "observed_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "received_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        },
+        {
+          "column_name": "confidence_score",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "source_payload_hash",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "station_id",
+          "ref_table": "connectors",
+          "ref_column": "id"
+        },
+        {
+          "column_name": "station_id",
+          "ref_table": "connectors",
+          "ref_column": "station_id"
+        },
+        {
+          "column_name": "connector_id",
+          "ref_table": "connectors",
+          "ref_column": "id"
+        },
+        {
+          "column_name": "connector_id",
+          "ref_table": "connectors",
+          "ref_column": "station_id"
+        },
+        {
+          "column_name": "connector_id",
+          "ref_table": "connectors",
+          "ref_column": "id"
+        },
+        {
+          "column_name": "source_id",
+          "ref_table": "data_sources",
+          "ref_column": "id"
+        },
+        {
+          "column_name": "station_id",
+          "ref_table": "stations",
+          "ref_column": "id"
+        }
+      ],
+      "check_constraints": [
+        "CHECK ((received_at >= observed_at))",
+        "CHECK (((available_connectors IS NULL) OR (available_connectors <= total_connectors)))",
+        "CHECK ((availability_status = ANY (ARRAY['available'::text, 'busy'::text, 'broken'::text, 'unknown'::text])))",
+        "CHECK (((available_connectors IS NULL) OR (available_connectors >= 0)))",
+        "CHECK (((confidence_score IS NULL) OR ((confidence_score >= (0)::numeric) AND (confidence_score <= (1)::numeric))))",
+        "CHECK ((queue_level = ANY (ARRAY['none'::text, 'short'::text, 'medium'::text, 'long'::text, 'unknown'::text])))",
+        "CHECK ((total_connectors >= 0))"
+      ]
+    },
+    {
+      "table_name": "station_source_link",
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()"
+        },
+        {
+          "column_name": "station_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "source_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "source_station_id",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "source_url",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "first_seen_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "last_seen_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "last_ingested_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "source_payload_hash",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "is_active",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "true"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "source_id",
+          "ref_table": "data_sources",
+          "ref_column": "id"
+        },
+        {
+          "column_name": "station_id",
+          "ref_table": "stations",
+          "ref_column": "id"
+        }
+      ],
+      "check_constraints": [
+        "CHECK (((last_seen_at IS NULL) OR (first_seen_at IS NULL) OR (last_seen_at >= first_seen_at)))",
+        "CHECK (((char_length(source_station_id) >= 1) AND (char_length(source_station_id) <= 500)))"
+      ]
+    },
+    {
+      "table_name": "stations",
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()"
+        },
+        {
+          "column_name": "slug",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "name",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "operator_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "address_line",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "locality",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "city",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'Mumbai'::text"
+        },
+        {
+          "column_name": "state",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'Maharashtra'::text"
+        },
+        {
+          "column_name": "postal_code",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "country",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'India'::text"
+        },
+        {
+          "column_name": "latitude",
+          "data_type": "double precision",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "longitude",
+          "data_type": "double precision",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "geom",
+          "data_type": "USER-DEFINED",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "opening_time",
+          "data_type": "time without time zone",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "closing_time",
+          "data_type": "time without time zone",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "is_24_hours",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "false"
+        },
+        {
+          "column_name": "access_type",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "is_public",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "true"
+        },
+        {
+          "column_name": "operational_status",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'unknown'::text"
+        },
+        {
+          "column_name": "phone",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "website_url",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "last_verified_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "operator_id",
+          "ref_table": "operators",
+          "ref_column": "id"
+        }
+      ],
+      "check_constraints": [
+        "CHECK (((is_24_hours AND (opening_time IS NULL) AND (closing_time IS NULL)) OR ((NOT is_24_hours) AND (opening_time IS NULL) AND (closing_time IS NULL)) OR ((NOT is_24_hours) AND (opening_time IS NOT NULL) AND (closing_time IS NOT NULL))))",
+        "CHECK (((slug IS NULL) OR (slug ~ '^[a-zA-Z0-9][a-zA-Z0-9_-]*$'::text)))",
+        "CHECK (((char_length(city) >= 1) AND (char_length(city) <= 120)))",
+        "CHECK (((char_length(country) >= 1) AND (char_length(country) <= 120)))",
+        "CHECK (((latitude >= ('-90'::integer)::double precision) AND (latitude <= (90)::double precision)))",
+        "CHECK (((longitude >= ('-180'::integer)::double precision) AND (longitude <= (180)::double precision)))",
+        "CHECK (((char_length(name) >= 1) AND (char_length(name) <= 300)))",
+        "CHECK ((operational_status = ANY (ARRAY['unknown'::text, 'operational'::text, 'temporarily_unavailable'::text, 'permanently_closed'::text])))",
+        "CHECK (((postal_code IS NULL) OR (postal_code ~ '^[1-9][0-9]{5}$'::text)))",
+        "CHECK (((char_length(state) >= 1) AND (char_length(state) <= 120)))"
+      ]
+    },
+    {
+      "table_name": "user_reports",
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()"
+        },
+        {
+          "column_name": "user_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "station_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "connector_id",
+          "data_type": "uuid",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "availability_status",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "queue_level",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "comment",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "observed_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        },
+        {
+          "column_name": "is_flagged",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "false"
+        },
+        {
+          "column_name": "moderation_status",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'pending'::text"
+        },
+        {
+          "column_name": "moderated_by",
+          "data_type": "uuid",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "moderated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "moderation_reason",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        }
+      ],
+      "primary_key": [
+        "id"
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "station_id",
+          "ref_table": "connectors",
+          "ref_column": "id"
+        },
+        {
+          "column_name": "station_id",
+          "ref_table": "connectors",
+          "ref_column": "station_id"
+        },
+        {
+          "column_name": "connector_id",
+          "ref_table": "connectors",
+          "ref_column": "id"
+        },
+        {
+          "column_name": "connector_id",
+          "ref_table": "connectors",
+          "ref_column": "station_id"
+        },
+        {
+          "column_name": "connector_id",
+          "ref_table": "connectors",
+          "ref_column": "id"
+        },
+        {
+          "column_name": "station_id",
+          "ref_table": "stations",
+          "ref_column": "id"
+        },
+        {
+          "column_name": "user_id",
+          "ref_table": "profiles",
+          "ref_column": "id"
+        }
+      ],
+      "check_constraints": [
+        "CHECK ((created_at >= observed_at))",
+        "CHECK ((((moderation_status = 'pending'::text) AND (moderated_at IS NULL) AND (moderation_reason IS NULL)) OR ((moderation_status = ANY (ARRAY['approved'::text, 'rejected'::text])) AND (moderated_at IS NOT NULL))))",
+        "CHECK (((moderation_status <> 'rejected'::text) OR (moderation_reason IS NOT NULL)))",
+        "CHECK ((availability_status = ANY (ARRAY['available'::text, 'busy'::text, 'broken'::text, 'unknown'::text])))",
+        "CHECK ((moderation_status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))",
+        "CHECK ((queue_level = ANY (ARRAY['none'::text, 'short'::text, 'medium'::text, 'long'::text, 'unknown'::text])))"
+      ]
+    }
+  ],
+  "enums": [
+    {
+      "typname": "aal_level",
+      "enumlabel": "aal1"
+    },
+    {
+      "typname": "aal_level",
+      "enumlabel": "aal2"
+    },
+    {
+      "typname": "aal_level",
+      "enumlabel": "aal3"
+    },
+    {
+      "typname": "action",
+      "enumlabel": "INSERT"
+    },
+    {
+      "typname": "action",
+      "enumlabel": "UPDATE"
+    },
+    {
+      "typname": "action",
+      "enumlabel": "DELETE"
+    },
+    {
+      "typname": "action",
+      "enumlabel": "TRUNCATE"
+    },
+    {
+      "typname": "action",
+      "enumlabel": "ERROR"
+    },
+    {
+      "typname": "buckettype",
+      "enumlabel": "STANDARD"
+    },
+    {
+      "typname": "buckettype",
+      "enumlabel": "ANALYTICS"
+    },
+    {
+      "typname": "buckettype",
+      "enumlabel": "VECTOR"
+    },
+    {
+      "typname": "code_challenge_method",
+      "enumlabel": "s256"
+    },
+    {
+      "typname": "code_challenge_method",
+      "enumlabel": "plain"
+    },
+    {
+      "typname": "equality_op",
+      "enumlabel": "eq"
+    },
+    {
+      "typname": "equality_op",
+      "enumlabel": "neq"
+    },
+    {
+      "typname": "equality_op",
+      "enumlabel": "lt"
+    },
+    {
+      "typname": "equality_op",
+      "enumlabel": "lte"
+    },
+    {
+      "typname": "equality_op",
+      "enumlabel": "gt"
+    },
+    {
+      "typname": "equality_op",
+      "enumlabel": "gte"
+    },
+    {
+      "typname": "equality_op",
+      "enumlabel": "in"
+    },
+    {
+      "typname": "equality_op",
+      "enumlabel": "like"
+    },
+    {
+      "typname": "equality_op",
+      "enumlabel": "ilike"
+    },
+    {
+      "typname": "equality_op",
+      "enumlabel": "is"
+    },
+    {
+      "typname": "equality_op",
+      "enumlabel": "match"
+    },
+    {
+      "typname": "equality_op",
+      "enumlabel": "imatch"
+    },
+    {
+      "typname": "equality_op",
+      "enumlabel": "isdistinct"
+    },
+    {
+      "typname": "factor_status",
+      "enumlabel": "unverified"
+    },
+    {
+      "typname": "factor_status",
+      "enumlabel": "verified"
+    },
+    {
+      "typname": "factor_type",
+      "enumlabel": "totp"
+    },
+    {
+      "typname": "factor_type",
+      "enumlabel": "webauthn"
+    },
+    {
+      "typname": "factor_type",
+      "enumlabel": "phone"
+    },
+    {
+      "typname": "factor_type",
+      "enumlabel": "recovery_code"
+    },
+    {
+      "typname": "oauth_authorization_status",
+      "enumlabel": "pending"
+    },
+    {
+      "typname": "oauth_authorization_status",
+      "enumlabel": "approved"
+    },
+    {
+      "typname": "oauth_authorization_status",
+      "enumlabel": "denied"
+    },
+    {
+      "typname": "oauth_authorization_status",
+      "enumlabel": "expired"
+    },
+    {
+      "typname": "oauth_client_type",
+      "enumlabel": "public"
+    },
+    {
+      "typname": "oauth_client_type",
+      "enumlabel": "confidential"
+    },
+    {
+      "typname": "oauth_registration_type",
+      "enumlabel": "dynamic"
+    },
+    {
+      "typname": "oauth_registration_type",
+      "enumlabel": "manual"
+    },
+    {
+      "typname": "oauth_response_type",
+      "enumlabel": "code"
+    },
+    {
+      "typname": "one_time_token_type",
+      "enumlabel": "confirmation_token"
+    },
+    {
+      "typname": "one_time_token_type",
+      "enumlabel": "reauthentication_token"
+    },
+    {
+      "typname": "one_time_token_type",
+      "enumlabel": "recovery_token"
+    },
+    {
+      "typname": "one_time_token_type",
+      "enumlabel": "email_change_token_new"
+    },
+    {
+      "typname": "one_time_token_type",
+      "enumlabel": "email_change_token_current"
+    },
+    {
+      "typname": "one_time_token_type",
+      "enumlabel": "phone_change_token"
+    }
+  ]
+}

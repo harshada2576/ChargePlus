@@ -1,0 +1,101 @@
+vehicle_key,vehicle_id,make,model,vehicle_type,battery_capacity_kwh,max_charge_rate_kw
+1,VEH-00001,Hero,Nexon EV,Commercial Fleet/Bus,27.73,61.39
+2,VEH-00002,Mahindra,S1 Pro,Passenger Sedan/SUV,98.23,38.01
+3,VEH-00003,Mahindra,Optima,2-Wheeler,79.59,58.95
+4,VEH-00004,Ather,450X,2-Wheeler,47.24,117.38
+5,VEH-00005,Hero,S1 Pro,3-Wheeler,32.6,51.01
+6,VEH-00006,Hyundai,450X,Commercial Fleet/Bus,51.65,111.36
+7,VEH-00007,Tata,450X,3-Wheeler,68.16,66.98
+8,VEH-00008,MG,Optima,2-Wheeler,3.45,7.45
+9,VEH-00009,Ola,450X,Commercial Fleet/Bus,69.53,85.29
+10,VEH-00010,Hyundai,EV6,Passenger Sedan/SUV,32.01,34.21
+11,VEH-00011,Ather,EV6,3-Wheeler,57.79,76.34
+12,VEH-00012,Ather,Nexon EV,2-Wheeler,97.7,10.68
+13,VEH-00013,Ather,ZS EV,Passenger Sedan/SUV,91.34,78.25
+14,VEH-00014,Tata,S1 Pro,2-Wheeler,55.66,74.31
+15,VEH-00015,Hero,S1 Pro,2-Wheeler,92.36,45.4
+16,VEH-00016,Kia,EV6,3-Wheeler,27.57,18.67
+17,VEH-00017,MG,XUV400,3-Wheeler,54.72,68.05
+18,VEH-00018,Hyundai,XUV400,3-Wheeler,47.12,98.04
+19,VEH-00019,Ola,XUV400,Passenger Sedan/SUV,71.22,73.59
+20,VEH-00020,Kia,Kona,Commercial Fleet/Bus,73.07,82.23
+21,VEH-00021,Ather,Optima,2-Wheeler,73.66,77.55
+22,VEH-00022,Mahindra,XUV400,Passenger Sedan/SUV,90.69,8.44
+23,VEH-00023,Hero,EV6,3-Wheeler,41.34,72.41
+24,VEH-00024,Hyundai,S1 Pro,2-Wheeler,65.45,33.21
+25,VEH-00025,Mahindra,450X,Commercial Fleet/Bus,50.44,100.74
+26,VEH-00026,Ola,450X,2-Wheeler,91.3,82.4
+27,VEH-00027,Kia,Nexon EV,2-Wheeler,76.02,48.0
+28,VEH-00028,Hyundai,S1 Pro,Passenger Sedan/SUV,6.13,60.61
+29,VEH-00029,Tata,Kona,Commercial Fleet/Bus,5.28,15.13
+30,VEH-00030,Kia,450X,2-Wheeler,90.6,56.04
+31,VEH-00031,Mahindra,S1 Pro,3-Wheeler,46.81,56.87
+32,VEH-00032,MG,Kona,2-Wheeler,75.55,17.36
+33,VEH-00033,Mahindra,S1 Pro,Passenger Sedan/SUV,25.92,107.81
+34,VEH-00034,Ather,Nexon EV,Passenger Sedan/SUV,59.11,97.19
+35,VEH-00035,Hero,S1 Pro,Commercial Fleet/Bus,65.17,67.0
+36,VEH-00036,Mahindra,Optima,2-Wheeler,52.21,90.73
+37,VEH-00037,Hero,450X,2-Wheeler,19.78,85.73
+38,VEH-00038,Ola,450X,Commercial Fleet/Bus,84.97,107.67
+39,VEH-00039,Kia,S1 Pro,3-Wheeler,99.63,21.46
+40,VEH-00040,Tata,S1 Pro,3-Wheeler,88.44,99.85
+41,VEH-00041,Hero,Kona,3-Wheeler,17.63,64.13
+42,VEH-00042,MG,Kona,Passenger Sedan/SUV,42.35,112.33
+43,VEH-00043,Tata,XUV400,2-Wheeler,40.19,94.97
+44,VEH-00044,Kia,S1 Pro,Commercial Fleet/Bus,69.57,31.13
+45,VEH-00045,Tata,XUV400,Passenger Sedan/SUV,33.13,99.23
+46,VEH-00046,MG,XUV400,Commercial Fleet/Bus,33.94,5.14
+47,VEH-00047,MG,XUV400,Commercial Fleet/Bus,93.33,85.82
+48,VEH-00048,Hyundai,450X,2-Wheeler,64.97,94.4
+49,VEH-00049,Tata,450X,3-Wheeler,67.2,111.8
+50,VEH-00050,Mahindra,Optima,2-Wheeler,17.68,4.75
+51,VEH-00051,Ola,Nexon EV,Commercial Fleet/Bus,5.53,77.04
+52,VEH-00052,Kia,450X,3-Wheeler,10.2,106.16
+53,VEH-00053,Ola,ZS EV,3-Wheeler,21.0,85.23
+54,VEH-00054,Hero,ZS EV,3-Wheeler,40.15,35.6
+55,VEH-00055,Tata,Nexon EV,2-Wheeler,51.61,65.55
+56,VEH-00056,MG,Optima,Commercial Fleet/Bus,73.61,67.4
+57,VEH-00057,Tata,ZS EV,3-Wheeler,54.52,101.06
+58,VEH-00058,Kia,Optima,3-Wheeler,94.6,6.47
+59,VEH-00059,Ola,Nexon EV,3-Wheeler,77.26,85.59
+60,VEH-00060,Hyundai,450X,2-Wheeler,79.6,37.59
+61,VEH-00061,Tata,Kona,2-Wheeler,75.5,116.31
+62,VEH-00062,Ola,Kona,3-Wheeler,48.3,84.22
+63,VEH-00063,Tata,S1 Pro,Commercial Fleet/Bus,12.94,9.44
+64,VEH-00064,Ola,Kona,Passenger Sedan/SUV,72.31,68.98
+65,VEH-00065,Hero,XUV400,Commercial Fleet/Bus,63.3,100.93
+66,VEH-00066,Hyundai,ZS EV,Passenger Sedan/SUV,44.42,74.21
+67,VEH-00067,Tata,Optima,3-Wheeler,18.36,62.49
+68,VEH-00068,Mahindra,EV6,2-Wheeler,86.89,10.57
+69,VEH-00069,Ather,XUV400,Passenger Sedan/SUV,61.96,6.4
+70,VEH-00070,Ola,Nexon EV,Commercial Fleet/Bus,50.92,69.44
+71,VEH-00071,Kia,S1 Pro,Commercial Fleet/Bus,13.1,98.59
+72,VEH-00072,Ather,EV6,2-Wheeler,38.43,24.63
+73,VEH-00073,Hero,Optima,2-Wheeler,2.51,6.05
+74,VEH-00074,MG,S1 Pro,Passenger Sedan/SUV,92.55,75.5
+75,VEH-00075,Kia,Nexon EV,Commercial Fleet/Bus,77.12,75.19
+76,VEH-00076,Mahindra,EV6,Commercial Fleet/Bus,87.51,70.72
+77,VEH-00077,Tata,Nexon EV,2-Wheeler,15.39,106.89
+78,VEH-00078,Tata,ZS EV,2-Wheeler,91.11,38.04
+79,VEH-00079,MG,Kona,3-Wheeler,71.16,16.9
+80,VEH-00080,Ola,Nexon EV,Passenger Sedan/SUV,32.38,72.18
+81,VEH-00081,Mahindra,Nexon EV,Commercial Fleet/Bus,52.73,5.93
+82,VEH-00082,Ather,Nexon EV,2-Wheeler,51.15,20.88
+83,VEH-00083,Ather,450X,Passenger Sedan/SUV,52.04,89.34
+84,VEH-00084,Ather,XUV400,2-Wheeler,31.42,15.58
+85,VEH-00085,Kia,Nexon EV,Passenger Sedan/SUV,44.72,112.17
+86,VEH-00086,Mahindra,EV6,Commercial Fleet/Bus,72.36,90.48
+87,VEH-00087,MG,Kona,Commercial Fleet/Bus,25.11,9.52
+88,VEH-00088,Mahindra,EV6,3-Wheeler,68.57,32.48
+89,VEH-00089,Kia,ZS EV,Passenger Sedan/SUV,64.53,45.72
+90,VEH-00090,Ather,EV6,2-Wheeler,17.53,51.16
+91,VEH-00091,Ather,XUV400,Commercial Fleet/Bus,92.62,3.86
+92,VEH-00092,Ola,S1 Pro,2-Wheeler,99.81,65.08
+93,VEH-00093,MG,ZS EV,Commercial Fleet/Bus,29.83,82.77
+94,VEH-00094,Kia,ZS EV,3-Wheeler,69.1,43.7
+95,VEH-00095,Kia,Nexon EV,2-Wheeler,20.49,43.76
+96,VEH-00096,Mahindra,450X,Passenger Sedan/SUV,78.91,41.26
+97,VEH-00097,MG,ZS EV,Commercial Fleet/Bus,86.93,108.95
+98,VEH-00098,Ather,ZS EV,Passenger Sedan/SUV,70.82,30.23
+99,VEH-00099,Ola,XUV400,2-Wheeler,16.34,119.85
+100,VEH-00100,Ather,ZS EV,3-Wheeler,46.85,16.01

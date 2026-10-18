@@ -272,6 +272,30 @@ Full interactive session verified and recorded by browser subagent:
 - [x] Live query execution tests against empty state passed cleanly for all views and functions (returned 0 rows without errors)
 - [x] `npm run typecheck` passed with 0 errors
 
+---
+
+## 7. Phase 7 — Final Integration, Data Reconciliation & Validation
+
+### Summary of Completed Work
+- **Import Count Discrepancy Resolved:** Reconciled 137,742 planned eligible rows vs 137,641 inserted rows. Clarified that the 101 skipped rows (46 connectors, 32 station-source links, 23 daily aggregations) were internal duplicate tuples safely rejected by PostgreSQL unique constraints without any data loss or live record corruption. Corrected the 100-row typo (`137,741` -> `137,641`).
+- **Provenance & Live/Demo Isolation:**
+  - Hardened database views (`v_station_current_state`, `v_station_connectors`) with `obs.is_simulated ASC` ordering, guaranteeing live operational telemetry always takes precedence over synthetic observations.
+  - Exposed `observation_is_simulated` across views and adapters.
+  - Hardened `deriveSourceCategory` and ML readiness calculations against synthetic contamination.
+- **Frontend Enhancements & Performance:**
+  - Implemented PostgREST range chunking in `src/data/stations.ts` to fetch all 1,694 stations across 1,000-row API limits.
+  - Added progressive card rendering (`PAGE_SIZE = 30`) with "Show more stations" in `ExploreClient.tsx` to prevent DOM freezing.
+  - Added demo badges to map popups, station cards, and detail pricing summaries.
+  - Updated Admin Dashboard with Live vs Demo KPI breakdown and provenance tagging.
+  - Added full Hindi and Marathi translations for newly introduced labels.
+- **Verification Results:**
+  - TypeScript typecheck: 0 errors.
+  - Test suite: 192 passed, 1 skipped, 0 failed.
+  - 6 new regression tests in `test_provenance_isolation.mjs` passed.
+  - Next.js production build (`npm run build`) succeeded across all 22 routes.
+  - Real browser e2e testing verified Explore, filters, search, station details, pricing disclaimers, i18n, and admin console.
+
+
 
 
 

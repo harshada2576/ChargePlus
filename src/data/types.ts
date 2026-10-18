@@ -38,6 +38,18 @@ export type Connector = {
   freshnessState?: FreshnessState;
   /** provenance source category */
   sourceCategory?: SourceCategory;
+  /** true when record originates from simulated demo / seed dataset */
+  isSimulated?: boolean;
+  /** verified connector tariff in INR/kWh; null when not verified/reported */
+  pricePerKwh?: number | null;
+  /** verified connector tariff in INR/session; null when not verified/reported */
+  pricePerSession?: number | null;
+  /** explicitly unverified source-derived estimate in INR/kWh */
+  priceEstimatePerKwh?: number | null;
+  /** original source text supporting the unverified estimate */
+  priceEstimateRaw?: string | null;
+  /** provenance source identifier for the unverified estimate (e.g. 'ocm_usage_cost') */
+  priceEstimateSource?: string | null;
 };
 
 export type Station = {
@@ -55,7 +67,9 @@ export type Station = {
   connectors: Connector[];
   /** INR per kWh; null if unknown */
   pricePerKwh: number | null;
-  /** True if charging is free; null if unknown */
+  /** True if charging is free; null if unknown. Free is established only by
+   * this flag === true or by a validated finite zero pricePerKwh — never by
+   * an invalid/missing number (contract lives in src/lib/priceDisplay.ts). */
   isFree: boolean | null;
   /** Opening hours descriptor */
   hours:
@@ -109,7 +123,14 @@ export type Alert = {
 
 export type Recommendation = {
   stationId: string;
-  reasons: ("matchConnector" | "availableNow" | "lessBusyNow")[];
+  reasons: (
+    | "matchConnector"
+    | "availableNow"
+    | "knownPower"
+    | "priceAvailable"
+    | "nearby"
+    | "availabilityUnknown"
+  )[];
   /** number of available chargers (if reason: availableNow) */
   availableCount?: number;
 };

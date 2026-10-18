@@ -44,6 +44,7 @@ export type DbStationRow = {
   source_id?: string | null;
   source_name?: string | null;
   is_simulated?: boolean | null;
+  observation_is_simulated?: boolean | null;
 };
 
 export type DbConnectorRow = {
@@ -56,6 +57,9 @@ export type DbConnectorRow = {
   pricing_type?: string | null;
   price_per_kwh?: number | null;
   price_per_session?: number | null;
+  price_estimate_per_kwh?: number | null;
+  price_estimate_raw?: string | null;
+  price_estimate_source?: string | null;
   currency?: string | null;
   latest_observation_id?: string | null;
   latest_availability_status?: string | null;
@@ -65,6 +69,7 @@ export type DbConnectorRow = {
   source_id?: string | null;
   source_name?: string | null;
   is_simulated?: boolean | null;
+  observation_is_simulated?: boolean | null;
 };
 
 /**
@@ -247,7 +252,9 @@ export function derivePricing(row: DbStationRow): {
   pricePerKwh: number | null;
   isFree: boolean | null;
 } {
-  if (row.min_price_per_kwh != null && !isNaN(Number(row.min_price_per_kwh))) {
+  // Finite only: NaN/±Infinity must never enter canonical pricing as valid
+  // prices (an Infinity tariff would render as "₹Infinity/kWh").
+  if (row.min_price_per_kwh != null && Number.isFinite(Number(row.min_price_per_kwh))) {
     const price = Number(row.min_price_per_kwh);
     return {
       pricePerKwh: price,
@@ -298,8 +305,10 @@ export function mapDbConnectorToConnector(
 
   const freshnessState = deriveFreshnessState(minutesSince);
   const hasObs = row.latest_availability_status != null || row.latest_available_connectors != null;
+  const isSimulated = row.is_simulated === true;
+  const observationIsSimulated = row.observation_is_simulated === true;
   const sourceCategory = deriveSourceCategory({
-    isSimulated: row.is_simulated === true,
+    isSimulated: isSimulated || observationIsSimulated,
     hasObservation: hasObs,
     freshness: freshnessState,
     sourceName: row.source_name,
@@ -316,6 +325,24 @@ export function mapDbConnectorToConnector(
     minutesSinceObservation: minutesSince,
     freshnessState,
     sourceCategory,
+    isSimulated,
+    pricePerKwh:
+      row.price_per_kwh != null && Number.isFinite(Number(row.price_per_kwh))
+        ? Number(row.price_per_kwh)
+        : null,
+    pricePerSession:
+      row.price_per_session != null && Number.isFinite(Number(row.price_per_session))
+        ? Number(row.price_per_session)
+        : null,
+    priceEstimatePerKwh:
+      row.price_estimate_per_kwh != null &&
+      Number.isFinite(Number(row.price_estimate_per_kwh)) &&
+      Number(row.price_estimate_per_kwh) > 0 &&
+      Number(row.price_estimate_per_kwh) <= 500
+        ? Number(row.price_estimate_per_kwh)
+        : null,
+    priceEstimateRaw: row.price_estimate_raw ?? null,
+    priceEstimateSource: row.price_estimate_source ?? null,
   };
 }
 
@@ -341,8 +368,10 @@ export function mapDbStationToStation(
 
   const freshnessState = deriveFreshnessState(minutesSinceUpdate);
   const hasObs = row.latest_availability_status != null || row.latest_observation_id != null;
+  const isSimulated = row.is_simulated === true;
+  const observationIsSimulated = row.observation_is_simulated === true;
   const sourceCategory = deriveSourceCategory({
-    isSimulated: row.is_simulated === true,
+    isSimulated: isSimulated || observationIsSimulated,
     hasObservation: hasObs,
     freshness: freshnessState,
     sourceName: row.source_name,
@@ -358,9 +387,18 @@ export function mapDbStationToStation(
   const area = deriveArea(row);
   const address = deriveAddress(row);
 
-  const mappedConnectors = connectors.map((c) =>
-    mapDbConnectorToConnector(c, status)
-  );
+  const mappedConnectors = connectors.length > 0
+    ? connectors.map((c) => mapDbConnectorToConnector(c, status))
+    : (row.connector_types || []).map((ct, idx) => ({
+        id: `${row.id}-stub-${idx}`,
+        type: normalizeConnectorType(ct),
+        powerKw: row.max_power_kw != null && Number.isFinite(Number(row.max_power_kw)) ? Number(row.max_power_kw) : null,
+        total: row.total_plugs != null && Number.isFinite(Number(row.total_plugs)) ? Number(row.total_plugs) : null,
+        available: null,
+        isSimulated: isSimulated,
+        sourceCategory: (isSimulated ? "simulated" : "unknown") as SourceCategory,
+        freshnessState: freshnessState,
+      }));
 
   const operator = row.operator_name?.trim() || "Unknown Operator";
 

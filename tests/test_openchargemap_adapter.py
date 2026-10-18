@@ -65,8 +65,8 @@ class TestOpenChargeMapAdapter(unittest.TestCase):
         self.assertIsNotNone(res.raw_record)
         self.assertIsNotNone(res.provenance)
         self.assertEqual(len(res.provenance.raw_payload_hash), 64)
-        self.assertEqual(res.provenance.contract_version, "1.0.0")
-        self.assertEqual(station.contract_version, "1.0.0")
+        self.assertEqual(res.provenance.contract_version, "1.1.0")
+        self.assertEqual(station.contract_version, "1.1.0")
 
         # Name & Location
         self.assertEqual(station.name, "Tata Power - BKC Fast Charging Hub")

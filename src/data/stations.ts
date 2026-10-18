@@ -311,8 +311,20 @@ export async function fetchStations(
     throw new Error(`fetchStations error: ${connectorsRes.error.message}`);
   }
 
-  const rawStations: DbStationRow[] = (stationsRes.data as DbStationRow[]) || [];
+  let rawStations: DbStationRow[] = (stationsRes.data as DbStationRow[]) || [];
   const rawConnectors: DbConnectorRow[] = (connectorsRes.data as DbConnectorRow[]) || [];
+
+  // PostgREST caps at 1000 rows per request. If 1000 rows returned and .range is supported, page remaining stations.
+  if (rawStations.length === 1000 && typeof (db.from("v_station_current_state").select("*") as any).range === "function") {
+    let offset = 1000;
+    while (true) {
+      const nextRes = await (db.from("v_station_current_state").select("*") as any).range(offset, offset + 999);
+      if (nextRes.error || !nextRes.data || nextRes.data.length === 0) break;
+      rawStations = rawStations.concat(nextRes.data);
+      if (nextRes.data.length < 1000) break;
+      offset += 1000;
+    }
+  }
 
   const connsByStation = new Map<string, DbConnectorRow[]>();
   for (const c of rawConnectors) {

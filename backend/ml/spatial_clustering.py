@@ -175,6 +175,10 @@ def find_coverage_gaps(
     """Identifies stations that have no neighboring station within isolation_threshold_km.
 
     Useful for identifying underserved zones or pioneer stations that require network expansion.
+
+    NOTE (ceiling): O(n^2) pairwise Haversine scan — fine for hundreds of
+    stations; upgrade path is a spatial index (ball-tree / geohash grid) if
+    scaled to a nationwide fleet.
     """
     valid: list[dict[str, Any]] = [
         s for s in stations

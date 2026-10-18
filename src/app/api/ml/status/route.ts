@@ -1,7 +1,12 @@
 import { pool } from "@/db";
 import { ML_GATE_THRESHOLDS } from "@/lib/ml";
+import { checkRateLimit, clientKey } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
+
+// Same ceiling as the health route: status checks and normal browsing never
+// trip; floods get a 429 instead of unbounded database pings.
+const STATUS_RATE_LIMIT = { limit: 300, windowMs: 60_000 };
 
 interface MaturityEvidence {
   totalRealObservations: number;
@@ -25,7 +30,12 @@ interface ActiveModel {
  * model version (if any), and the typed reason when unavailable. Observed
  * station discovery never depends on this endpoint.
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const rate = checkRateLimit(clientKey(request), STATUS_RATE_LIMIT);
+  if (!rate.allowed) {
+    return Response.json({ ok: false, throttled: true }, { status: 429 });
+  }
+
   const required = {
     min_total_observations: ML_GATE_THRESHOLDS.minTotalObservations,
     min_stations_with_observations: ML_GATE_THRESHOLDS.minStationsWithObservations,
@@ -45,14 +55,16 @@ export async function GET() {
 
   try {
     const maturity = await pool.query(
-      `SELECT COUNT(*)::int AS total,
-              COUNT(DISTINCT station_id)::int AS stations,
-              COUNT(DISTINCT (observed_at AT TIME ZONE 'UTC')::date)::int AS days,
-              MAX(observed_at) AS latest
+      `SELECT COUNT(*) FILTER (WHERE is_simulated = false)::int AS total,
+              COUNT(*) FILTER (WHERE is_simulated = true)::int AS sim_total,
+              COUNT(DISTINCT station_id) FILTER (WHERE is_simulated = false)::int AS stations,
+              COUNT(DISTINCT (observed_at AT TIME ZONE 'UTC')::date) FILTER (WHERE is_simulated = false)::int AS days,
+              MAX(observed_at) FILTER (WHERE is_simulated = false) AS latest
          FROM public.station_observations`,
     );
     const row = maturity.rows[0] as {
       total: number;
+      sim_total: number;
       stations: number;
       days: number;
       latest: Date | string | null;

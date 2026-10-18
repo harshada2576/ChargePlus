@@ -145,6 +145,54 @@ export function validatePredictInput(body: unknown): {
   };
 }
 
+export interface ValidatedPredictResult {
+  probability: number;
+  modelVersion: string;
+}
+
+/**
+ * Validates an inference-CLI result payload before it is served as trusted
+ * output. The CLI runs out-of-process; its stdout must satisfy the serving
+ * contract: success:true requires a finite P(busy) in [0,1] and a non-empty
+ * model version. Anything else is refused as MODEL_ARTIFACT_INVALID so an
+ * invalid probability can never be mistaken for a reliable prediction.
+ * success:false payloads pass through untouched (honest "no prediction").
+ * Never throws on malformed input.
+ */
+export function validatePredictResult(result: unknown): {
+  ok: true;
+  value: ValidatedPredictResult;
+} | {
+  ok: false;
+  reason: Extract<MlUnavailableReason, "MODEL_ARTIFACT_INVALID">;
+  message: string;
+} {
+  const invalid = (message: string) => ({
+    ok: false as const,
+    reason: "MODEL_ARTIFACT_INVALID" as const,
+    message,
+  });
+  if (typeof result !== "object" || result === null) {
+    return invalid("Inference backend returned a malformed payload.");
+  }
+  const { success, probability, model_version: modelVersion } =
+    result as Record<string, unknown>;
+  if (success !== true) {
+    // Not a prediction; the route handles unavailable reasons separately.
+    return invalid("Inference backend did not return a prediction.");
+  }
+  if (typeof probability !== "number" || !Number.isFinite(probability)) {
+    return invalid("Model emitted a non-finite prediction; refusing to serve it.");
+  }
+  if (probability < 0 || probability > 1) {
+    return invalid(`Model emitted out-of-range probability ${probability}; refusing to serve it.`);
+  }
+  if (typeof modelVersion !== "string" || modelVersion.length === 0) {
+    return invalid("Prediction is missing its model version; refusing to serve it.");
+  }
+  return { ok: true, value: { probability, modelVersion } };
+}
+
 /** Resolves the server-side artifact directory (never client-exposed). */
 export function mlArtifactDir(): string {
   return process.env.ML_ARTIFACT_DIR ?? "backend/ml/artifacts";

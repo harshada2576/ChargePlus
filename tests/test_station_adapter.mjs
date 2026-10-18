@@ -161,6 +161,34 @@ test("mapDbConnectorToConnector preserves missing quantity and unobserved availa
   assert.equal(cExplicit.available, 2);
 });
 
+test("mapDbConnectorToConnector keeps verified tariff separate from unverified estimate", () => {
+  const conn = mapDbConnectorToConnector({
+    id: "conn-price-estimate",
+    station_id: "st-price-estimate",
+    connector_type: "CCS2",
+    price_per_kwh: null,
+    price_per_session: 50,
+    price_estimate_per_kwh: 18.5,
+    price_estimate_raw: "₹18.50 per kWh + GST",
+    price_estimate_source: "ocm_usage_cost",
+  });
+  assert.equal(conn.pricePerKwh, null);
+  assert.equal(conn.pricePerSession, 50);
+  assert.equal(conn.priceEstimatePerKwh, 18.5);
+  assert.equal(conn.priceEstimateRaw, "₹18.50 per kWh + GST");
+  assert.equal(conn.priceEstimateSource, "ocm_usage_cost");
+
+  const verified = mapDbConnectorToConnector({
+    id: "conn-verified-price",
+    station_id: "st-price-estimate",
+    connector_type: "CCS2",
+    price_per_kwh: 20,
+    price_estimate_per_kwh: 18.5,
+  });
+  assert.equal(verified.pricePerKwh, 20);
+  assert.equal(verified.priceEstimatePerKwh, 18.5);
+});
+
 test("mapDbStationToStation does not invent operator, address, or busy windows", () => {
   const station = mapDbStationToStation({
     id: "st-test-1",
@@ -276,4 +304,11 @@ test("mapDbConnectorToConnector and mapDbStationToStation retain observation IDs
   assert.equal(st.sourceCategory, "verified_live");
   assert.equal(st.freshnessState, "fresh");
   assert.equal(st.connectors[0].latestObservationId, "obs-abc-123");
+});
+
+test("connector provenance: isSimulated propagates from db row", () => {
+  const c = mapDbConnectorToConnector({ id: "c1", station_id: "s1", connector_type: "Type 2", is_simulated: true });
+  assert.equal(c.isSimulated, true);
+  const c2 = mapDbConnectorToConnector({ id: "c2", station_id: "s1", connector_type: "Type 2", is_simulated: false });
+  assert.equal(c2.isSimulated, false);
 });

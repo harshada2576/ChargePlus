@@ -231,8 +231,11 @@ class TestRunnerCanonicalComposition(unittest.TestCase):
         """Configured timeout must bound the OCM HTTP request (not hardcoded 15s)."""
         from backend.ingestion.adapters.openchargemap import OpenChargeMapAdapter
         adapter = OpenChargeMapAdapter()
-        import backend.ingestion.adapters.openchargemap as ocm_mod
-        with patch.object(ocm_mod.requests, "get") as mock_get:
+        # OCM fetch_raw delegates transport to the shared request_with_retry
+        # helper, which forwards timeout_sec to requests.get as timeout=.
+        # Patching requests.get therefore proves the configured value
+        # reaches the wire.
+        with patch("requests.get") as mock_get:
             mock_resp = mock_get.return_value
             mock_resp.status_code = 200
             mock_resp.json.return_value = []

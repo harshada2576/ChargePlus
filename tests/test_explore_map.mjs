@@ -20,7 +20,11 @@ import {
   filterAndSortStations,
   mappableStations,
   toStationGeoJSON,
+  refreshStationsSource,
+  createMapLoadWatchdog,
+  recommendStations,
   resolveSelectedStation,
+  visibleSelection,
   stationDetailHref,
   exploreLoadState,
   rankAvailability,
@@ -395,6 +399,195 @@ test("12. Existing HTML escaping protections remain intact", () => {
   assert.equal(popup.includes("<script>"), false);
   assert.equal(popup.includes(escapeHtml(hostile.name)), true);
   assert.equal(popup.includes(encodeURIComponent(hostile.id)), true);
+});
+
+function recStation(id, lat, lng, { status = "unknown", connectors = null, price = null } = {}) {
+  const s = baseStation({ id, name: `Station ${id}`, latitude: lat, longitude: lng });
+  s.status = status;
+  s.connectors =
+    connectors ??
+    [{ id: `${id}-c1`, type: "CCS2", powerKw: 60, total: 1, available: null }];
+  s.pricePerKwh = price;
+  return s;
+}
+
+test("13. Valid coordinates generate station GeoJSON features with [lng, lat]", () => {
+  const stations = [
+    recStation("g1", 19.076, 72.877),
+    recStation("g2", 19.1, 72.9),
+  ];
+  const geo = toStationGeoJSON(stations);
+  assert.equal(geo.type, "FeatureCollection");
+  assert.equal(geo.features.length, 2);
+  assert.deepEqual(geo.features[0].geometry.coordinates, [72.877, 19.076]);
+  assert.equal(geo.features[0].properties.id, "g1");
+  assert.equal(geo.features[1].properties.id, "g2");
+});
+
+test("14. Invalid coordinates are excluded without fabrication, including (0, 0)", () => {
+  const stations = [
+    recStation("ok", 19.076, 72.877),
+    recStation("null-island", 0, 0),
+    recStation("nan", NaN, 72.877),
+    recStation("missing", null, undefined),
+    recStation("out-of-range", 91, 200),
+  ];
+  const geo = toStationGeoJSON(stations);
+  assert.equal(geo.features.length, 1);
+  assert.equal(geo.features[0].properties.id, "ok");
+  for (const f of geo.features) {
+    assert.deepEqual(f.geometry.coordinates[0] === 0 && f.geometry.coordinates[1] === 0, false);
+  }
+});
+
+test("15. Late station data updates an existing map source; missing source is a safe no-op", () => {
+  const seen = [];
+  const fakeMap = {
+    getSource: (id) => {
+      assert.equal(id, "stations");
+      return { setData: (data) => seen.push(data) };
+    },
+  };
+  const stations = [recStation("late", 19.076, 72.877)];
+  assert.equal(refreshStationsSource(fakeMap, stations), true);
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0].features.length, 1);
+  assert.equal(seen[0].features[0].properties.id, "late");
+
+  // Source not yet created (style still loading): no throw, caller retries later.
+  assert.equal(refreshStationsSource({ getSource: () => undefined }, stations), false);
+});
+
+test("16. Recommendations are produced when every station has unknown availability", () => {
+  const stations = [
+    recStation("r1", 19.076, 72.877),
+    recStation("r2", 19.08, 72.88),
+    recStation("r3", 19.09, 72.89),
+  ];
+  const recs = recommendStations(stations);
+  assert.ok(recs.length >= 1 && recs.length <= 3);
+  for (const r of recs) {
+    assert.ok(stations.some((s) => s.id === r.stationId)); // genuine records only
+    assert.ok(!r.reasons.includes("availableNow")); // unknown is never "available now"
+    assert.ok(!r.reasons.includes("lessBusyNow")); // unknown busy windows never qualify
+    assert.ok(r.reasons.includes("availabilityUnknown"));
+    assert.equal(r.availableCount, undefined);
+  }
+});
+
+test("17. Recommendation reasons use only evidence-backed labels", () => {
+  const full = recStation("full", 19.076, 72.877, { price: 18.5 });
+  const recs = recommendStations([full], { connectorTypes: ["CCS2"] });
+  assert.equal(recs.length, 1);
+  const reasons = recs[0].reasons;
+  assert.ok(reasons.includes("matchConnector")); // required connector known and matched
+  assert.ok(reasons.includes("knownPower")); // verified 60 kW connector
+  assert.ok(reasons.includes("priceAvailable")); // verified tariff present
+  assert.ok(reasons.includes("availabilityUnknown"));
+
+  // Connector filter that matches nothing known yields no matchConnector reason.
+  const noMatch = recommendStations([full], { connectorTypes: ["CHAdeMO"] });
+  assert.ok(!noMatch[0].reasons.includes("matchConnector"));
+
+  // Nearby only with user location in range.
+  const near = recommendStations([full], { userLoc: { lat: 19.077, lng: 72.878 } });
+  assert.ok(near[0].reasons.includes("nearby"));
+  const far = recommendStations([full], {});
+  assert.ok(!far[0].reasons.includes("nearby"));
+});
+
+test("18. Genuine live availability keeps an honest availableNow reason", () => {
+  const live = mapDbStationToStation({
+    id: "live-avail",
+    name: "Live Station",
+    latitude: 19.076,
+    longitude: 72.877,
+    operational_status: "operational",
+    latest_availability_status: "available",
+    min_price_per_kwh: null,
+    avg_rating: null,
+    review_count: 0,
+  }, [
+    {
+      id: "c1",
+      station_id: "live-avail",
+      connector_type: "CCS2",
+      power_kw: 60,
+      total_quantity: 2,
+      latest_available_connectors: 1,
+      latest_availability_status: "available",
+    },
+  ]);
+  assert.equal(live.status, "available");
+  const recs = recommendStations([live]);
+  assert.equal(recs.length, 1);
+  assert.ok(recs[0].reasons.includes("availableNow"));
+  assert.equal(recs[0].availableCount, 1);
+});
+
+test("19. Search/filter scoping, eligibility, and count limits constrain recommendations", () => {
+  const eligible = [
+    recStation("e1", 19.076, 72.877),
+    recStation("e2", 19.077, 72.878),
+    recStation("e3", 19.078, 72.879),
+    recStation("e4", 19.079, 72.88),
+    recStation("e5", 19.08, 72.881),
+  ];
+  const recs = recommendStations(eligible);
+  assert.equal(recs.length, 3); // capped at 3 even with 5 eligible
+
+  // Ineligible: broken status, invalid coords, no usable connector info.
+  const broken = recStation("broken", 19.076, 72.877);
+  broken.status = "broken";
+  const noCoords = recStation("nocoords", NaN, NaN);
+  const noInfo = recStation("noinfo", 19.076, 72.877, { connectors: [] });
+  const unknownOnly = recStation("unknownonly", 19.076, 72.877, {
+    connectors: [{ id: "u1", type: "Unknown", powerKw: null, total: null, available: null }],
+  });
+  assert.deepEqual(recommendStations([broken, noCoords, noInfo, unknownOnly]), []);
+  assert.deepEqual(recommendStations([]), []);
+});
+
+test("20. Recommended-station selection stays synchronized with list, preview, and map", () => {
+  const stations = [
+    recStation("s1", 19.076, 72.877),
+    recStation("s2", 19.08, 72.88),
+  ];
+  const filtered = filterAndSortStations(stations, { filters: DEFAULT_EXPLORE_FILTERS });
+  const recs = recommendStations(filtered);
+  assert.ok(recs.length > 0);
+  for (const r of recs) {
+    // Every recommendation resolves through the same visible-selection path
+    // the list, preview sheet, and map popup share.
+    assert.equal(r.stationId && filtered.some((s) => s.id === r.stationId), true);
+    assert.equal(visibleSelection(r.stationId, filtered), r.stationId);
+    assert.equal(resolveSelectedStation(r.stationId, filtered, stations)?.id, r.stationId);
+    assert.ok(
+      toStationGeoJSON(filtered).features.some((f) => f.properties.id === r.stationId)
+    ); // pin exists for the recommendation
+  }
+});
+
+test("21. Silent style stall fires the watchdog timeout once", async () => {
+  let calls = 0;
+  const watchdog = createMapLoadWatchdog(() => {
+    calls += 1;
+  }, 20);
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  assert.equal(calls, 1); // hanging style/tile request becomes actionable
+  watchdog.resolve(); // late resolve after firing never refires
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  assert.equal(calls, 1);
+});
+
+test("22. Style readiness disarms the watchdog before the timeout", async () => {
+  let calls = 0;
+  const watchdog = createMapLoadWatchdog(() => {
+    calls += 1;
+  }, 20);
+  watchdog.resolve(); // style.load / load / unmount path
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  assert.equal(calls, 0); // no false error overlay on a healthy map
 });
 
 test("live: fetchStations against public anon client when credentials are present", async (t) => {

@@ -153,6 +153,18 @@ npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) to view the driver interface or [http://localhost:3000/admin](http://localhost:3000/admin) for the Operations Console.
 
+### 2b. Running Verification & Automated Tests
+```bash
+# Typecheck
+npm run typecheck
+
+# Full test suite (192 passing unit & integration tests)
+npm test
+
+# Production build
+npm run build
+```
+
 ### 3. Running the Data Warehouse & Mining Pipeline
 ```bash
 # Set up Python virtual environment

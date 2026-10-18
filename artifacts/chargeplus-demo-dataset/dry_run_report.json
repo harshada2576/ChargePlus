@@ -1,0 +1,141 @@
+{
+  "excluded_files": [
+    "profiles.csv",
+    "favorites.csv",
+    "reviews.csv",
+    "user_reports.csv",
+    "alerts.csv"
+  ],
+  "tables": {
+    "data_sources.csv": {
+      "rows": 5,
+      "pk_conflicts_with_remote": 0,
+      "sample_conflicts": [],
+      "intended_inserts": 5
+    },
+    "operators.csv": {
+      "rows": 100,
+      "pk_conflicts_with_remote": 0,
+      "sample_conflicts": [],
+      "intended_inserts": 100
+    },
+    "stations.csv": {
+      "rows": 2000,
+      "pk_conflicts_with_remote": 0,
+      "sample_conflicts": [],
+      "intended_inserts": 2000
+    },
+    "connectors.csv": {
+      "rows": 5002,
+      "pk_conflicts_with_remote": 0,
+      "sample_conflicts": [],
+      "intended_inserts": 5002
+    },
+    "station_source_link.csv": {
+      "rows": 2000,
+      "pk_conflicts_with_remote": 0,
+      "sample_conflicts": [],
+      "intended_inserts": 2000
+    },
+    "station_observations.csv": {
+      "rows": 70000,
+      "pk_conflicts_with_remote": 0,
+      "sample_conflicts": [],
+      "intended_inserts": 70000
+    },
+    "ingestion_runs.csv": {
+      "rows": 1000,
+      "pk_conflicts_with_remote": 0,
+      "sample_conflicts": [],
+      "intended_inserts": 1000
+    },
+    "dim_date.csv": {
+      "rows": 1095,
+      "pk_conflicts_with_remote": 0,
+      "sample_conflicts": [],
+      "intended_inserts": 1095
+    },
+    "dim_location.csv": {
+      "rows": 2000,
+      "pk_conflicts_with_remote": 0,
+      "sample_conflicts": [],
+      "intended_inserts": 2000
+    },
+    "dim_station.csv": {
+      "rows": 2000,
+      "pk_conflicts_with_remote": 0,
+      "sample_conflicts": [],
+      "intended_inserts": 2000
+    },
+    "dim_tariff.csv": {
+      "rows": 1000,
+      "pk_conflicts_with_remote": 0,
+      "sample_conflicts": [],
+      "intended_inserts": 1000
+    },
+    "dim_time.csv": {
+      "rows": 1440,
+      "pk_conflicts_with_remote": 0,
+      "sample_conflicts": [],
+      "intended_inserts": 1440
+    },
+    "dim_vehicle.csv": {
+      "rows": 100,
+      "pk_conflicts_with_remote": 0,
+      "sample_conflicts": [],
+      "intended_inserts": 100
+    },
+    "dim_weather.csv": {
+      "rows": 10000,
+      "pk_conflicts_with_remote": 0,
+      "sample_conflicts": [],
+      "intended_inserts": 10000
+    },
+    "fact_charging_session.csv": {
+      "rows": 30000,
+      "pk_conflicts_with_remote": 0,
+      "sample_conflicts": [],
+      "intended_inserts": 30000
+    },
+    "fact_station_daily_agg.csv": {
+      "rows": 10000,
+      "pk_conflicts_with_remote": 0,
+      "sample_conflicts": [],
+      "intended_inserts": 10000
+    }
+  },
+  "provenance": {
+    "stations_has_demo_marker": false,
+    "station_columns": [
+      "id",
+      "slug",
+      "name",
+      "operator_id",
+      "address_line",
+      "locality",
+      "city",
+      "state",
+      "postal_code",
+      "country",
+      "latitude",
+      "longitude",
+      "geom",
+      "opening_time",
+      "closing_time",
+      "is_24_hours",
+      "access_type",
+      "is_public",
+      "operational_status",
+      "phone",
+      "website_url",
+      "last_verified_at",
+      "created_at",
+      "updated_at"
+    ]
+  },
+  "fk_checks": {
+    "connectors_orphan": 0,
+    "obs_station_orphan": 0,
+    "obs_connector_orphan": 0
+  }
+}

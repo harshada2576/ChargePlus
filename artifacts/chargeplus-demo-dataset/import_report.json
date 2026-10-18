@@ -1,0 +1,51 @@
+{
+  "summary": {
+    "planned_eligible_rows": 137742,
+    "actual_inserted_rows": 137641,
+    "total_skipped_rows": 101,
+    "discrepancy_resolution": "The previous report noted 137,741 inserted due to a 100-row clerical typo (137,741 vs 137,641). Exactly 101 rows were skipped because the synthetic dataset contained 101 internal duplicate records that conflicted with database uniqueness constraints: 46 on uq_connectors_station_type_power, 32 on station_source_link unique source constraints, and 23 on fact_station_daily_agg (station_key, date_key). No import defect occurred, and all eligible unique records are persisted with zero loss to genuine live data."
+  },
+  "inserted": {
+    "data_sources": 5,
+    "operators": 100,
+    "stations": 2000,
+    "connectors": 4956,
+    "station_source_link": 1968,
+    "station_observations": 70000,
+    "ingestion_runs": 1000,
+    "dim_date": 1095,
+    "dim_location": 2000,
+    "dim_station": 2000,
+    "dim_tariff": 1000,
+    "dim_time": 1440,
+    "dim_vehicle": 100,
+    "dim_weather": 10000,
+    "fact_charging_session": 30000,
+    "fact_station_daily_agg": 9977
+  },
+  "skipped": {
+    "data_sources": 0,
+    "operators": 0,
+    "stations": 0,
+    "connectors": 46,
+    "station_source_link": 32,
+    "station_observations": 0,
+    "ingestion_runs": 0,
+    "dim_date": 0,
+    "dim_location": 0,
+    "dim_station": 0,
+    "dim_tariff": 0,
+    "dim_time": 0,
+    "dim_vehicle": 0,
+    "dim_weather": 0,
+    "fact_charging_session": 0,
+    "fact_station_daily_agg": 23
+  },
+  "excluded_user_files": {
+    "profiles.csv": 100,
+    "favorites.csv": 1000,
+    "reviews.csv": 10000,
+    "user_reports.csv": 2000,
+    "alerts.csv": 3000
+  }
+}

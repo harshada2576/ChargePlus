@@ -203,6 +203,22 @@ class NormalizedConnectorRecord(BaseModel):
         ge=0.0,
         description="Fixed connection or session fee if applicable"
     )
+    price_estimate_per_kwh: Optional[float] = Field(
+        default=None,
+        gt=0.0,
+        le=500.0,
+        description="Unverified estimate parsed from source free text; never a verified tariff"
+    )
+    price_estimate_raw: Optional[str] = Field(
+        default=None,
+        max_length=500,
+        description="Original source pricing text supporting the unverified estimate"
+    )
+    price_estimate_source: Optional[str] = Field(
+        default=None,
+        max_length=80,
+        description="Source identifier for the unverified estimate, e.g. ocm_usage_cost"
+    )
     currency: str = Field(
         default="INR",
         min_length=1,

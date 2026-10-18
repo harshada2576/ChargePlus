@@ -235,12 +235,15 @@ class MockCursor:
             self.db.mutation_counts["stations_inserted"] += 1
             self._last_result = [(stn_id,)]
 
-        # 9. INSERT INTO public.connectors (legacy 6-param + canonical 9-param)
+        # 9. INSERT INTO public.connectors (legacy 6-param + canonical 12-param with estimates)
         elif "INSERT INTO public.connectors" in sql_clean:
             conn_id = params[0]
             if len(params) >= 9:
+                est = tuple(params[9:12]) if len(params) >= 12 else (None, None, None)
                 row = {"id": conn_id, "station_id": params[1], "connector_type": params[2], "charging_standard": params[3], "power_kw": params[4], "quantity": params[5],
-                       "pricing_type": params[6], "price_per_kwh": params[7], "price_per_session": params[8]}
+                       "pricing_type": params[6], "price_per_kwh": params[7], "price_per_session": params[8],
+                       "price_estimate_per_kwh": est[0], "price_estimate_raw": est[1],
+                       "price_estimate_source": est[2]}
             else:
                 row = {"id": conn_id, "station_id": params[1], "connector_type": params[2], "power_kw": params[3]}
             self.db.tables["public.connectors"].append(row)
@@ -257,9 +260,15 @@ class MockCursor:
                     else:
                         self._last_result.append((c["id"], c["connector_type"], c.get("power_kw"), c.get("charging_standard"), c.get("quantity"), c.get("pricing_type"), c.get("price_per_kwh"), c.get("price_per_session")))
         # 9c. Canonical connector reconcile: update existing capacity group
+        # (23 params; mirrors the production estimate CASE: verified/FREE
+        # clears, valid OCM stores, OCM-without-estimate clears, else preserve).
         elif "UPDATE public.connectors SET" in sql_clean:
             try:
-                new_qty, p_type, p_kwh, p_sess, conn_id = params[:5]
+                new_qty, p_type, p_kwh, p_sess = params[0], params[1], params[2], params[3]
+                conn_id = str(params[-1])
+                v_kwh, p_str = (params[4], params[5]) if len(params) >= 23 else (None, None)
+                p_str_val = p_str.value if hasattr(p_str, "value") else p_str
+                e_src, e_val = (params[6], params[7]) if len(params) >= 23 else (None, None)
                 for c in self.db.tables["public.connectors"]:
                     if str(c["id"]) == str(conn_id):
                         c["quantity"] = new_qty
@@ -269,6 +278,19 @@ class MockCursor:
                             c["price_per_kwh"] = p_kwh
                         if p_sess is not None:
                             c["price_per_session"] = p_sess
+                        if len(params) >= 23:
+                            if v_kwh is not None or p_str_val == "free":
+                                c["price_estimate_per_kwh"] = None
+                                c["price_estimate_raw"] = None
+                                c["price_estimate_source"] = None
+                            elif e_src == "ocm_usage_cost" and e_val is not None:
+                                c["price_estimate_per_kwh"] = params[8]
+                                c["price_estimate_raw"] = params[14]
+                                c["price_estimate_source"] = params[20]
+                            elif e_src == "ocm_usage_cost":
+                                c["price_estimate_per_kwh"] = None
+                                c["price_estimate_raw"] = None
+                                c["price_estimate_source"] = None
                         break
             except Exception:
                 pass

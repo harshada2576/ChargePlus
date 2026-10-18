@@ -3,11 +3,20 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+
+if (typeof window !== "undefined") {
+  maplibregl.setWorkerUrl("/maplibre-gl-worker.mjs");
+}
 import type { Station } from "@/data/types";
 import { MUMBAI_CENTER } from "@/data/stations";
-import { toStationGeoJSON } from "@/data/exploreQuery";
+import {
+  createMapLoadWatchdog,
+  refreshStationsSource,
+  toStationGeoJSON,
+} from "@/data/exploreQuery";
 import { PlusIcon, MinusIcon, CompassIcon, PinIcon, AlertTriangleIcon } from "./Icon";
 import { cx, escapeHtml, isValidCoordinate } from "@/lib/util";
+import { stationPriceDisplay } from "@/lib/priceDisplay";
 import { useI18n } from "@/i18n/I18nProvider";
 
 export type MapLibreMapProps = {
@@ -47,7 +56,12 @@ export function MapLibreMap({
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const stationsRef = useRef(stations);
   const onSelectRef = useRef(onSelect);
+  const watchdogRef = useRef<{ resolve: () => void } | null>(null);
   const [mapError, setMapError] = useState(false);
+  // Bumped by the error-state retry action to re-run initialization and give
+  // a transient style/tile failure another chance. Cleanup below destroys the
+  // previous map instance before the re-attempt.
+  const [mapAttempt, setMapAttempt] = useState(0);
   const { t } = useI18n();
 
   useEffect(() => {
@@ -65,16 +79,35 @@ export function MapLibreMap({
         : initialCenter || [MUMBAI_CENTER.lng, MUMBAI_CENTER.lat];
     const zoom = singleStation ? 15 : (initialZoom ?? 11);
 
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: TILE_STYLE_URL,
-      center,
-      zoom,
-      attributionControl: false,
-      interactive: interactive,
-    });
+    let map: maplibregl.Map;
+    try {
+      map = new maplibregl.Map({
+        container: containerRef.current,
+        style: TILE_STYLE_URL,
+        center,
+        zoom,
+        attributionControl: false,
+        interactive: interactive,
+      });
+    } catch (err) {
+      // Construction itself can throw (e.g. no WebGL context): surface it
+      // through the same actionable error state instead of crashing the page.
+      console.error("MapLibre map initialization failed:", err);
+      // Synchronous mount-failure reporting; the error overlay is this effect's purpose.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMapError(true);
+      return;
+    }
 
     mapRef.current = map;
+
+    // Silent stalls (a hanging style/tile request emits no error event) would
+    // otherwise leave a blank canvas forever: surface them actionably.
+    const watchdog = createMapLoadWatchdog(() => {
+      const current = mapRef.current;
+      if (!current || !current.isStyleLoaded()) setMapError(true);
+    });
+    watchdogRef.current = watchdog;
 
     // A style/tile failure before the style is ready leaves an empty canvas with
     // no feedback, so surface it in the UI instead of failing silently.
@@ -89,7 +122,11 @@ export function MapLibreMap({
       "bottom-left"
     );
 
-    map.on("load", () => {
+    // Seed pins on style readiness, not full load: station pins must not wait
+    // for (or depend on) base-map tile completion. Late station data is
+    // pushed by the refresh effect below.
+    map.on("style.load", () => {
+      watchdogRef.current?.resolve();
       setMapError(false);
       // Build GeoJSON features for valid stations
       const featureStations = singleStation ? [singleStation] : stationsRef.current;
@@ -233,6 +270,13 @@ export function MapLibreMap({
       });
     });
 
+    // Full load (style + tiles settled) also disarms the watchdog and clears
+    // any earlier transient error. Pins do not wait for this event.
+    map.on("load", () => {
+      watchdogRef.current?.resolve();
+      setMapError(false);
+    });
+
     // Resize observer for dynamic layout
     const resizeObserver = new ResizeObserver(() => {
       map.resize();
@@ -243,28 +287,31 @@ export function MapLibreMap({
 
     return () => {
       resizeObserver.disconnect();
+      watchdogRef.current?.resolve();
+      watchdogRef.current = null;
       if (userMarkerRef.current) {
         userMarkerRef.current.remove();
+        userMarkerRef.current = null;
       }
       if (popupRef.current) {
         popupRef.current.remove();
+        popupRef.current = null;
       }
       map.remove();
       mapRef.current = null;
     };
-  }, [singleStation, initialCenter, initialZoom, interactive]);
+  }, [singleStation, initialCenter, initialZoom, interactive, mapAttempt]);
 
-  // Update GeoJSON data when station list changes
+  // Update GeoJSON data when station list changes (e.g. the station fetch
+  // completes after map initialization). No-op until the style is loaded and
+  // the source exists; the load handler above seeds from the latest stations.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
-    const source = map.getSource("stations") as maplibregl.GeoJSONSource | undefined;
-    if (!source) return;
-
-    const featureStations = singleStation ? [singleStation] : stations;
-    const geojson = toStationGeoJSON(featureStations);
-
-    source.setData(geojson);
+    refreshStationsSource(
+      map as unknown as Parameters<typeof refreshStationsSource>[0],
+      singleStation ? [singleStation] : stations
+    );
   }, [stations, singleStation]);
 
   // Update user location marker & recenter map
@@ -362,12 +409,11 @@ export function MapLibreMap({
         ? "Broken"
         : "Unknown";
 
-    const priceText =
-      st.isFree === true
-        ? "Free"
-        : st.pricePerKwh != null
-        ? `₹${st.pricePerKwh}/kWh`
-        : "—";
+    const priceText = escapeHtml(stationPriceDisplay(st, t).text);
+    const isSim = st.isSimulated || st.sourceCategory === "simulated";
+    const demoBadge = isSim
+      ? `<span class="inline-flex items-center rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 border border-amber-200">Demo</span>`
+      : "";
 
     const popupNode = document.createElement("div");
     popupNode.className = "p-2 text-ink-900 font-sans";
@@ -375,9 +421,12 @@ export function MapLibreMap({
     popupNode.setAttribute("aria-label", `${st.name}, ${statusText}`);
     popupNode.innerHTML = `
       <div class="flex items-center justify-between gap-2">
-        <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[10.5px] font-semibold ${statusBadgeClass}">
-          ● ${statusText}
-        </span>
+        <div class="flex items-center gap-1.5">
+          <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[10.5px] font-semibold ${statusBadgeClass}">
+            ● ${statusText}
+          </span>
+          ${demoBadge}
+        </div>
         <span class="rounded-full bg-ink-100 px-2 py-0.5 text-[11px] font-semibold text-ink-800">
           ${priceText}
         </span>
@@ -400,7 +449,7 @@ export function MapLibreMap({
       .setLngLat([st.lng, st.lat])
       .setDOMContent(popupNode)
       .addTo(map);
-  }, [selectedId, stations, singleStation]);
+  }, [selectedId, stations, singleStation, t]);
 
   const handleZoomIn = useCallback(() => {
     mapRef.current?.zoomIn({ duration: 300 });
@@ -451,6 +500,16 @@ export function MapLibreMap({
           <AlertTriangleIcon size={20} className="text-coral-700" />
           <p className="text-[13px] font-semibold text-ink-900">{t("errors.map.title")}</p>
           <p className="text-[12px] text-ink-600">{t("errors.map.body")}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setMapError(false);
+              setMapAttempt((a) => a + 1);
+            }}
+            className="mt-2 inline-flex h-9 items-center rounded-full bg-coral-600 px-4 text-[13px] font-medium text-ink-900 hover:bg-coral-700"
+          >
+            {t("common.tryAgain")}
+          </button>
         </div>
       )}
 

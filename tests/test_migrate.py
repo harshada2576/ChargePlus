@@ -18,11 +18,11 @@ from tests.db_target_guard import UnsafeDatabaseTarget
 
 def test_get_migration_files_count_and_order():
     files = get_migration_files()
-    assert len(files) == 14
+    assert len(files) == 15
     names = [f.name for f in files]
     assert names == sorted(names)
     assert names[0] == "20260918000001_step_1_3_core_operational_schema.sql"
-    assert names[-1] == "20260928000001_phase4_dim_connector_null_power.sql"
+    assert names[-1] == "20261013000001_step_7_1_connector_price_estimate.sql"
 
 
 def test_migrate_guard_rejects_placeholder_url():

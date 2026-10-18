@@ -31,6 +31,7 @@ EXPECTED_ORDER = [
     "20260927000003_pre_phase4_profiles_role_guard.sql",
     "20260927000004_pre_phase4_alerts_uniqueness.sql",
     "20260928000001_phase4_dim_connector_null_power.sql",
+    "20261013000001_step_7_1_connector_price_estimate.sql",
 ]
 
 PUBLIC_11 = [

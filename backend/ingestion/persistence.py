@@ -1807,6 +1807,23 @@ class IngestionPersistenceService:
             conn_p_type = c_data.get("pricing_type") or p_type
             conn_p_kwh = c_data.get("price_per_kwh") if c_data.get("price_per_kwh") is not None else p_kwh
             conn_p_sess = c_data.get("price_per_session") if c_data.get("price_per_session") is not None else p_sess
+            # Plain-string pricing type: PricingType.FREE.value is "free" (lowercase).
+            # The stale-estimate supersede check below must not depend on whether
+            # the caller passed an enum member or a raw string.
+            conn_p_type_str = conn_p_type.value if hasattr(conn_p_type, "value") else conn_p_type
+            # Resolve the estimate triple for a fresh row. A valid OCM estimate is
+            # stored only when no authoritative verified tariff or explicit FREE
+            # state supersedes it; an OCM refresh without a parseable estimate
+            # clears all three fields (never a stale numeric paired with new raw).
+            est_val = c_data.get("price_estimate_per_kwh")
+            est_raw = c_data.get("price_estimate_raw")
+            est_src = c_data.get("price_estimate_source")
+            if (
+                conn_p_kwh is not None
+                or conn_p_type_str == "free"
+                or not (est_src == "ocm_usage_cost" and est_val is not None)
+            ):
+                est_val, est_raw, est_src = None, None, None
 
             if key in existing_map:
                 # Update existing connector capacity group
@@ -1828,10 +1845,44 @@ class IngestionPersistenceService:
                         pricing_type = COALESCE(%s, pricing_type),
                         price_per_kwh = COALESCE(%s, price_per_kwh),
                         price_per_session = COALESCE(%s, price_per_session),
+                        -- Unverified-estimate lifecycle (never a verified tariff):
+                        -- an authoritative verified per-kWh tariff or explicit
+                        -- FREE state clears any stale estimate; a valid OCM
+                        -- estimate is stored; an OCM refresh without a parseable
+                        -- estimate clears all three fields; any other source
+                        -- without new pricing preserves the existing estimate
+                        -- (NULL verified price alone never clears).
+                        price_estimate_per_kwh = CASE
+                            WHEN %s IS NOT NULL OR %s = 'free' THEN NULL
+                            WHEN %s = 'ocm_usage_cost' AND %s IS NOT NULL THEN %s
+                            WHEN %s = 'ocm_usage_cost' THEN NULL
+                            ELSE price_estimate_per_kwh END,
+                        price_estimate_raw = CASE
+                            WHEN %s IS NOT NULL OR %s = 'free' THEN NULL
+                            WHEN %s = 'ocm_usage_cost' AND %s IS NOT NULL THEN %s
+                            WHEN %s = 'ocm_usage_cost' THEN NULL
+                            ELSE price_estimate_raw END,
+                        price_estimate_source = CASE
+                            WHEN %s IS NOT NULL OR %s = 'free' THEN NULL
+                            WHEN %s = 'ocm_usage_cost' AND %s IS NOT NULL THEN %s
+                            WHEN %s = 'ocm_usage_cost' THEN NULL
+                            ELSE price_estimate_source END,
                         updated_at = now()
                     WHERE id = %s;
                     """,
-                    (new_qty, conn_p_type, conn_p_kwh, conn_p_sess, str(conn_id)),
+                    (
+                        new_qty, conn_p_type, conn_p_kwh, conn_p_sess,
+                        conn_p_kwh, conn_p_type_str,
+                        c_data.get("price_estimate_source"), c_data.get("price_estimate_per_kwh"), c_data.get("price_estimate_per_kwh"),
+                        c_data.get("price_estimate_source"),
+                        conn_p_kwh, conn_p_type_str,
+                        c_data.get("price_estimate_source"), c_data.get("price_estimate_per_kwh"), c_data.get("price_estimate_raw"),
+                        c_data.get("price_estimate_source"),
+                        conn_p_kwh, conn_p_type_str,
+                        c_data.get("price_estimate_source"), c_data.get("price_estimate_per_kwh"), c_data.get("price_estimate_source"),
+                        c_data.get("price_estimate_source"),
+                        str(conn_id),
+                    ),
                 )
                 updated_count += 1
                 persisted_count += new_qty
@@ -1844,12 +1895,16 @@ class IngestionPersistenceService:
                     INSERT INTO public.connectors (
                         id, station_id, connector_type, charging_standard, power_kw,
                         quantity, pricing_type, price_per_kwh, price_per_session, currency,
+                        price_estimate_per_kwh, price_estimate_raw, price_estimate_source,
                         created_at, updated_at
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'INR', now(), now());
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'INR', %s, %s, %s, now(), now());
                     """,
                     (
                         str(conn_id), str(station_id), c_type, std or None, p_val,
                         qty, conn_p_type, conn_p_kwh, conn_p_sess,
+                        est_val,
+                        est_raw,
+                        est_src,
                     ),
                 )
                 created_count += 1

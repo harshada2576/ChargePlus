@@ -1,0 +1,6 @@
+id,name,source_type,base_url,source_priority,is_active,created_at
+bdd640fb-0667-1ad1-1c80-317fa3b1799d,demo_open_charge_map,api,https://example.com/demo_open_charge_map,100,True,2026-01-01T00:00:00+00:00
+23b8c1e9-3924-56de-3eb1-3b9046685257,demo_operator_feed,manual,https://example.com/demo_operator_feed,90,True,2026-01-02T00:00:00+00:00
+bd9c66b3-ad3c-2d6d-1a3d-1fa7bc8960a9,manual_demo_import,manual,https://example.com/manual_demo_import,80,True,2026-01-03T00:00:00+00:00
+972a8469-1641-9f82-8b9d-2434e465e150,analytics_etl,manual,https://example.com/analytics_etl,70,True,2026-01-04T00:00:00+00:00
+17fc695a-07a0-ca6e-0822-e8f36c031199,alert_service,manual,https://example.com/alert_service,60,True,2026-01-05T00:00:00+00:00

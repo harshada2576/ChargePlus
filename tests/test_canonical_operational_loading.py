@@ -244,24 +244,33 @@ class MockDatabaseCursor:
             tot = sum(c["quantity"] for c in self.db.tables["public.connectors"] if str(c["station_id"]) == stn_id)
             self._last_result = [(tot,)]
 
-        # 9. INSERT INTO public.connectors
+        # 9. INSERT INTO public.connectors (legacy 9-param + 12-param with estimates)
         elif "INSERT INTO public.connectors" in sql_clean:
             if self.db.should_fail_on_connector_insert:
                 raise psycopg2.DatabaseError("Simulated database failure on connector insertion")
-            cid, stn_id, ctype, std, pkw, qty, p_type, p_kwh, p_sess = params
+            cid, stn_id, ctype, std, pkw, qty, p_type, p_kwh, p_sess = params[:9]
+            est = tuple(params[9:12]) if len(params) >= 12 else (None, None, None)
             row = {
                 "id": str(cid), "station_id": str(stn_id), "connector_type": ctype, "charging_standard": std,
                 "power_kw": float(pkw) if pkw is not None else None, "quantity": int(qty), "pricing_type": p_type,
                 "price_per_kwh": float(p_kwh) if p_kwh is not None else None,
                 "price_per_session": float(p_sess) if p_sess is not None else None,
                 "currency": "INR",
+                "price_estimate_per_kwh": est[0], "price_estimate_raw": est[1],
+                "price_estimate_source": est[2],
             }
             self.db.tables["public.connectors"].append(row)
             self.db.mutation_counts["connectors_inserted"] += 1
 
-        # 10. UPDATE public.connectors
+        # 10. UPDATE public.connectors (23 params; mirrors production CASE:
+        # verified/FREE clears, valid OCM stores, OCM-without-estimate clears,
+        # otherwise preserve).
         elif "UPDATE public.connectors SET" in sql_clean:
-            new_qty, p_type, p_kwh, p_sess, conn_id = params
+            new_qty, p_type, p_kwh, p_sess = params[0], params[1], params[2], params[3]
+            conn_id = str(params[-1])
+            v_kwh, p_str = (params[4], params[5]) if len(params) >= 23 else (None, None)
+            p_str_val = p_str.value if hasattr(p_str, "value") else p_str
+            e_src, e_val = (params[6], params[7]) if len(params) >= 23 else (None, None)
             for c in self.db.tables["public.connectors"]:
                 if str(c["id"]) == str(conn_id):
                     c["quantity"] = int(new_qty)
@@ -271,6 +280,19 @@ class MockDatabaseCursor:
                         c["price_per_kwh"] = float(p_kwh)
                     if p_sess is not None:
                         c["price_per_session"] = float(p_sess)
+                    if len(params) >= 23:
+                        if v_kwh is not None or p_str_val == "free":
+                            c["price_estimate_per_kwh"] = None
+                            c["price_estimate_raw"] = None
+                            c["price_estimate_source"] = None
+                        elif e_src == "ocm_usage_cost" and e_val is not None:
+                            c["price_estimate_per_kwh"] = params[8]
+                            c["price_estimate_raw"] = params[14]
+                            c["price_estimate_source"] = params[20]
+                        elif e_src == "ocm_usage_cost":
+                            c["price_estimate_per_kwh"] = None
+                            c["price_estimate_raw"] = None
+                            c["price_estimate_source"] = None
                     self.db.mutation_counts["connectors_updated"] += 1
                     break
 

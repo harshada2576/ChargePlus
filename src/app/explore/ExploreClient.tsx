@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
-import { fetchStations, getAvailableChargers } from "@/data/stations";
+import { distanceKm, fetchStations, formatDistance } from "@/data/stations";
 import {
   DEFAULT_EXPLORE_FILTERS,
   filterAndSortStations,
+  recommendStations,
   resolveSelectedStation,
   visibleSelection,
 } from "@/data/exploreQuery";
@@ -52,6 +53,9 @@ export function ExploreClient() {
   const [sortOpen, setSortOpen] = useState(false);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const desktopSearchInputRef = useRef<HTMLInputElement>(null);
+
+  const PAGE_SIZE = 30;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const [retryNonce, setRetryNonce] = useState(0);
   const loadStations = useCallback(() => {
@@ -129,6 +133,21 @@ export function ExploreClient() {
     [selectedId, filtered]
   );
 
+  // Reset visible card count on filter/search change
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [query, filters, sort]);
+
+  // Expand visible count if selected station is beyond current page
+  useEffect(() => {
+    if (visibleSelectedId) {
+      const idx = filtered.findIndex((s) => s.id === visibleSelectedId);
+      if (idx >= 0 && idx >= visibleCount) {
+        setVisibleCount(Math.min(idx + PAGE_SIZE, filtered.length));
+      }
+    }
+  }, [visibleSelectedId, filtered, visibleCount]);
+
   const selectedStation = useMemo(
     () => resolveSelectedStation(visibleSelectedId, filtered, stations),
     [filtered, stations, visibleSelectedId]
@@ -137,17 +156,13 @@ export function ExploreClient() {
   const activeChips = useMemo(() => buildChips(filters, setFilters, t), [filters, t]);
 
   const recommendations: Recommendation[] = useMemo(() => {
-    // Recommend up to 1 well-matched station from the visible list
-    const cand = filtered.find((s) => s.status === "available" && (getAvailableChargers(s) ?? 0) > 0);
-    if (!cand) return [];
-    return [
-      {
-        stationId: cand.id,
-        reasons: ["availableNow", "matchConnector"],
-        availableCount: getAvailableChargers(cand) ?? undefined,
-      },
-    ];
-  }, [filtered]);
+    // Recommend up to 3 eligible stations from the visible (search/filtered)
+    // list. Works without live availability: unknown status is never evidence.
+    return recommendStations(filtered, {
+      userLoc,
+      connectorTypes: filters.connectorTypes,
+    });
+  }, [filtered, userLoc, filters.connectorTypes]);
 
   const sortLabels: Record<SortKey, string> = {
     nearest: t("common.sort.nearest"),
@@ -270,48 +285,75 @@ export function ExploreClient() {
           </div>
 
           {/* Recommendations */}
-          {recommendations.length > 0 && !loading && !error && (
+          {!loading && !error && filtered.length > 0 && (
             <div className="mt-3">
               <h2 className="px-1 text-[12px] font-semibold uppercase tracking-wider text-ink-600">
                 {t("station.rec.title")}
               </h2>
-              <div className="mt-2 space-y-2">
-                {recommendations.map((r) => {
-                  const st = filtered.find((s) => s.id === r.stationId)!;
-                  return (
-                    <button
-                      key={r.stationId}
-                      onClick={() => setSelectedId(r.stationId)}
-                      className="block w-full text-left"
-                    >
-                      <div className="rounded-[16px] border border-coral-200 bg-coral-50 p-3 shadow-card hover:shadow-card-hover">
-                        <div className="flex items-center justify-between">
-                          <p className="text-[14px] font-semibold text-ink-900">{st.name}</p>
-                          <span className="inline-flex h-6 items-center rounded-full bg-white px-2 text-[10.5px] font-semibold text-coral-700">
-                            {t("common.recommended")}
-                          </span>
+              {recommendations.length > 0 ? (
+                <div className="mt-2 space-y-2">
+                  {recommendations.map((r) => {
+                    const st = filtered.find((s) => s.id === r.stationId)!;
+                    const dist =
+                      userLoc && st.lat != null && st.lng != null
+                        ? distanceKm(userLoc, { lat: st.lat, lng: st.lng })
+                        : null;
+                    const distLabel =
+                      dist != null && Number.isFinite(dist)
+                        ? (() => {
+                            const f = formatDistance(dist);
+                            return t("station.rec.away", {
+                              distance: `${f.value} ${f.unit}`,
+                            });
+                          })()
+                        : null;
+                    return (
+                      <button
+                        key={r.stationId}
+                        onClick={() => setSelectedId(r.stationId)}
+                        className="block w-full text-left"
+                      >
+                        <div className="rounded-[16px] border border-coral-200 bg-coral-50 p-3 shadow-card hover:shadow-card-hover">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[14px] font-semibold text-ink-900">{st.name}</p>
+                            <span className="inline-flex h-6 items-center rounded-full bg-white px-2 text-[10.5px] font-semibold text-coral-700">
+                              {t("common.recommended")}
+                            </span>
+                          </div>
+                          <ul className="mt-1.5 space-y-1 text-[12.5px] text-ink-700">
+                            {r.reasons.map((reason) => (
+                              <li key={reason} className="inline-flex items-center gap-1.5">
+                                <CheckIcon size={13} className="text-coral-600" />
+                                {reason === "availableNow" && r.availableCount != null
+                                  ? t("station.rec.availableNow", { n: r.availableCount })
+                                  : reason === "matchConnector"
+                                  ? t("station.rec.matchConnector")
+                                  : reason === "knownPower"
+                                  ? t("station.rec.knownPower")
+                                  : reason === "priceAvailable"
+                                  ? t("station.rec.priceAvailable")
+                                  : reason === "nearby"
+                                  ? t("station.rec.nearby")
+                                  : t("station.rec.availabilityUnknown")}
+                              </li>
+                            ))}
+                            {distLabel && (
+                              <li className="inline-flex items-center gap-1.5">
+                                <CheckIcon size={13} className="text-coral-600" />
+                                {distLabel}
+                              </li>
+                            )}
+                          </ul>
                         </div>
-                        <ul className="mt-1.5 space-y-1 text-[12.5px] text-ink-700">
-                          <li className="inline-flex items-center gap-1.5">
-                            <CheckIcon size={13} className="text-coral-600" />
-                            {t("station.rec.matchConnector")}
-                          </li>
-                          {r.availableCount != null && (
-                            <li className="inline-flex items-center gap-1.5">
-                              <CheckIcon size={13} className="text-coral-600" />
-                              {t("station.rec.availableNow", { n: r.availableCount })}
-                            </li>
-                          )}
-                          <li className="inline-flex items-center gap-1.5">
-                            <CheckIcon size={13} className="text-coral-600" />
-                            {t("station.rec.lessBusyNow")}
-                          </li>
-                        </ul>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="mt-2 rounded-[16px] border border-ink-100 bg-white px-3 py-2.5 text-[12.5px] text-ink-600">
+                  {t("station.rec.empty")}
+                </p>
+              )}
             </div>
           )}
 
@@ -343,42 +385,55 @@ export function ExploreClient() {
             ) : filtered.length === 0 ? (
               <EmptyResults onClear={() => { setFilters(DEFAULT_EXPLORE_FILTERS); setQuery(""); }} />
             ) : (
-              filtered.map((s) => (
-                <div
-                  key={s.id}
-                  role="group"
-                  tabIndex={0}
-                  aria-label={s.name}
-                  onClick={(event) => {
-                    if (
-                      event.target instanceof Element &&
-                      event.target.closest("a,button,input,select,textarea")
-                    ) {
-                      return;
-                    }
-                    setSelectedId(s.id);
-                  }}
-                  onKeyDown={(event) => {
-                    if (
-                      (event.key === "Enter" || event.key === " ") &&
-                      event.target === event.currentTarget
-                    ) {
-                      event.preventDefault();
-                      setSelectedId(s.id);
-                    }
-                  }}
-                  className="block w-full text-left"
-                >
+              <>
+                {filtered.slice(0, visibleCount).map((s) => (
                   <div
-                    className={cx(
-                      "rounded-[18px]",
-                      visibleSelectedId === s.id && "ring-2 ring-coral-600 ring-offset-2 ring-offset-ink-50"
-                    )}
+                    key={s.id}
+                    role="group"
+                    tabIndex={0}
+                    aria-label={s.name}
+                    onClick={(event) => {
+                      if (
+                        event.target instanceof Element &&
+                        event.target.closest("a,button,input,select,textarea")
+                      ) {
+                        return;
+                      }
+                      setSelectedId(s.id);
+                    }}
+                    onKeyDown={(event) => {
+                      if (
+                        (event.key === "Enter" || event.key === " ") &&
+                        event.target === event.currentTarget
+                      ) {
+                        event.preventDefault();
+                        setSelectedId(s.id);
+                      }
+                    }}
+                    className="block w-full text-left"
                   >
-                    <StationCard station={s} userLocation={userLoc} />
+                    <div
+                      className={cx(
+                        "rounded-[18px]",
+                        visibleSelectedId === s.id && "ring-2 ring-coral-600 ring-offset-2 ring-offset-ink-50"
+                      )}
+                    >
+                      <StationCard station={s} userLocation={userLoc} />
+                    </div>
                   </div>
-                </div>
-              ))
+                ))}
+                {visibleCount < filtered.length && (
+                  <div className="pt-2 pb-4 text-center">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filtered.length))}
+                    >
+                      Show more stations ({Math.min(visibleCount, filtered.length)} of {filtered.length})
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </aside>
