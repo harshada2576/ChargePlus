@@ -50,6 +50,7 @@ export type TranslationKey =
   | "common.skipToContent"
   | "nav.home"
   | "nav.explore"
+  | "nav.intelligence"
   | "nav.saved"
   | "nav.alerts"
   | "nav.profile"

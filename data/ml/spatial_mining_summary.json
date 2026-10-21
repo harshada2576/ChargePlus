@@ -1,0 +1,1427 @@
+{
+  "metadata": {
+    "generated_at": "2026-10-21T13:44:50.901165+00:00",
+    "pipeline": "backend.ml.run_spatial_mining",
+    "algorithm": "DBSCAN (Density-Based Spatial Clustering of Applications with Noise)",
+    "distance_metric": "Haversine Great-Circle Distance (Spherical Earth, R = 6371.0088 km)",
+    "parameters": {
+      "eps_km": 2.0,
+      "min_samples": 3,
+      "isolation_threshold_km": 5.0
+    },
+    "data_provenance": {
+      "source": "artifacts\\chargeplus-real-dataset\\stations.csv",
+      "total_records": 541,
+      "is_synthetic": false,
+      "verification_status": "AUTHENTIC_REAL_DATASET"
+    }
+  },
+  "summary": {
+    "total_stations": 541,
+    "clustered_stations": 114,
+    "noise_stations": 427,
+    "cluster_count": 24,
+    "coverage_gap_count": 254,
+    "extreme_isolation_outliers": 17
+  },
+  "clusters": [
+    {
+      "cluster_id": 0,
+      "station_count": 8,
+      "center_lat": 18.608978,
+      "center_lng": 73.750433,
+      "radius_km": 1.734,
+      "min_lat": 18.5963,
+      "max_lat": 18.623896,
+      "min_lng": 73.745481,
+      "max_lng": 73.755999,
+      "stations": [
+        {
+          "id": "1ca3bd33-2eda-5b01-952a-1e2fa91d66ca",
+          "name": "Gaurav Icon Tower",
+          "operator": "Unknown Operator",
+          "lat": 18.59629964353062,
+          "lng": 73.75599935970514
+        },
+        {
+          "id": "bb12d5d4-66f0-5fea-a0a6-ffa086c85cb0",
+          "name": "MG Motor B.U. Bhandari Showroom",
+          "operator": "Unknown Operator",
+          "lat": 18.599012307937844,
+          "lng": 73.75415702984328
+        },
+        {
+          "id": "a8b47cf3-aa3d-52d9-9358-19041e758ad3",
+          "name": "Shell Tathawade",
+          "operator": "Unknown Operator",
+          "lat": 18.61358685499954,
+          "lng": 73.74883334321919
+        },
+        {
+          "id": "35b211b2-c4aa-586d-b133-12c8f4d6d772",
+          "name": "Burger King, Tathawade",
+          "operator": "Unknown Operator",
+          "lat": 18.61652961025573,
+          "lng": 73.74773834178781
+        },
+        {
+          "id": "93807938-f9ff-58fd-83a5-c9d46638c1fa",
+          "name": "Tata Motors Tathawade",
+          "operator": "Unknown Operator",
+          "lat": 18.623488205362765,
+          "lng": 73.74548104644525
+        },
+        {
+          "id": "0efac94d-7142-5706-8ed1-847d5c3010af",
+          "name": "Sai Darbar Hotel",
+          "operator": "Unknown Operator",
+          "lat": 18.623896266954958,
+          "lng": 73.74563734187849
+        },
+        {
+          "id": "9c928a8f-423c-5722-9033-7b22b39ae2cb",
+          "name": "Hotel Sayaji Wakad",
+          "operator": "Unknown Operator",
+          "lat": 18.599090985407713,
+          "lng": 73.75190356008125
+        },
+        {
+          "id": "a5ddafdf-b192-59fc-b7e8-6ee6a536a715",
+          "name": "Garve Hyundai",
+          "operator": "Unknown Operator",
+          "lat": 18.59991835206595,
+          "lng": 73.7537161148497
+        }
+      ]
+    },
+    {
+      "cluster_id": 1,
+      "station_count": 4,
+      "center_lat": 17.989757,
+      "center_lng": 73.990809,
+      "radius_km": 1.497,
+      "min_lat": 17.977804,
+      "max_lat": 18.002655,
+      "min_lng": 73.988148,
+      "max_lng": 73.994858,
+      "stations": [
+        {
+          "id": "2957f5d1-6c5e-5c8c-8b5b-34bfea33ff6e",
+          "name": "Hotel Aram Regency",
+          "operator": "Unknown Operator",
+          "lat": 18.002654665762318,
+          "lng": 73.99485811928642
+        },
+        {
+          "id": "a2b513f9-ab9c-555c-a285-fe75cc301bf2",
+          "name": "Hotel Ashirwad Inn",
+          "operator": "Unknown Operator",
+          "lat": 17.990830600792236,
+          "lng": 73.99070513633966
+        },
+        {
+          "id": "50ff9fbe-5bbd-5b29-9bbf-acfbfb281a7e",
+          "name": "OscarWadi Misal",
+          "operator": "Unknown Operator",
+          "lat": 17.987737858886614,
+          "lng": 73.98952587881438
+        },
+        {
+          "id": "6b5f153b-83a3-5199-ab7d-b9cd5aafe3e2",
+          "name": "Hotel Sai Park Inn",
+          "operator": "Unknown Operator",
+          "lat": 17.97780430476992,
+          "lng": 73.98814830460636
+        }
+      ]
+    },
+    {
+      "cluster_id": 2,
+      "station_count": 5,
+      "center_lat": 16.702022,
+      "center_lng": 74.247097,
+      "radius_km": 2.067,
+      "min_lat": 16.698877,
+      "max_lat": 16.703369,
+      "min_lng": 74.231142,
+      "max_lng": 74.266494,
+      "stations": [
+        {
+          "id": "256d0c00-8bcc-5b05-bd89-75d145be2b3f",
+          "name": "Reliance Mall",
+          "operator": "Unknown Operator",
+          "lat": 16.698876513466676,
+          "lng": 74.23114174500584
+        },
+        {
+          "id": "c4107991-d0a4-584e-be0a-8964040aff7f",
+          "name": "Kolhapur Railway Station",
+          "operator": "Unknown Operator",
+          "lat": 16.70295634772825,
+          "lng": 74.23709668798799
+        },
+        {
+          "id": "d4c153b8-e9a4-55e4-a02b-a339daf283cc",
+          "name": "MAI Hyundai Kolhapur",
+          "operator": "Unknown Operator",
+          "lat": 16.70238664960913,
+          "lng": 74.25029800499102
+        },
+        {
+          "id": "142cf38c-0754-53e3-8149-62b66f116809",
+          "name": "CWC Kolhapur - I",
+          "operator": "Unknown Operator",
+          "lat": 16.702524278100203,
+          "lng": 74.26649372291912
+        },
+        {
+          "id": "0c005d88-aa40-5ced-8dc0-dab212efb87b",
+          "name": "Vijaya Power Charging Station 60 Kw + 30 Kw",
+          "operator": "Unknown Operator",
+          "lat": 16.70336850326356,
+          "lng": 74.25045696673965
+        }
+      ]
+    },
+    {
+      "cluster_id": 3,
+      "station_count": 6,
+      "center_lat": 18.556944,
+      "center_lng": 73.776106,
+      "radius_km": 2.204,
+      "min_lat": 18.551668,
+      "max_lat": 18.564141,
+      "min_lng": 73.761016,
+      "max_lng": 73.796756,
+      "stations": [
+        {
+          "id": "e37024cf-ad65-56e7-9ca4-cf042767ba3c",
+          "name": "Shell Recharge Sus Road",
+          "operator": "Unknown Operator",
+          "lat": 18.551668484658936,
+          "lng": 73.76101557363096
+        },
+        {
+          "id": "94d8ddb3-b2af-5b4b-b8c3-29f1b2593a1b",
+          "name": "B4S Baner",
+          "operator": "Unknown Operator",
+          "lat": 18.5534199309817,
+          "lng": 73.77066239419024
+        },
+        {
+          "id": "8952f11a-4124-5ae1-bfea-fceb931f42ff",
+          "name": "Crystal Kia, Baner",
+          "operator": "Unknown Operator",
+          "lat": 18.557345771328887,
+          "lng": 73.77053982274862
+        },
+        {
+          "id": "79818ae4-d54e-5c0a-affc-1da36d4bc794",
+          "name": "Aditya School",
+          "operator": "Unknown Operator",
+          "lat": 18.56124353052958,
+          "lng": 73.7812056950576
+        },
+        {
+          "id": "5394e87b-9472-53e6-a082-8190c186ac2c",
+          "name": "Amar Business Zone",
+          "operator": "Unknown Operator",
+          "lat": 18.56414082731241,
+          "lng": 73.77645742740673
+        },
+        {
+          "id": "e7cb28a0-3098-54b6-8175-609b3f96641f",
+          "name": "MobiLane 45ICON",
+          "operator": "Unknown Operator",
+          "lat": 18.553845,
+          "lng": 73.796756
+        }
+      ]
+    },
+    {
+      "cluster_id": 4,
+      "station_count": 4,
+      "center_lat": 9.930369,
+      "center_lng": 76.32141,
+      "radius_km": 1.47,
+      "min_lat": 9.918899,
+      "max_lat": 9.939769,
+      "min_lng": 76.317555,
+      "max_lng": 76.330848,
+      "stations": [
+        {
+          "id": "1e5cc130-ace4-5610-a00c-b0cc3966de08",
+          "name": "Nucleus Mall EVCS",
+          "operator": "Unknown Operator",
+          "lat": 9.939769327506,
+          "lng": 76.33084767868081
+        },
+        {
+          "id": "42771d38-159b-5004-876b-cda924422fdb",
+          "name": "Maradu Crowne Plaza EVCS",
+          "operator": "Unknown Operator",
+          "lat": 9.934295516158258,
+          "lng": 76.31882007213062
+        },
+        {
+          "id": "426ab106-3385-5500-a4c7-1082257f884d",
+          "name": "Nettoor Royal Drive Smart EVCS",
+          "operator": "Unknown Operator",
+          "lat": 9.928512582134246,
+          "lng": 76.31755483825702
+        },
+        {
+          "id": "f693a879-c792-5faf-b832-4c7b577337e6",
+          "name": "VPS Lakeshore Hospital EVCS",
+          "operator": "Unknown Operator",
+          "lat": 9.918898936471678,
+          "lng": 76.31841806447744
+        }
+      ]
+    },
+    {
+      "cluster_id": 5,
+      "station_count": 3,
+      "center_lat": 10.961969,
+      "center_lng": 78.051643,
+      "radius_km": 1.059,
+      "min_lat": 10.95773,
+      "max_lat": 10.964214,
+      "min_lng": 78.046556,
+      "max_lng": 78.06033,
+      "stations": [
+        {
+          "id": "6b577e27-ca68-5406-8060-7a6260c6a132",
+          "name": "VSB Auto Care",
+          "operator": "Unknown Operator",
+          "lat": 10.964214297245903,
+          "lng": 78.04655560696892
+        },
+        {
+          "id": "a821c84b-c667-575c-914a-1f12dbdcee3b",
+          "name": "AKR Textiles",
+          "operator": "Unknown Operator",
+          "lat": 10.963961710013322,
+          "lng": 78.0480420514914
+        },
+        {
+          "id": "12496868-a041-5c26-8eb9-1a9132282f93",
+          "name": "Subbanna Hotel",
+          "operator": "Unknown Operator",
+          "lat": 10.95773,
+          "lng": 78.06033
+        }
+      ]
+    },
+    {
+      "cluster_id": 6,
+      "station_count": 6,
+      "center_lat": 28.630959,
+      "center_lng": 77.220922,
+      "radius_km": 1.428,
+      "min_lat": 28.618401,
+      "max_lat": 28.634997,
+      "min_lng": 77.217594,
+      "max_lng": 77.224946,
+      "stations": [
+        {
+          "id": "5e58842f-71a7-51a4-a895-8b9b56987ca9",
+          "name": "EESL - Devinder Collections",
+          "operator": "Unknown Operator",
+          "lat": 28.633242086746723,
+          "lng": 77.22494621242714
+        },
+        {
+          "id": "4b073278-c3a8-5acf-814f-427145bef644",
+          "name": "Le M\u00e9ridien",
+          "operator": "Unknown Operator",
+          "lat": 28.618401012446768,
+          "lng": 77.21783619594248
+        },
+        {
+          "id": "8a6e11ed-7c11-532a-b9b7-d8ed6f2c48e4",
+          "name": "EESL Charging Station",
+          "operator": "Unknown Operator",
+          "lat": 28.633916381579937,
+          "lng": 77.21759418912825
+        },
+        {
+          "id": "b011aa66-d901-58c0-8678-e402e3f56948",
+          "name": "EESL Charging Station",
+          "operator": "Unknown Operator",
+          "lat": 28.631607433900697,
+          "lng": 77.2219265686017
+        },
+        {
+          "id": "8fa9b19c-688f-53df-a930-1122c6d7fd65",
+          "name": "EESL Charging Station",
+          "operator": "Unknown Operator",
+          "lat": 28.633589917686507,
+          "lng": 77.2235540442191
+        },
+        {
+          "id": "f00c5e0b-f076-597d-8b27-b235579ce923",
+          "name": "EESL Charging Station",
+          "operator": "Unknown Operator",
+          "lat": 28.634996929264886,
+          "lng": 77.21967228284348
+        }
+      ]
+    },
+    {
+      "cluster_id": 7,
+      "station_count": 3,
+      "center_lat": 10.16142,
+      "center_lng": 76.380721,
+      "radius_km": 1.464,
+      "min_lat": 10.159995,
+      "max_lat": 10.162224,
+      "min_lng": 76.367356,
+      "max_lng": 76.390154,
+      "stations": [
+        {
+          "id": "21a350be-11ac-5980-9091-5890e55844c4",
+          "name": "Taj Cochin Internation Airport Hotel - Tata Power",
+          "operator": "Unknown Operator",
+          "lat": 10.159995038034907,
+          "lng": 76.39015421888632
+        },
+        {
+          "id": "a9a3bec1-9aff-59ea-ac29-c59b152ee2a4",
+          "name": "SAJ Earth Resort - Tata Power",
+          "operator": "Unknown Operator",
+          "lat": 10.162224246244605,
+          "lng": 76.3846534973361
+        },
+        {
+          "id": "9c69e631-ed0e-552d-ab8d-397032f13bdc",
+          "name": "Luxon Motors - Tata Power",
+          "operator": "Unknown Operator",
+          "lat": 10.162042049613518,
+          "lng": 76.36735603462671
+        }
+      ]
+    },
+    {
+      "cluster_id": 8,
+      "station_count": 4,
+      "center_lat": 12.353937,
+      "center_lng": 76.631338,
+      "radius_km": 1.229,
+      "min_lat": 12.35048,
+      "max_lat": 12.35941,
+      "min_lng": 76.62151,
+      "max_lng": 76.63894,
+      "stations": [
+        {
+          "id": "3b0d3ee8-9c59-5cc3-bb33-bed23f0e7f45",
+          "name": "Hotel Arcore",
+          "operator": "Unknown Operator",
+          "lat": 12.352687402465657,
+          "lng": 76.62920329960255
+        },
+        {
+          "id": "498cc989-b328-58f2-b6dc-ab44f535bd47",
+          "name": "Ganapati Fuel Station",
+          "operator": "Unknown Operator",
+          "lat": 12.35048,
+          "lng": 76.63894
+        },
+        {
+          "id": "48e512ed-f8db-5213-ab16-cf67d98c7ebd",
+          "name": "GRS Fantasy Park",
+          "operator": "Unknown Operator",
+          "lat": 12.35317,
+          "lng": 76.6357
+        },
+        {
+          "id": "cfeea851-34a9-5be0-af19-e1f2f18fa2b1",
+          "name": "Akshaya Motors",
+          "operator": "Unknown Operator",
+          "lat": 12.35941,
+          "lng": 76.62151
+        }
+      ]
+    },
+    {
+      "cluster_id": 9,
+      "station_count": 5,
+      "center_lat": 11.00926,
+      "center_lng": 76.983152,
+      "radius_km": 2.159,
+      "min_lat": 10.99713,
+      "max_lat": 11.02287,
+      "min_lng": 76.97363,
+      "max_lng": 76.99726,
+      "stations": [
+        {
+          "id": "7d154110-ed55-5082-81d2-3a4fa5cd4b31",
+          "name": "Zibe Coimbatore by GRT Hotels",
+          "operator": "Unknown Operator",
+          "lat": 11.02287,
+          "lng": 76.99726
+        },
+        {
+          "id": "b966b383-949e-59e1-a03b-cbf7ebca46ab",
+          "name": "Ibis Coimbatore City Centre",
+          "operator": "Unknown Operator",
+          "lat": 11.01223,
+          "lng": 76.98654
+        },
+        {
+          "id": "7a936f19-d0c7-5c2f-9fab-9aee2abb1740",
+          "name": "Zone by The Park Hotel",
+          "operator": "Unknown Operator",
+          "lat": 11.01157,
+          "lng": 76.98444
+        },
+        {
+          "id": "678d7133-c174-5940-80d7-51b01b738020",
+          "name": "Taj Vivanta Coimbatore",
+          "operator": "Unknown Operator",
+          "lat": 11.0025,
+          "lng": 76.97363
+        },
+        {
+          "id": "7adf41a4-68bc-50dd-a02d-c3f3954b0d77",
+          "name": "Welcomhotel By ITC Hotels, Race Course, Coimbatore",
+          "operator": "Unknown Operator",
+          "lat": 10.99713,
+          "lng": 76.97389
+        }
+      ]
+    },
+    {
+      "cluster_id": 10,
+      "station_count": 15,
+      "center_lat": 12.978687,
+      "center_lng": 77.720077,
+      "radius_km": 4.278,
+      "min_lat": 12.957173,
+      "max_lat": 12.99577,
+      "min_lng": 77.6847,
+      "max_lng": 77.747194,
+      "stations": [
+        {
+          "id": "6d189f3d-fa9b-5db5-b266-2032a68a57ec",
+          "name": "MG Motor B Narayanapura",
+          "operator": "Unknown Operator",
+          "lat": 12.99577,
+          "lng": 77.6847
+        },
+        {
+          "id": "f1a1885f-2c1a-560f-8ad9-732babf574b4",
+          "name": "Trifecta Addatto",
+          "operator": "Unknown Operator",
+          "lat": 12.994305942257284,
+          "lng": 77.69929493060977
+        },
+        {
+          "id": "ce648503-5a86-5aa6-8773-c504fc6684fb",
+          "name": "Epitome KIA Whitefield",
+          "operator": "Unknown Operator",
+          "lat": 12.985769101393643,
+          "lng": 77.70856232742358
+        },
+        {
+          "id": "1d279411-e7a4-53d0-a3f9-18683522b9b8",
+          "name": "Fairfield by Marriott, Mahadevapura",
+          "operator": "Unknown Operator",
+          "lat": 12.981842444072356,
+          "lng": 77.7086328330862
+        },
+        {
+          "id": "56c2f51b-bd1c-51fe-92f9-2352792f34b8",
+          "name": "Prestige Technostar",
+          "operator": "Unknown Operator",
+          "lat": 12.972600290996027,
+          "lng": 77.71145680417794
+        },
+        {
+          "id": "ae91c013-3d78-5a07-a7bb-7a6c57a7bd5b",
+          "name": "KHT Brookefield",
+          "operator": "Unknown Operator",
+          "lat": 12.96712414548928,
+          "lng": 77.71696159433418
+        },
+        {
+          "id": "45017b57-d70c-514c-abbf-f6b774d4b5df",
+          "name": "JLR Shakti Auto",
+          "operator": "Unknown Operator",
+          "lat": 12.963582255188314,
+          "lng": 77.7173795341912
+        },
+        {
+          "id": "fd058619-1783-5832-aa9b-9281da0a858a",
+          "name": "Jio-bp Pulse Hub, Siddhapura",
+          "operator": "Unknown Operator",
+          "lat": 12.957173268150797,
+          "lng": 77.72954555409183
+        },
+        {
+          "id": "fbffda18-1a5d-5602-8078-1774216fb5c7",
+          "name": "DivyaSree LitBox",
+          "operator": "Unknown Operator",
+          "lat": 12.97098961190295,
+          "lng": 77.7250244631253
+        },
+        {
+          "id": "6bdb0975-0854-5ae9-bbc8-401551ac4bea",
+          "name": "Marriott Hotel Whitefield",
+          "operator": "Unknown Operator",
+          "lat": 12.979262407836174,
+          "lng": 77.72744812682743
+        }
+      ]
+    },
+    {
+      "cluster_id": 11,
+      "station_count": 6,
+      "center_lat": 12.929477,
+      "center_lng": 77.692802,
+      "radius_km": 2.677,
+      "min_lat": 12.90986,
+      "max_lat": 12.95179,
+      "min_lng": 77.682188,
+      "max_lng": 77.70305,
+      "stations": [
+        {
+          "id": "07f20401-786e-5aad-bc30-2f4976efcb03",
+          "name": "Jio-BP Pulse Hub, Marathalli",
+          "operator": "Unknown Operator",
+          "lat": 12.95179,
+          "lng": 77.70207
+        },
+        {
+          "id": "812e810c-e44f-5840-b733-38c517774e17",
+          "name": "Aloft Bengaluru Outer Ring Road",
+          "operator": "Unknown Operator",
+          "lat": 12.93674468018763,
+          "lng": 77.69488851137544
+        },
+        {
+          "id": "c33dda31-6946-5510-bc20-51d2e3a1747a",
+          "name": "Bellandur Charging Hub",
+          "operator": "Unknown Operator",
+          "lat": 12.92924,
+          "lng": 77.70305
+        },
+        {
+          "id": "ac3f44b1-0418-54d5-8dd8-ebee6e30c3e1",
+          "name": "Big Pitcher Sarjapur Road",
+          "operator": "Unknown Operator",
+          "lat": 12.90986,
+          "lng": 77.68856
+        },
+        {
+          "id": "a571246f-1bf2-527d-832c-80dc24f387e5",
+          "name": "RMZ Eco World",
+          "operator": "Unknown Operator",
+          "lat": 12.92099415205729,
+          "lng": 77.6860545556384
+        },
+        {
+          "id": "024ea6ec-5db9-5816-9ff9-62a7740eaa10",
+          "name": "Courtyard by Marriott",
+          "operator": "Unknown Operator",
+          "lat": 12.928234378881882,
+          "lng": 77.68218794687056
+        }
+      ]
+    },
+    {
+      "cluster_id": 12,
+      "station_count": 6,
+      "center_lat": 12.879705,
+      "center_lng": 77.648768,
+      "radius_km": 1.831,
+      "min_lat": 12.86563,
+      "max_lat": 12.89388,
+      "min_lng": 77.63829,
+      "max_lng": 77.65753,
+      "stations": [
+        {
+          "id": "ff762c68-7283-5d0b-8ea8-3f619f11dffb",
+          "name": "MG Motor Hosur Road",
+          "operator": "Unknown Operator",
+          "lat": 12.86563,
+          "lng": 77.65753
+        },
+        {
+          "id": "e5f1b7a7-5903-5488-a720-098a10770435",
+          "name": "Kropex Auto, Hosur Road",
+          "operator": "Unknown Operator",
+          "lat": 12.87194,
+          "lng": 77.65095
+        },
+        {
+          "id": "efc19cb9-1465-5102-acf9-39cf9062cf3e",
+          "name": "Metropolis Gurukrupa",
+          "operator": "Unknown Operator",
+          "lat": 12.87544,
+          "lng": 77.64835
+        },
+        {
+          "id": "b3358e21-e264-53b7-973c-ba361185734f",
+          "name": "More Hypermarket, Hosur Road",
+          "operator": "Unknown Operator",
+          "lat": 12.88014,
+          "lng": 77.64592
+        },
+        {
+          "id": "4d16e719-ce76-53b5-9973-8f6bc12236c8",
+          "name": "Prerana Motors, Hongasandra",
+          "operator": "Unknown Operator",
+          "lat": 12.8912,
+          "lng": 77.63829
+        },
+        {
+          "id": "b9898a34-b364-598e-ad72-766903c7d85d",
+          "name": "Pratham Motors",
+          "operator": "Unknown Operator",
+          "lat": 12.89388,
+          "lng": 77.65157
+        }
+      ]
+    },
+    {
+      "cluster_id": 13,
+      "station_count": 3,
+      "center_lat": 12.973925,
+      "center_lng": 77.620309,
+      "radius_km": 0.141,
+      "min_lat": 12.973314,
+      "max_lat": 12.974519,
+      "min_lng": 77.619578,
+      "max_lng": 77.621461,
+      "stations": [
+        {
+          "id": "823a51d7-ebc2-53c9-9eef-e08acbce9a0c",
+          "name": "Carzonrent",
+          "operator": "Unknown Operator",
+          "lat": 12.974519436687544,
+          "lng": 77.62146110718822
+        },
+        {
+          "id": "6fc45cb6-d433-59f2-b39d-1973f48ac791",
+          "name": "The Park Hotel",
+          "operator": "Unknown Operator",
+          "lat": 12.973940635420362,
+          "lng": 77.61988884794027
+        },
+        {
+          "id": "91c158b0-24d7-5960-b4d0-eafb889c6a08",
+          "name": "Taj MG Road",
+          "operator": "Unknown Operator",
+          "lat": 12.97331434540071,
+          "lng": 77.6195781000381
+        }
+      ]
+    },
+    {
+      "cluster_id": 14,
+      "station_count": 5,
+      "center_lat": 12.309242,
+      "center_lng": 76.65031,
+      "radius_km": 1.939,
+      "min_lat": 12.29519,
+      "max_lat": 12.31857,
+      "min_lng": 76.64067,
+      "max_lng": 76.66539,
+      "stations": [
+        {
+          "id": "26b3e269-36f9-5618-bc5e-66a9572a82bb",
+          "name": "The Quorum Hotel",
+          "operator": "Unknown Operator",
+          "lat": 12.31223,
+          "lng": 76.64067
+        },
+        {
+          "id": "95cea302-e8cc-581f-80b7-ca308e2cf44a",
+          "name": "Southern Star Mysore",
+          "operator": "Unknown Operator",
+          "lat": 12.31169,
+          "lng": 76.64328
+        },
+        {
+          "id": "c554d317-0cde-549d-87ea-6b5c13764b39",
+          "name": "Urs Kar, Krishnamurthy Puram",
+          "operator": "Unknown Operator",
+          "lat": 12.29519,
+          "lng": 76.6415
+        },
+        {
+          "id": "ac4bd9dc-bc12-5838-84cf-1d6389a11755",
+          "name": "Hotel Siddharta",
+          "operator": "Unknown Operator",
+          "lat": 12.30853,
+          "lng": 76.66071
+        },
+        {
+          "id": "1ad126bd-3601-5400-a477-b619532942ae",
+          "name": "Nexus Centre City",
+          "operator": "Unknown Operator",
+          "lat": 12.31857,
+          "lng": 76.66539
+        }
+      ]
+    },
+    {
+      "cluster_id": 15,
+      "station_count": 3,
+      "center_lat": 12.859617,
+      "center_lng": 74.842887,
+      "radius_km": 1.331,
+      "min_lat": 12.85763,
+      "max_lat": 12.86212,
+      "min_lng": 74.83519,
+      "max_lng": 74.85515,
+      "stations": [
+        {
+          "id": "653d83a7-010c-5e2c-b4aa-56c22b0e5abc",
+          "name": "St Joseph Service Centre",
+          "operator": "Unknown Operator",
+          "lat": 12.8591,
+          "lng": 74.85515
+        },
+        {
+          "id": "af82ad95-92fd-5401-92a8-86edf6028b0c",
+          "name": "Fiza by Nexus Mall",
+          "operator": "Unknown Operator",
+          "lat": 12.85763,
+          "lng": 74.83832
+        },
+        {
+          "id": "dd674bae-681a-5782-9844-09ceeffc8777",
+          "name": "Vivanta Mangalore, Old Port Road",
+          "operator": "Unknown Operator",
+          "lat": 12.86212,
+          "lng": 74.83519
+        }
+      ]
+    },
+    {
+      "cluster_id": 16,
+      "station_count": 3,
+      "center_lat": 12.8868,
+      "center_lng": 74.840255,
+      "radius_km": 0.536,
+      "min_lat": 12.88567,
+      "max_lat": 12.88807,
+      "min_lng": 74.835484,
+      "max_lng": 74.84352,
+      "stations": [
+        {
+          "id": "d30a4b9b-3ad0-5d29-8e79-a08d480d5001",
+          "name": "Auto Matrix, Bejai",
+          "operator": "Unknown Operator",
+          "lat": 12.88567,
+          "lng": 74.84352
+        },
+        {
+          "id": "8449c30a-772b-5e3e-ab7a-23538b74409e",
+          "name": "Mescom Substation Bejai",
+          "operator": "Unknown Operator",
+          "lat": 12.88666,
+          "lng": 74.84176
+        },
+        {
+          "id": "7a0279f9-d727-5322-a0a7-b2f4d0369944",
+          "name": "Sowkar M Baba Pai & Co",
+          "operator": "Unknown Operator",
+          "lat": 12.888069564664889,
+          "lng": 74.8354843185316
+        }
+      ]
+    },
+    {
+      "cluster_id": 17,
+      "station_count": 3,
+      "center_lat": 12.918761,
+      "center_lng": 74.832269,
+      "radius_km": 1.208,
+      "min_lat": 12.908462,
+      "max_lat": 12.92394,
+      "min_lng": 74.829655,
+      "max_lng": 74.835803,
+      "stations": [
+        {
+          "id": "a05eff6d-826f-5e2c-8d3c-965258a3cb19",
+          "name": "MG Motor Jubilant Motors",
+          "operator": "Unknown Operator",
+          "lat": 12.92394,
+          "lng": 74.83135
+        },
+        {
+          "id": "0dcd58c9-c176-5402-95f1-9129cb302eb5",
+          "name": "Ginger Hotel",
+          "operator": "Unknown Operator",
+          "lat": 12.908462407676879,
+          "lng": 74.83580306975753
+        },
+        {
+          "id": "d7d41520-6dd8-5b1f-a6e2-d917055c3396",
+          "name": "Audi Mangaluru",
+          "operator": "Unknown Operator",
+          "lat": 12.923881847417348,
+          "lng": 74.8296552161257
+        }
+      ]
+    },
+    {
+      "cluster_id": 18,
+      "station_count": 3,
+      "center_lat": 15.873531,
+      "center_lng": 74.519304,
+      "radius_km": 1.216,
+      "min_lat": 15.867345,
+      "max_lat": 15.878287,
+      "min_lng": 74.51343,
+      "max_lng": 74.528684,
+      "stations": [
+        {
+          "id": "e7aa7e9c-a8f9-5503-a7a8-ec8aeac1f9b0",
+          "name": "Hotel Ramdev",
+          "operator": "Unknown Operator",
+          "lat": 15.878287475844715,
+          "lng": 74.51579659267398
+        },
+        {
+          "id": "aa16e24c-c13a-5975-95ad-f0e780242bd2",
+          "name": "UK27 The Fern - An Ecotel Hotel, Belagavi",
+          "operator": "Unknown Operator",
+          "lat": 15.87496,
+          "lng": 74.51343
+        },
+        {
+          "id": "5a726a94-c186-5e82-a687-ccbbdf670ca5",
+          "name": "Pai Resorts",
+          "operator": "Unknown Operator",
+          "lat": 15.867344553938452,
+          "lng": 74.52868439845417
+        }
+      ]
+    },
+    {
+      "cluster_id": 19,
+      "station_count": 3,
+      "center_lat": 15.82029,
+      "center_lng": 74.490433,
+      "radius_km": 1.848,
+      "min_lat": 15.80545,
+      "max_lat": 15.83662,
+      "min_lng": 74.48541,
+      "max_lng": 74.49365,
+      "stations": [
+        {
+          "id": "aa1b1c67-111c-5460-bc4f-5e5fff47b4bc",
+          "name": "Manickbag Automobiles, Belagavi",
+          "operator": "Unknown Operator",
+          "lat": 15.8188,
+          "lng": 74.49224
+        },
+        {
+          "id": "f8f8c17a-fa0e-5662-8fee-0098dce58cf5",
+          "name": "Miraculum Kia",
+          "operator": "Unknown Operator",
+          "lat": 15.80545,
+          "lng": 74.48541
+        },
+        {
+          "id": "eaa320b5-58ab-581f-a5ee-8e490dd04903",
+          "name": "BPCL Goral Petroleum",
+          "operator": "Unknown Operator",
+          "lat": 15.83662,
+          "lng": 74.49365
+        }
+      ]
+    },
+    {
+      "cluster_id": 20,
+      "station_count": 4,
+      "center_lat": 11.407138,
+      "center_lng": 76.698188,
+      "radius_km": 1.843,
+      "min_lat": 11.39057,
+      "max_lat": 11.42074,
+      "min_lng": 76.69288,
+      "max_lng": 76.70407,
+      "stations": [
+        {
+          "id": "51e5b771-2117-5410-8d47-4bc78177e15b",
+          "name": "Club Mahindra Resort - Derby Green, Ooty",
+          "operator": "Unknown Operator",
+          "lat": 11.4023,
+          "lng": 76.69714
+        },
+        {
+          "id": "b0d20e7c-47db-55a4-9819-ff17f39cd7a0",
+          "name": "Sterling Ooty - Fern Hill",
+          "operator": "Unknown Operator",
+          "lat": 11.39057,
+          "lng": 76.69866
+        },
+        {
+          "id": "1d17a59a-e3f7-54a4-8b42-e41c82d2bd4e",
+          "name": "Hotel Gem Park",
+          "operator": "Unknown Operator",
+          "lat": 11.42074,
+          "lng": 76.70407
+        },
+        {
+          "id": "63e191d9-e3cc-5687-bd28-926aa16822ac",
+          "name": "Savoy, Ooty - IHCL SeleQtions",
+          "operator": "Unknown Operator",
+          "lat": 11.41494,
+          "lng": 76.69288
+        }
+      ]
+    },
+    {
+      "cluster_id": 21,
+      "station_count": 5,
+      "center_lat": 28.989567,
+      "center_lng": 79.401269,
+      "radius_km": 1.905,
+      "min_lat": 28.975849,
+      "max_lat": 29.000382,
+      "min_lng": 79.389542,
+      "max_lng": 79.415786,
+      "stations": [
+        {
+          "id": "c74eca16-bb24-583f-be47-e05a394c82e1",
+          "name": "Tata Power- Ginger Hotel Pantnagar",
+          "operator": "Unknown Operator",
+          "lat": 28.998167113138976,
+          "lng": 79.41578575985898
+        },
+        {
+          "id": "0f31da63-27bf-5b8b-81ae-ac31887e6a00",
+          "name": "Ecoplug Radisson Blu Hotel",
+          "operator": "Unknown Operator",
+          "lat": 29.000382131496686,
+          "lng": 79.3998773770921
+        },
+        {
+          "id": "bccf9cac-995f-5309-9c51-1e5fe6a867b0",
+          "name": "BP-RUDRAPUR",
+          "operator": "Unknown Operator",
+          "lat": 28.994841574837153,
+          "lng": 79.40068624557932
+        },
+        {
+          "id": "9be3cd8a-c7f2-50c7-918c-6e0932a48a33",
+          "name": "PREM SINGH & SONS (BPCL Charging Station)",
+          "operator": "Unknown Operator",
+          "lat": 28.978596821134563,
+          "lng": 79.40045316567043
+        },
+        {
+          "id": "9508a800-31f8-5f06-b26d-032526258824",
+          "name": "Rudra Continental",
+          "operator": "Unknown Operator",
+          "lat": 28.9758485356967,
+          "lng": 79.38954231232401
+        }
+      ]
+    },
+    {
+      "cluster_id": 22,
+      "station_count": 3,
+      "center_lat": 28.552956,
+      "center_lng": 77.122885,
+      "radius_km": 0.164,
+      "min_lat": 28.552368,
+      "max_lat": 28.553361,
+      "min_lng": 77.12122,
+      "max_lng": 77.12382,
+      "stations": [
+        {
+          "id": "9addaddd-dfa3-54f2-89a9-c2cc74772156",
+          "name": "Hotel Pullman",
+          "operator": "Unknown Operator",
+          "lat": 28.55336145830492,
+          "lng": 77.12361595842049
+        },
+        {
+          "id": "c4672726-8ac2-5650-bae9-479af9fab2d2",
+          "name": "JW Marriott - Aerocity",
+          "operator": "Unknown Operator",
+          "lat": 28.553139997543852,
+          "lng": 77.1212200291775
+        },
+        {
+          "id": "672547d4-175c-5a72-b858-9ea474710f19",
+          "name": "Aloft",
+          "operator": "Unknown Operator",
+          "lat": 28.552367614043746,
+          "lng": 77.12382001094556
+        }
+      ]
+    },
+    {
+      "cluster_id": 23,
+      "station_count": 4,
+      "center_lat": 28.580737,
+      "center_lng": 77.228378,
+      "radius_km": 2.23,
+      "min_lat": 28.56437,
+      "max_lat": 28.600694,
+      "min_lng": 77.222226,
+      "max_lng": 77.23404,
+      "stations": [
+        {
+          "id": "c5c9ba7c-f56e-55b5-b6fe-fa7e62729866",
+          "name": "EESL Charging Station",
+          "operator": "Unknown Operator",
+          "lat": 28.583694883108265,
+          "lng": 77.22222640417203
+        },
+        {
+          "id": "52daa048-a101-5a97-8e01-14678af7ddee",
+          "name": "EESL Charging Station",
+          "operator": "Unknown Operator",
+          "lat": 28.60069401609546,
+          "lng": 77.22615763260933
+        },
+        {
+          "id": "4ac28f29-4d11-5c08-b631-695f82af1926",
+          "name": "Moolchand Metro Station",
+          "operator": "Unknown Operator",
+          "lat": 28.564370488731058,
+          "lng": 77.23404016562915
+        },
+        {
+          "id": "96c05091-1058-542d-95d2-5cb4470508bb",
+          "name": "A-359, Varun Marg, Market, near Gol Gumbad",
+          "operator": "Unknown Operator",
+          "lat": 28.574190481126507,
+          "lng": 77.2310862606812
+        }
+      ]
+    }
+  ],
+  "coverage_gaps_sample": [
+    {
+      "station_id": "c421cb44-e4ec-54e4-944e-fee5644cd9e8",
+      "station_name": "Tata EV Fast Charging - Lexican Motors, Siliguri",
+      "latitude": 26.729458,
+      "longitude": 88.378023,
+      "nearest_station_id": "a04846e3-aa7c-5b88-bf5f-ea8970349b6f",
+      "nearest_distance_km": 254.837
+    },
+    {
+      "station_id": "a9a36158-23bb-5117-96dd-58a4687c0d7e",
+      "station_name": "Khajuraho Airport",
+      "latitude": 24.810179,
+      "longitude": 79.911512,
+      "nearest_station_id": "97732c81-ea4d-5fdc-a3bf-d1d3ba30ea9f",
+      "nearest_distance_km": 240.159
+    },
+    {
+      "station_id": "a04846e3-aa7c-5b88-bf5f-ea8970349b6f",
+      "station_name": "Electrify Bihar EV Charging Station",
+      "latitude": 26.156965,
+      "longitude": 85.899512,
+      "nearest_station_id": "91eaa95d-9a8c-526e-942c-9b5e5caffe30",
+      "nearest_distance_km": 238.871
+    },
+    {
+      "station_id": "0fc72525-fe5d-56bc-934b-d75d12e97db2",
+      "station_name": "Punjabi Haveli",
+      "latitude": 32.886581,
+      "longitude": 74.956389,
+      "nearest_station_id": "42b41d7f-afb5-503d-9767-b78260953a95",
+      "nearest_distance_km": 147.804
+    },
+    {
+      "station_id": "97732c81-ea4d-5fdc-a3bf-d1d3ba30ea9f",
+      "station_name": "Madhav Midway Treat",
+      "latitude": 23.090495,
+      "longitude": 78.481623,
+      "nearest_station_id": "9b9ce645-f523-5286-8a30-8e8f97e62b21",
+      "nearest_distance_km": 136.997
+    },
+    {
+      "station_id": "c1a0898c-69af-5a3a-8d91-b1a4a1725ead",
+      "station_name": "JCR - The Entertainment World",
+      "latitude": 22.445355,
+      "longitude": 70.116655,
+      "nearest_station_id": "b8b1bea8-998f-504e-b34c-28d1c8105c3e",
+      "nearest_distance_km": 117.354
+    },
+    {
+      "station_id": "85725ca6-7ff1-5e5e-8b50-900a2638b94e",
+      "station_name": "Lakshya Water Park",
+      "latitude": 25.162226,
+      "longitude": 76.16636,
+      "nearest_station_id": "d12326a2-9dea-5ee4-83b5-143faf74d867",
+      "nearest_distance_km": 103.348
+    },
+    {
+      "station_id": "d12326a2-9dea-5ee4-83b5-143faf74d867",
+      "station_name": "DME Garoth Rest Area RHS",
+      "latitude": 24.345262,
+      "longitude": 75.678323,
+      "nearest_station_id": "85725ca6-7ff1-5e5e-8b50-900a2638b94e",
+      "nearest_distance_km": 103.348
+    },
+    {
+      "station_id": "c9b9448a-1b54-5a9e-9784-11439ea48781",
+      "station_name": "Powerbank Charging Station",
+      "latitude": 30.70254,
+      "longitude": 76.729553,
+      "nearest_station_id": "d9211569-0f3b-5165-b95f-6e8e5464f4fb",
+      "nearest_distance_km": 101.816
+    },
+    {
+      "station_id": "99add338-e2af-5313-87cc-26d1bae6866f",
+      "station_name": "Shree Kanha International Chargezone",
+      "latitude": 23.386513,
+      "longitude": 75.059851,
+      "nearest_station_id": "54a0f701-5dd8-54c6-bed4-aee8881957b5",
+      "nearest_distance_km": 100.658
+    },
+    {
+      "station_id": "a13db946-791a-5ed0-b92e-94077c0f4799",
+      "station_name": "Mannat",
+      "latitude": 27.562407,
+      "longitude": 76.074978,
+      "nearest_station_id": "0ba53765-f297-5421-92fa-d3e16b10c036",
+      "nearest_distance_km": 91.571
+    },
+    {
+      "station_id": "d9211569-0f3b-5165-b95f-6e8e5464f4fb",
+      "station_name": "E-Fill Electric Hotel Food Mania",
+      "latitude": 31.602844,
+      "longitude": 76.924626,
+      "nearest_station_id": "42b41d7f-afb5-503d-9767-b78260953a95",
+      "nearest_distance_km": 88.972
+    },
+    {
+      "station_id": "42b41d7f-afb5-503d-9767-b78260953a95",
+      "station_name": "BPCL EV Dharamshala Road",
+      "latitude": 32.214505,
+      "longitude": 76.31694,
+      "nearest_station_id": "d9211569-0f3b-5165-b95f-6e8e5464f4fb",
+      "nearest_distance_km": 88.972
+    },
+    {
+      "station_id": "b8b1bea8-998f-504e-b34c-28d1c8105c3e",
+      "station_name": "Honest Restaurant- Amardeep food court",
+      "latitude": 23.006253,
+      "longitude": 71.085909,
+      "nearest_station_id": "c0e24f3a-d569-5192-8cf9-c641c2f5f539",
+      "nearest_distance_km": 85.804
+    },
+    {
+      "station_id": "91eaa95d-9a8c-526e-942c-9b5e5caffe30",
+      "station_name": "Green Garden Family Restaurant",
+      "latitude": 24.01219,
+      "longitude": 86.033786,
+      "nearest_station_id": "c2438c75-179a-50c2-ba6a-11934216822e",
+      "nearest_distance_km": 83.152
+    },
+    {
+      "station_id": "dd1d49bb-c6a3-57bf-a0cd-143b0b22fd45",
+      "station_name": "Saguna Family Restaurant",
+      "latitude": 17.877009,
+      "longitude": 75.976022,
+      "nearest_station_id": "c8d4ec7c-626f-5015-860b-32eebbab7d3c",
+      "nearest_distance_km": 82.738
+    },
+    {
+      "station_id": "0ba53765-f297-5421-92fa-d3e16b10c036",
+      "station_name": "NE-4 KFC Parking",
+      "latitude": 27.735563,
+      "longitude": 76.983877,
+      "nearest_station_id": "547624c9-ccc7-53dc-8f93-8f384551d5a6",
+      "nearest_distance_km": 75.894
+    },
+    {
+      "station_id": "6d761b31-07e4-540c-8600-2ac7dac00590",
+      "station_name": "Driftnatuon Food Court NH44",
+      "latitude": 16.814494,
+      "longitude": 78.148329,
+      "nearest_station_id": "ed9fdc81-1d38-510b-aa7a-0dd3187e9487",
+      "nearest_distance_km": 72.124
+    },
+    {
+      "station_id": "37b46618-f2bc-5de6-a74d-e0f5baa20df3",
+      "station_name": "Hotel Shivani",
+      "latitude": 23.963964,
+      "longitude": 76.938304,
+      "nearest_station_id": "28d56bbb-20be-59ab-b87a-b9239ebb59f5",
+      "nearest_distance_km": 69.726
+    },
+    {
+      "station_id": "896ca8ae-94ac-5e1c-87b8-6c0e1f11bdf8",
+      "station_name": "Indira Nagar",
+      "latitude": 19.051819,
+      "longitude": 74.723431,
+      "nearest_station_id": "a0f17eb6-7a1c-5848-b163-7cc6b693a439",
+      "nearest_distance_km": 67.959
+    },
+    {
+      "station_id": "ec4aacb4-ed7b-53e1-b6d5-b3a00fcde118",
+      "station_name": "MobiLane Treat Hotel, Nashik",
+      "latitude": 19.980385,
+      "longitude": 73.778651,
+      "nearest_station_id": "0e2ff125-eb56-562e-b3eb-a84fa7657240",
+      "nearest_distance_km": 67.743
+    },
+    {
+      "station_id": "1406ec88-b2fd-50a2-b692-353e42f8a011",
+      "station_name": "Kakinada Unit 1",
+      "latitude": 16.982049,
+      "longitude": 82.246026,
+      "nearest_station_id": "8d4c2f59-e90b-5875-bf17-159380ce3ca4",
+      "nearest_distance_km": 67.313
+    },
+    {
+      "station_id": "c0e24f3a-d569-5192-8cf9-c641c2f5f539",
+      "station_name": "HFM - Highway Food Mall",
+      "latitude": 22.567181,
+      "longitude": 71.774189,
+      "nearest_station_id": "0f3d9fbb-99ce-570a-88ee-6a8b3ff854aa",
+      "nearest_distance_km": 63.886
+    },
+    {
+      "station_id": "0f837a81-e8bf-5570-b3c3-13b702723f24",
+      "station_name": "Hotel Bluemoon",
+      "latitude": 15.026219,
+      "longitude": 77.621073,
+      "nearest_station_id": "4d300cc9-a0ad-5805-8b4d-255a84137522",
+      "nearest_distance_km": 61.293
+    },
+    {
+      "station_id": "838aff6a-745b-5912-9ba8-a3585a5644c0",
+      "station_name": "Sri Nisty Pvt",
+      "latitude": 17.274606,
+      "longitude": 76.874074,
+      "nearest_station_id": "c28096dc-b0fc-516a-b76b-13851dfa37c4",
+      "nearest_distance_km": 60.94
+    }
+  ],
+  "extreme_isolation_anomalies": [
+    {
+      "station_id": "dd1d49bb-c6a3-57bf-a0cd-143b0b22fd45",
+      "station_name": "Saguna Family Restaurant",
+      "nearest_distance_km": 82.738,
+      "nearest_station_id": "c8d4ec7c-626f-5015-860b-32eebbab7d3c",
+      "outlier_score": 0.339
+    },
+    {
+      "station_id": "d9211569-0f3b-5165-b95f-6e8e5464f4fb",
+      "station_name": "E-Fill Electric Hotel Food Mania",
+      "nearest_distance_km": 88.972,
+      "nearest_station_id": "42b41d7f-afb5-503d-9767-b78260953a95",
+      "outlier_score": 0.582
+    },
+    {
+      "station_id": "a13db946-791a-5ed0-b92e-94077c0f4799",
+      "station_name": "Mannat",
+      "nearest_distance_km": 91.571,
+      "nearest_station_id": "0ba53765-f297-5421-92fa-d3e16b10c036",
+      "outlier_score": 0.684
+    },
+    {
+      "station_id": "42b41d7f-afb5-503d-9767-b78260953a95",
+      "station_name": "BPCL EV Dharamshala Road",
+      "nearest_distance_km": 88.972,
+      "nearest_station_id": "d9211569-0f3b-5165-b95f-6e8e5464f4fb",
+      "outlier_score": 0.582
+    },
+    {
+      "station_id": "99add338-e2af-5313-87cc-26d1bae6866f",
+      "station_name": "Shree Kanha International Chargezone",
+      "nearest_distance_km": 100.658,
+      "nearest_station_id": "54a0f701-5dd8-54c6-bed4-aee8881957b5",
+      "outlier_score": 1.038
+    },
+    {
+      "station_id": "85725ca6-7ff1-5e5e-8b50-900a2638b94e",
+      "station_name": "Lakshya Water Park",
+      "nearest_distance_km": 103.348,
+      "nearest_station_id": "d12326a2-9dea-5ee4-83b5-143faf74d867",
+      "outlier_score": 1.143
+    },
+    {
+      "station_id": "d12326a2-9dea-5ee4-83b5-143faf74d867",
+      "station_name": "DME Garoth Rest Area RHS",
+      "nearest_distance_km": 103.348,
+      "nearest_station_id": "85725ca6-7ff1-5e5e-8b50-900a2638b94e",
+      "outlier_score": 1.143
+    },
+    {
+      "station_id": "a9a36158-23bb-5117-96dd-58a4687c0d7e",
+      "station_name": "Khajuraho Airport",
+      "nearest_distance_km": 240.159,
+      "nearest_station_id": "97732c81-ea4d-5fdc-a3bf-d1d3ba30ea9f",
+      "outlier_score": 6.476
+    },
+    {
+      "station_id": "91eaa95d-9a8c-526e-942c-9b5e5caffe30",
+      "station_name": "Green Garden Family Restaurant",
+      "nearest_distance_km": 83.152,
+      "nearest_station_id": "c2438c75-179a-50c2-ba6a-11934216822e",
+      "outlier_score": 0.355
+    },
+    {
+      "station_id": "c9b9448a-1b54-5a9e-9784-11439ea48781",
+      "station_name": "Powerbank Charging Station",
+      "nearest_distance_km": 101.816,
+      "nearest_station_id": "d9211569-0f3b-5165-b95f-6e8e5464f4fb",
+      "outlier_score": 1.083
+    },
+    {
+      "station_id": "b8b1bea8-998f-504e-b34c-28d1c8105c3e",
+      "station_name": "Honest Restaurant- Amardeep food court",
+      "nearest_distance_km": 85.804,
+      "nearest_station_id": "c0e24f3a-d569-5192-8cf9-c641c2f5f539",
+      "outlier_score": 0.459
+    },
+    {
+      "station_id": "c1a0898c-69af-5a3a-8d91-b1a4a1725ead",
+      "station_name": "JCR - The Entertainment World",
+      "nearest_distance_km": 117.354,
+      "nearest_station_id": "b8b1bea8-998f-504e-b34c-28d1c8105c3e",
+      "outlier_score": 1.689
+    },
+    {
+      "station_id": "a04846e3-aa7c-5b88-bf5f-ea8970349b6f",
+      "station_name": "Electrify Bihar EV Charging Station",
+      "nearest_distance_km": 238.871,
+      "nearest_station_id": "91eaa95d-9a8c-526e-942c-9b5e5caffe30",
+      "outlier_score": 6.426
+    },
+    {
+      "station_id": "c421cb44-e4ec-54e4-944e-fee5644cd9e8",
+      "station_name": "Tata EV Fast Charging - Lexican Motors, Siliguri",
+      "nearest_distance_km": 254.837,
+      "nearest_station_id": "a04846e3-aa7c-5b88-bf5f-ea8970349b6f",
+      "outlier_score": 7.048
+    },
+    {
+      "station_id": "97732c81-ea4d-5fdc-a3bf-d1d3ba30ea9f",
+      "station_name": "Madhav Midway Treat",
+      "nearest_distance_km": 136.997,
+      "nearest_station_id": "9b9ce645-f523-5286-8a30-8e8f97e62b21",
+      "outlier_score": 2.454
+    },
+    {
+      "station_id": "0fc72525-fe5d-56bc-934b-d75d12e97db2",
+      "station_name": "Punjabi Haveli",
+      "nearest_distance_km": 147.804,
+      "nearest_station_id": "42b41d7f-afb5-503d-9767-b78260953a95",
+      "outlier_score": 2.876
+    },
+    {
+      "station_id": "0ba53765-f297-5421-92fa-d3e16b10c036",
+      "station_name": "NE-4 KFC Parking",
+      "nearest_distance_km": 75.894,
+      "nearest_station_id": "547624c9-ccc7-53dc-8f93-8f384551d5a6",
+      "outlier_score": 0.072
+    }
+  ]
+}

@@ -62,6 +62,7 @@ const en: Translations = {
 
   "nav.home": "Home",
   "nav.explore": "Explore",
+  "nav.intelligence": "Intelligence",
   "nav.saved": "Saved",
   "nav.alerts": "Alerts",
   "nav.profile": "Profile",
@@ -323,6 +324,7 @@ const hi: Translations = merge(en, {
 
   "nav.home": "होम",
   "nav.explore": "एक्सप्लोर",
+  "nav.intelligence": "डेटा इंटेलिजेंस",
   "nav.saved": "सेव किए",
   "nav.alerts": "अलर्ट",
   "nav.profile": "प्रोफ़ाइल",
@@ -591,6 +593,7 @@ const mr: Translations = merge(en, {
 
   "nav.home": "होम",
   "nav.explore": "एक्सप्लोर",
+  "nav.intelligence": "डेटा इंटेलिजन्स",
   "nav.saved": "जतन केलेले",
   "nav.alerts": "अलर्ट",
   "nav.profile": "प्रोफाइल",
