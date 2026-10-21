@@ -32,6 +32,7 @@ EXPECTED_ORDER = [
     "20260927000004_pre_phase4_alerts_uniqueness.sql",
     "20260928000001_phase4_dim_connector_null_power.sql",
     "20261013000001_step_7_1_connector_price_estimate.sql",
+    "20261018000001_demo_provenance.sql",
 ]
 
 PUBLIC_11 = [

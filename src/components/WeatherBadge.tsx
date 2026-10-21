@@ -35,7 +35,9 @@ export function WeatherBadge({
     if (lat == null || lng == null || isNaN(lat) || isNaN(lng)) return;
 
     let active = true;
-    setLoading(true);
+    Promise.resolve().then(() => {
+      if (active) setLoading(true);
+    });
 
     fetch(`/api/weather?lat=${lat}&lng=${lng}`)
       .then((res) => res.json())

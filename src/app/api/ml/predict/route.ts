@@ -112,6 +112,7 @@ export async function POST(request: Request) {
     return Response.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    console.error("ML prediction error:", message);
     // Missing Python runtime or missing registry both mean the same honest
     // thing to callers: no prediction is available right now.
     const isTimeout =
@@ -123,7 +124,7 @@ export async function POST(request: Request) {
         reason: "NO_MODEL",
         message: isTimeout
           ? "Inference timed out; no prediction available."
-          : `Inference backend unavailable (${message.slice(0, 200)}); no prediction available.`,
+          : "Inference backend unavailable; no prediction available.",
       },
       { status: 503 },
     );

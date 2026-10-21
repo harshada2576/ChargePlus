@@ -79,3 +79,45 @@ def test_canonical_dataset_spatial_clustering():
     assert res.noise_stations_count == 3
     for c in res.clusters:
         assert c.station_count >= 2
+
+
+def test_spatial_isolation_iqr_threshold_invariant():
+    """Phase C regression guard: verify threshold k=1.5 on real stations.
+
+    Explicitly verifies the 3 distinct spatial isolation concepts:
+    1. DBSCAN noise / unclustered stations (density-based).
+    2. Nearest-neighbor distance > 5.0 km (coverage gap indicator).
+    3. Tukey IQR extreme isolation outliers with multiplier k=1.5 (statistical outlier).
+    """
+    from backend.ml.anomaly import iqr_anomalies
+    from backend.ml.run_spatial_mining import load_real_stations
+
+    stations = load_real_stations("artifacts/chargeplus-real-dataset/stations.csv")
+    assert len(stations) == 541
+
+    gaps = find_coverage_gaps(stations, isolation_threshold_km=5.0)
+    assert len(gaps) == 254
+
+    distances = [g.nearest_distance_km for g in gaps if g.nearest_distance_km is not None]
+    assert len(distances) == 254
+
+    # Threshold must be k=1.5 producing exactly 17 extreme isolation outliers
+    anomalies_k15 = iqr_anomalies(distances, k=1.5)
+    assert len(anomalies_k15) == 17, f"Expected 17 outliers for k=1.5, got {len(anomalies_k15)}"
+
+    # If drifted to k=3.0, only 6 far outliers would be found
+    anomalies_k30 = iqr_anomalies(distances, k=3.0)
+    assert len(anomalies_k30) == 6, f"Expected 6 far-outliers for k=3.0, got {len(anomalies_k30)}"
+
+    # Also verify against committed artifact data/ml/spatial_mining_summary.json
+    with open("data/ml/spatial_mining_summary.json", encoding="utf-8") as f:
+        artifact = json.load(f)
+
+    summary = artifact["summary"]
+    assert summary["total_stations"] == 541
+    assert summary["noise_stations"] == 427  # DBSCAN noise
+    assert summary["coverage_gap_count"] == 254  # 5km geographic isolation
+    assert summary["isolated_stations_5km_count"] == 254
+    assert summary["extreme_isolation_outliers"] == 17  # k=1.5 statistical outliers
+    assert summary["coverage_gaps_sample_size"] == 25  # Sampled UI preview size
+

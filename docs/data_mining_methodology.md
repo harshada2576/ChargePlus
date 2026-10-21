@@ -89,8 +89,16 @@ $$R^2 = 1 - \frac{\sum (y_i - \hat{y}_i)^2}{\sum (y_i - \bar{y})^2}$$
 
 ## 5. Algorithm 4: Spatial Outlier Mining (IQR Fences)
 
-1. **Nearest-Neighbor Distance Matrix:** Computed via spatial BallTree / pairwise Haversine metric.
-2. **IQR Outlier Fences:**
+1. **Three Orthogonal Spatial Concepts:**
+   - **DBSCAN Density / Noise Classification:** Stations without $\text{min\_samples} = 3$ neighbors within $\epsilon = 2.0\text{ km}$ are marked as noise/isolated points (427 stations in snapshot).
+   - **Geographic Coverage Gap / Isolation Distance:** Stations whose nearest recorded neighbor distance $d_{\text{min}} > 5.0\text{ km}$ indicate sparse coverage within the dataset snapshot (254 stations).
+   - **Statistical IQR Outlier Fences:** Applied on the distribution of distances $d_{\text{min}}$ among isolated stations to identify statistical anomalies.
+2. **Tukey Quartile Thresholds:**
    $$Q_1 = P_{25}(d_{\text{min}}), \quad Q_3 = P_{75}(d_{\text{min}}), \quad \text{IQR} = Q_3 - Q_1$$
-   $$\text{Threshold}_{\text{extreme}} = Q_3 + 3.0 \times \text{IQR}$$
-   Stations exceeding this boundary are flagged as extreme isolation outliers relative to the recorded network snapshot.
+   - **Outlier Threshold ($k = 1.5$):**
+     $$\text{Threshold}_{\text{isolation\_outlier}} = Q_3 + 1.5 \times \text{IQR}$$
+     In this dataset snapshot, $Q_1 \approx 7.23\text{ km}$, $Q_3 \approx 34.50\text{ km}$, $\text{IQR} \approx 27.27\text{ km}$, setting the upper Tukey fence at $\approx 75.40\text{ km}$. Exactly **17 stations** exceed this boundary (range $75.89\text{ km} - 254.84\text{ km}$) and are tracked in the artifact `top_coverage_gaps` / `extreme_isolation_outliers`.
+   - **Far Outlier Threshold ($k = 3.0$):**
+     $$\text{Threshold}_{\text{far\_outlier}} = Q_3 + 3.0 \times \text{IQR} \approx 116.31\text{ km}$$
+     Exactly **6 extreme outlier stations** exceed this outer boundary (e.g., Lexican Motors Siliguri at $254.8\text{ km}$, Electrify Bihar at $238.9\text{ km}$, Khajuraho Airport at $240.2\text{ km}$, Punjabi Haveli at $147.8\text{ km}$, Madhav Midway Treat at $137.0\text{ km}$, JCR Entertainment World at $117.4\text{ km}$).
+   - **Implementation Invariant:** The pipeline (`backend/ml/run_spatial_mining.py`) standardizes on $k = 1.5$ (`iqr_anomalies(distances, k=1.5)`), yielding the verified set of 17 isolation outliers.
