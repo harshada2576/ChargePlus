@@ -63,7 +63,9 @@ interface SpatialMiningData {
     extreme_isolation_outliers: number;
   };
   clusters: SpatialCluster[];
-  top_coverage_gaps: CoverageGap[];
+  top_coverage_gaps?: CoverageGap[];
+  extreme_isolation_anomalies?: CoverageGap[];
+  coverage_gaps_sample?: CoverageGap[];
 }
 
 interface KMeansCluster {
@@ -454,18 +456,25 @@ export function IntelligenceClient() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-ink-100">
-                  {spatialMining.top_coverage_gaps.slice(0, 15).map((gap) => (
-                    <tr key={gap.station_id} className="hover:bg-ink-50/40">
-                      <td className="py-3 px-3 font-medium text-ink-900">{gap.station_name}</td>
-                      <td className="py-3 px-3 font-mono font-semibold text-coral-600">
-                        {gap.nearest_distance_km.toFixed(1)} km
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="inline-flex rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] font-medium text-amber-800">
-                          {gap.outlier_score.toFixed(2)}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3">
+                  {(
+                    spatialMining.top_coverage_gaps ||
+                    spatialMining.extreme_isolation_anomalies ||
+                    spatialMining.coverage_gaps_sample ||
+                    []
+                  )
+                    .slice(0, 15)
+                    .map((gap) => (
+                      <tr key={gap.station_id} className="hover:bg-ink-50/40">
+                        <td className="py-3 px-3 font-medium text-ink-900">{gap.station_name}</td>
+                        <td className="py-3 px-3 font-mono font-semibold text-coral-600">
+                          {gap.nearest_distance_km ? gap.nearest_distance_km.toFixed(1) : "N/A"} km
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="inline-flex rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                            {gap.outlier_score != null ? gap.outlier_score.toFixed(2) : "N/A"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
                         <Link
                           href={`/station/${gap.station_id}`}
                           className="font-medium text-coral-600 hover:text-coral-700"

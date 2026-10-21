@@ -217,7 +217,7 @@ export function MapLibreMap({
         id: "station-halo",
         type: "circle",
         source: "stations",
-        filter: singleStation ? undefined : ["!", ["has", "point_count"]],
+        ...(singleStation ? {} : { filter: ["!", ["has", "point_count"]] }),
         paint: {
           "circle-color": [
             "match",
@@ -237,7 +237,7 @@ export function MapLibreMap({
         id: "unclustered-point",
         type: "circle",
         source: "stations",
-        filter: singleStation ? undefined : ["!", ["has", "point_count"]],
+        ...(singleStation ? {} : { filter: ["!", ["has", "point_count"]] }),
         paint: {
           "circle-color": [
             "match",

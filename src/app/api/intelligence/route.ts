@@ -21,6 +21,12 @@ export async function GET(request: Request) {
     let spatialMining = null;
     if (fs.existsSync(spatialPath)) {
       spatialMining = JSON.parse(fs.readFileSync(spatialPath, "utf-8"));
+      if (spatialMining && !spatialMining.top_coverage_gaps) {
+        spatialMining.top_coverage_gaps =
+          spatialMining.extreme_isolation_anomalies ||
+          spatialMining.coverage_gaps_sample ||
+          [];
+      }
     }
 
     // 2. Demand mining summary (K-Means + Random Forest)
