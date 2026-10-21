@@ -157,11 +157,11 @@ Open [http://localhost:3000](http://localhost:3000) to view the driver interface
 # Typecheck
 npm run typecheck
 
-# Full Node.js test suite (200 unit & integration tests: 199 passed, 0 failed, 1 skipped)
+# Full Node.js test suite (201 unit & integration tests: 200 passed, 0 failed, 1 skipped)
 npm test
 
-# Python spatial clustering & ML test suite
-python -u -m pytest tests/test_spatial_clustering.py tests/test_demand_mining.py tests/test_canonical_contracts.py tests/test_maturity.py tests/test_ml_offline_libs.py
+# Full Python test suite (748 passed, 3 skipped, 0 failed)
+python -u -m pytest tests/ -q --ignore=tests/test_canonical_postgres_integration.py
 
 # Production build
 npm run build
