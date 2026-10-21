@@ -155,7 +155,9 @@ def run_spatial_mining(
             "noise_stations": cluster_res.noise_stations_count,
             "cluster_count": cluster_res.cluster_count,
             "coverage_gap_count": len(gaps),
+            "isolated_stations_5km_count": len(gaps),
             "extreme_isolation_outliers": len(anomalous_gaps),
+            "coverage_gaps_sample_size": min(len(gaps), 25),
         },
         "clusters": enriched_clusters,
         "coverage_gaps_sample": [

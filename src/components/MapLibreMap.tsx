@@ -11,6 +11,7 @@ import type { Station } from "@/data/types";
 import { MUMBAI_CENTER } from "@/data/stations";
 import {
   createMapLoadWatchdog,
+  getStationPointLayerFilter,
   refreshStationsSource,
   toStationGeoJSON,
 } from "@/data/exploreQuery";
@@ -217,7 +218,7 @@ export function MapLibreMap({
         id: "station-halo",
         type: "circle",
         source: "stations",
-        ...(singleStation ? {} : { filter: ["!", ["has", "point_count"]] }),
+        ...getStationPointLayerFilter(Boolean(singleStation)),
         paint: {
           "circle-color": [
             "match",
@@ -237,7 +238,7 @@ export function MapLibreMap({
         id: "unclustered-point",
         type: "circle",
         source: "stations",
-        ...(singleStation ? {} : { filter: ["!", ["has", "point_count"]] }),
+        ...getStationPointLayerFilter(Boolean(singleStation)),
         paint: {
           "circle-color": [
             "match",

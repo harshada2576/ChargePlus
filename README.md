@@ -81,7 +81,7 @@
 ### 4. Data Mining & Predictive Modeling (`backend/ml/`)
 - **Spatial Density Clustering (DBSCAN + Haversine Metric)**:
   - Discovers 24 spatial density clusters across 541 real stations using true spherical great-circle distances ($\epsilon = 2.0\text{ km}$, $\text{min\_samples} = 3$).
-  - Station-isolation analysis flags 254 solitary stations ($>5\text{ km}$ from nearest recorded neighbor in snapshot).
+  - Station-isolation analysis flags 254 solitary stations ($>5\text{ km}$ from nearest recorded neighbor in snapshot), with 17 extreme statistical outliers ($>75.4\text{ km}$, upper Tukey fence) and a 25-station sample.
 - **Unsupervised Grouping (K-Means)**:
   - Partitions network into spatial clusters identifying high-density charging demand archetypes ($K=3$).
 - **Supervised Forecasting (Random Forest Regressor)**:

@@ -22,6 +22,7 @@ import {
   toStationGeoJSON,
   refreshStationsSource,
   createMapLoadWatchdog,
+  getStationPointLayerFilter,
   recommendStations,
   resolveSelectedStation,
   visibleSelection,
@@ -588,6 +589,27 @@ test("22. Style readiness disarms the watchdog before the timeout", async () => 
   watchdog.resolve(); // style.load / load / unmount path
   await new Promise((resolve) => setTimeout(resolve, 60));
   assert.equal(calls, 0); // no false error overlay on a healthy map
+});
+
+test("MapLibre single-station regression: filter property is completely omitted when singleStation is true", () => {
+  // When multiple stations are mapped, unclustered points filter out clustered aggregates
+  const multiStationFilter = getStationPointLayerFilter(false);
+  assert.deepEqual(multiStationFilter, { filter: ["!", ["has", "point_count"]] });
+
+  // When singleStation is true (e.g. StationDetail page where cluster: false),
+  // passing filter: undefined causes MapLibre GL style validation to error.
+  // The filter property MUST be completely omitted.
+  const singleStationFilter = getStationPointLayerFilter(true);
+  assert.equal("filter" in singleStationFilter, false, "filter key must not exist on single-station layer spec");
+  assert.deepEqual(singleStationFilter, {});
+
+  // Confirm single-station GeoJSON conversion preserves single-station attributes
+  const single = baseStation({ id: "solo-1", name: "Solo Station", latitude: 18.5204, longitude: 73.8567 });
+  const geo = toStationGeoJSON([single]);
+  assert.equal(geo.type, "FeatureCollection");
+  assert.equal(geo.features.length, 1);
+  assert.equal(geo.features[0].id, "solo-1");
+  assert.deepEqual(geo.features[0].geometry.coordinates, [73.8567, 18.5204]);
 });
 
 test("live: fetchStations against public anon client when credentials are present", async (t) => {

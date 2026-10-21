@@ -23,7 +23,9 @@
     "noise_stations": 427,
     "cluster_count": 24,
     "coverage_gap_count": 254,
-    "extreme_isolation_outliers": 17
+    "isolated_stations_5km_count": 254,
+    "extreme_isolation_outliers": 17,
+    "coverage_gaps_sample_size": 25
   },
   "clusters": [
     {

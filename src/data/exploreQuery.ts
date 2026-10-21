@@ -196,6 +196,16 @@ export function refreshStationsSource(
   return true;
 }
 
+/**
+ * Returns the layer filter definition for unclustered station points.
+ * For single-station views (e.g. StationDetail where clustering is disabled),
+ * the `filter` property MUST be completely omitted from the layer spec;
+ * passing `filter: undefined` causes MapLibre GL style validation to error.
+ */
+export function getStationPointLayerFilter(singleStation: boolean): { filter?: any } {
+  return singleStation ? {} : { filter: ["!", ["has", "point_count"]] };
+}
+
 export function toStationGeoJSON(stations: readonly Station[]): {
   type: "FeatureCollection";
   features: Array<{

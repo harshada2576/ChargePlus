@@ -33,8 +33,10 @@ interface CoverageGap {
   station_id: string;
   station_name: string;
   nearest_distance_km: number;
-  nearest_station_id: string;
-  outlier_score: number;
+  nearest_station_id?: string;
+  outlier_score?: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 interface SpatialMiningData {
@@ -60,7 +62,9 @@ interface SpatialMiningData {
     noise_stations: number;
     cluster_count: number;
     coverage_gap_count: number;
+    isolated_stations_5km_count?: number;
     extreme_isolation_outliers: number;
+    coverage_gaps_sample_size?: number;
   };
   clusters: SpatialCluster[];
   top_coverage_gaps?: CoverageGap[];
@@ -151,6 +155,7 @@ type TabType = "spatial" | "demand" | "regression" | "gaps" | "governance";
 
 export function IntelligenceClient() {
   const [activeTab, setActiveTab] = useState<TabType>("spatial");
+  const [isolationView, setIsolationView] = useState<"extreme" | "sample">("extreme");
   const [data, setData] = useState<IntelligencePayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -230,7 +235,9 @@ export function IntelligenceClient() {
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
             <CheckIcon size={12} />
-            {spatialMining?.summary.total_stations ?? 541} Real Stations (India Snapshot)
+            {spatialMining?.summary.total_stations != null
+              ? `${spatialMining.summary.total_stations} Real Stations (India Snapshot)`
+              : "Spatial Artifact Unavailable"}
           </span>
           <span className="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-800">
             <CompassIcon size={12} />
@@ -255,35 +262,47 @@ export function IntelligenceClient() {
         <div className="rounded-2xl border border-ink-100 bg-white p-4 shadow-xs">
           <p className="text-xs font-medium text-ink-500">Real Stations Analyzed</p>
           <p className="mt-1 text-2xl font-bold text-ink-900 sm:text-3xl">
-            {spatialMining?.summary.total_stations ?? 541}
+            {spatialMining?.summary.total_stations != null ? spatialMining.summary.total_stations : "—"}
           </p>
-          <p className="mt-1 text-[11px] text-ink-500">Authentic Open Charge Map dataset</p>
+          <p className="mt-1 text-[11px] text-ink-500">
+            {spatialMining?.summary.total_stations != null ? "Authentic Open Charge Map dataset" : "Artifact unavailable"}
+          </p>
         </div>
 
         <div className="rounded-2xl border border-ink-100 bg-white p-4 shadow-xs">
           <p className="text-xs font-medium text-ink-500">Spatial Clusters Found</p>
           <p className="mt-1 text-2xl font-bold text-purple-600 sm:text-3xl">
-            {spatialMining?.summary.cluster_count ?? 24}
+            {spatialMining?.summary.cluster_count != null ? spatialMining.summary.cluster_count : "—"}
           </p>
           <p className="mt-1 text-[11px] text-ink-500">
-            {spatialMining?.summary.clustered_stations ?? 114} stations (DBSCAN)
+            {spatialMining?.summary.clustered_stations != null
+              ? `${spatialMining.summary.clustered_stations} stations (DBSCAN)`
+              : "Clustering uncomputed"}
           </p>
         </div>
 
         <div className="rounded-2xl border border-ink-100 bg-white p-4 shadow-xs">
           <p className="text-xs font-medium text-ink-500">Isolated Outliers</p>
           <p className="mt-1 text-2xl font-bold text-ink-700 sm:text-3xl">
-            {spatialMining?.summary.noise_stations ?? 427}
+            {spatialMining?.summary.noise_stations != null ? spatialMining.summary.noise_stations : "—"}
           </p>
-          <p className="mt-1 text-[11px] text-ink-500">Noise points (no neighbor within 2km)</p>
+          <p className="mt-1 text-[11px] text-ink-500">
+            {spatialMining?.summary.noise_stations != null
+              ? "Noise points (no neighbor within 2km)"
+              : "Data unavailable"}
+          </p>
         </div>
 
         <div className="rounded-2xl border border-ink-100 bg-white p-4 shadow-xs">
           <p className="text-xs font-medium text-ink-500">Isolated Stations (&gt;5km)</p>
           <p className="mt-1 text-2xl font-bold text-coral-600 sm:text-3xl">
-            {spatialMining?.summary.coverage_gap_count ?? 254}
+            {spatialMining?.summary.coverage_gap_count != null ? spatialMining.summary.coverage_gap_count : "—"}
           </p>
-          <p className="mt-1 text-[11px] text-ink-500">Nearest recorded neighbor &gt;5km</p>
+          <p className="mt-1 text-[11px] text-ink-500">
+            {spatialMining?.summary.coverage_gap_count != null
+              ? "Nearest recorded neighbor >5km"
+              : "Data unavailable"}
+          </p>
         </div>
       </div>
 
@@ -318,238 +337,319 @@ export function IntelligenceClient() {
       </div>
 
       {/* Tab 1: Spatial Clusters */}
-      {activeTab === "spatial" && spatialMining && (
-        <div className="mt-6 flex flex-col gap-6">
-          <div className="rounded-2xl border border-purple-100 bg-purple-50/50 p-4 text-xs text-purple-900 sm:p-5 sm:text-sm">
-            <h3 className="font-semibold text-purple-950">DBSCAN Methodology on Authentic Real Data</h3>
-            <p className="mt-1 text-purple-800">
-              Executed with <strong>Haversine great-circle distance metric</strong> on genuine GPS coordinates
-              (R = 6,371 km). Parameter configuration: <code>eps = 2.0 km</code>, <code>min_samples = 3</code>.
-              Cluster labels are density grouping identifiers, <em>not</em> quality or performance rankings.
+      {activeTab === "spatial" && (
+        !spatialMining ? (
+          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
+            <h3 className="text-sm font-semibold text-amber-900">Spatial Clustering Data Unavailable</h3>
+            <p className="mt-1 text-xs text-amber-700">
+              The spatial clustering artifact is missing, ungenerated, or invalid. Run the offline spatial mining pipeline to populate this view.
             </p>
           </div>
+        ) : (
+          <div className="mt-6 flex flex-col gap-6">
+            <div className="rounded-2xl border border-purple-100 bg-purple-50/50 p-4 text-xs text-purple-900 sm:p-5 sm:text-sm">
+              <h3 className="font-semibold text-purple-950">DBSCAN Methodology on Authentic Real Data</h3>
+              <p className="mt-1 text-purple-800">
+                Executed with <strong>Haversine great-circle distance metric</strong> on genuine GPS coordinates
+                (R = 6,371 km). Parameter configuration: <code>eps = 2.0 km</code>, <code>min_samples = 3</code>.
+                Cluster labels are density grouping identifiers, <em>not</em> quality or performance rankings.
+              </p>
+            </div>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            {/* Cluster Selector List */}
-            <div className="lg:col-span-5">
-              <div className="rounded-2xl border border-ink-100 bg-white p-4 shadow-card">
-                <div className="flex items-center justify-between pb-3 border-b border-ink-100">
-                  <h3 className="text-sm font-semibold text-ink-900">
-                    Discovered Clusters ({spatialMining.clusters.length})
-                  </h3>
-                  <span className="text-xs text-ink-500">Click to inspect</span>
-                </div>
-                <div className="mt-3 max-h-[480px] overflow-y-auto space-y-2 pr-1">
-                  {spatialMining.clusters.map((c) => {
-                    const isSelected = c.cluster_id === selectedClusterId;
-                    return (
-                      <button
-                        key={c.cluster_id}
-                        onClick={() => setSelectedClusterId(c.cluster_id)}
-                        className={`w-full text-left rounded-xl p-3 border transition-all ${
-                          isSelected
-                            ? "border-purple-500 bg-purple-50/70 shadow-xs"
-                            : "border-ink-100 hover:border-ink-200 hover:bg-ink-50/50"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold text-ink-900">
-                            Cluster #{c.cluster_id}
-                          </span>
-                          <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
-                            {c.station_count} stations
-                          </span>
-                        </div>
-                        <div className="mt-1.5 flex items-center justify-between text-xs text-ink-500">
-                          <span>
-                            Centroid: {c.center_lat.toFixed(3)}, {c.center_lng.toFixed(3)}
-                          </span>
-                          <span>Radius: {c.radius_km.toFixed(2)} km</span>
-                        </div>
-                      </button>
-                    );
-                  })}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+              {/* Cluster Selector List */}
+              <div className="lg:col-span-5">
+                <div className="rounded-2xl border border-ink-100 bg-white p-4 shadow-card">
+                  <div className="flex items-center justify-between pb-3 border-b border-ink-100">
+                    <h3 className="text-sm font-semibold text-ink-900">
+                      Discovered Clusters ({spatialMining.clusters.length})
+                    </h3>
+                    <span className="text-xs text-ink-500">Click to inspect</span>
+                  </div>
+                  <div className="mt-3 max-h-[480px] overflow-y-auto space-y-2 pr-1">
+                    {spatialMining.clusters.map((c) => {
+                      const isSelected = c.cluster_id === selectedClusterId;
+                      return (
+                        <button
+                          key={c.cluster_id}
+                          onClick={() => setSelectedClusterId(c.cluster_id)}
+                          className={`w-full text-left rounded-xl p-3 border transition-all ${
+                            isSelected
+                              ? "border-purple-500 bg-purple-50/70 shadow-xs"
+                              : "border-ink-100 hover:border-ink-200 hover:bg-ink-50/50"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-semibold text-ink-900">
+                              Cluster #{c.cluster_id}
+                            </span>
+                            <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
+                              {c.station_count} stations
+                            </span>
+                          </div>
+                          <div className="mt-1.5 flex items-center justify-between text-xs text-ink-500">
+                            <span>
+                              Centroid: {c.center_lat.toFixed(3)}, {c.center_lng.toFixed(3)}
+                            </span>
+                            <span>Radius: {c.radius_km.toFixed(2)} km</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Cluster Detail View */}
-            <div className="lg:col-span-7">
-              {selectedCluster ? (
-                <div className="rounded-2xl border border-ink-100 bg-white p-5 shadow-card">
-                  <div className="flex items-center justify-between border-b border-ink-100 pb-4">
-                    <div>
-                      <h3 className="text-lg font-bold text-ink-900">
-                        Cluster #{selectedCluster.cluster_id} Station Details
-                      </h3>
-                      <p className="text-xs text-ink-500">
-                        Centroid: {selectedCluster.center_lat.toFixed(5)}°N, {selectedCluster.center_lng.toFixed(5)}°E · Max Spread: {selectedCluster.radius_km.toFixed(2)} km
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-800">
-                      {selectedCluster.station_count} Verified Stations
-                    </span>
-                  </div>
-
-                  <div className="mt-4 max-h-[440px] overflow-y-auto space-y-2.5">
-                    {selectedCluster.stations.map((st, idx) => (
-                      <div
-                        key={st.id || idx}
-                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-xl border border-ink-100 p-3 hover:bg-ink-50/50"
-                      >
-                        <div>
-                          <p className="text-sm font-semibold text-ink-900">{st.name}</p>
-                          <p className="text-xs text-ink-500">{st.operator || "Independent / Commercial CPO"}</p>
-                        </div>
-                        <div className="mt-2 sm:mt-0 flex items-center gap-3">
-                          <span className="text-xs font-mono text-ink-400">
-                            {st.lat.toFixed(4)}, {st.lng.toFixed(4)}
-                          </span>
-                          <Link
-                            href={`/station/${st.id}`}
-                            className="inline-flex items-center text-xs font-medium text-coral-600 hover:text-coral-700"
-                          >
-                            View Station &rarr;
-                          </Link>
-                        </div>
+              {/* Cluster Detail View */}
+              <div className="lg:col-span-7">
+                {selectedCluster ? (
+                  <div className="rounded-2xl border border-ink-100 bg-white p-5 shadow-card">
+                    <div className="flex items-center justify-between border-b border-ink-100 pb-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-ink-900">
+                          Cluster #{selectedCluster.cluster_id} Station Details
+                        </h3>
+                        <p className="text-xs text-ink-500">
+                          Centroid: {selectedCluster.center_lat.toFixed(5)}°N, {selectedCluster.center_lng.toFixed(5)}°E · Max Spread: {selectedCluster.radius_km.toFixed(2)} km
+                        </p>
                       </div>
-                    ))}
+                      <span className="rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-800">
+                        {selectedCluster.station_count} Verified Stations
+                      </span>
+                    </div>
+
+                    <div className="mt-4 max-h-[440px] overflow-y-auto space-y-2.5">
+                      {selectedCluster.stations.map((st, idx) => (
+                        <div
+                          key={st.id || idx}
+                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-xl border border-ink-100 p-3 hover:bg-ink-50/50"
+                        >
+                          <div>
+                            <p className="text-sm font-semibold text-ink-900">{st.name}</p>
+                            <p className="text-xs text-ink-500">{st.operator || "Independent / Commercial CPO"}</p>
+                          </div>
+                          <div className="mt-2 sm:mt-0 flex items-center gap-3">
+                            <span className="text-xs font-mono text-ink-400">
+                              {st.lat.toFixed(4)}, {st.lng.toFixed(4)}
+                            </span>
+                            <Link
+                              href={`/station/${st.id}`}
+                              className="inline-flex items-center text-xs font-medium text-coral-600 hover:text-coral-700"
+                            >
+                              View Station &rarr;
+                            </Link>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="flex h-64 items-center justify-center rounded-2xl border border-dashed border-ink-200 text-sm text-ink-400">
-                  Select a cluster on the left to inspect constituent stations
-                </div>
-              )}
+                ) : (
+                  <div className="flex h-64 items-center justify-center rounded-2xl border border-dashed border-ink-200 text-sm text-ink-400">
+                    Select a cluster on the left to inspect constituent stations
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )
       )}
 
       {/* Tab 2: Station Isolation Analysis */}
-      {activeTab === "gaps" && spatialMining && (
-        <div className="mt-6 flex flex-col gap-6">
-          <div className="rounded-2xl border border-coral-100 bg-coral-50/40 p-4 text-xs text-coral-900 sm:p-5 sm:text-sm">
-            <h3 className="font-semibold text-coral-950">Station Isolation Analysis (Threshold &gt; 5.0 km)</h3>
-            <p className="mt-1 text-coral-800">
-              Identified <strong>{spatialMining.summary.coverage_gap_count} stations</strong> that have no nearest
-              neighbor charger within 5 kilometers in this snapshot. Additionally, {spatialMining.summary.extreme_isolation_outliers} stations
-              exhibit extreme isolation (&gt;25 km). <em>Limitation Note:</em> This evaluates isolation relative to recorded
-              stations in the Open Charge Map snapshot, rather than an exhaustive area census of all Indian charging infrastructure.
+      {activeTab === "gaps" && (
+        !spatialMining ? (
+          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
+            <h3 className="text-sm font-semibold text-amber-900">Station Isolation Data Unavailable</h3>
+            <p className="mt-1 text-xs text-amber-700">
+              The station isolation summary artifact is missing or invalid.
             </p>
           </div>
+        ) : (
+          <div className="mt-6 flex flex-col gap-6">
+            <div className="rounded-2xl border border-coral-100 bg-coral-50/40 p-4 text-xs text-coral-900 sm:p-5 sm:text-sm">
+              <h3 className="font-semibold text-coral-950">Station Isolation Analysis (Nationwide Snapshot Scope)</h3>
+              <p className="mt-1 text-coral-800">
+                Across the <strong>{spatialMining.summary.total_stations} recorded stations</strong> in this Open Charge Map snapshot,
+                {" "}<strong>{spatialMining.summary.coverage_gap_count} stations</strong> have no neighboring charger within 5 kilometers.
+                Of those, <strong>{spatialMining.summary.extreme_isolation_outliers} stations</strong> are statistical outliers exceeding the upper
+                Tukey fence (Q3 + 1.5 &times; IQR &approx; 75.4 km, range 75.9 km &ndash; 254.8 km).
+                A curated sample of <strong>{spatialMining.coverage_gaps_sample?.length ?? 25} most isolated stations</strong> is preserved in the artifact.
+              </p>
+              <p className="mt-2 text-[11px] text-coral-700 italic">
+                Limitation Notice: Evaluates isolation relative to recorded stations in the snapshot, not an exhaustive census of all public Indian EVSE hardware.
+              </p>
+            </div>
 
-          <div className="rounded-2xl border border-ink-100 bg-white p-5 shadow-card">
-            <h3 className="text-base font-bold text-ink-900">Most Isolated Recorded Stations (Candidate Network Expansion Points)</h3>
-            <p className="text-xs text-ink-500 mt-0.5">
-              High nearest-neighbor distance indicates solitary deployment within this dataset snapshot.
-            </p>
+            <div className="rounded-2xl border border-ink-100 bg-white p-5 shadow-card">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 pb-3">
+                <div>
+                  <h3 className="text-base font-bold text-ink-900">
+                    {isolationView === "extreme"
+                      ? `Extreme Isolation Outliers (${spatialMining.summary.extreme_isolation_outliers} Stations — IQR Anomalies)`
+                      : `Sample of Most Isolated Stations (${spatialMining.coverage_gaps_sample?.length ?? 25} Stations Recorded)`}
+                  </h3>
+                  <p className="text-xs text-ink-500 mt-0.5">
+                    {isolationView === "extreme"
+                      ? "Stations exceeding the upper Tukey fence (>75.4 km nearest recorded neighbor) with statistical outlier score"
+                      : "Curated sample of stations with the largest nearest-neighbor separation in this snapshot (sorted descending)"}
+                  </p>
+                </div>
+                <div className="inline-flex rounded-xl bg-ink-100 p-1 text-xs font-medium">
+                  <button
+                    type="button"
+                    onClick={() => setIsolationView("extreme")}
+                    className={`rounded-lg px-3 py-1.5 transition ${
+                      isolationView === "extreme"
+                        ? "bg-white text-ink-900 shadow-xs font-semibold"
+                        : "text-ink-600 hover:text-ink-900"
+                    }`}
+                  >
+                    17 Extreme Outliers (IQR)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsolationView("sample")}
+                    className={`rounded-lg px-3 py-1.5 transition ${
+                      isolationView === "sample"
+                        ? "bg-white text-ink-900 shadow-xs font-semibold"
+                        : "text-ink-600 hover:text-ink-900"
+                    }`}
+                  >
+                    25 Sampled Stations
+                  </button>
+                </div>
+              </div>
 
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-left text-xs text-ink-700">
-                <thead className="border-b border-ink-100 bg-ink-50/70 text-ink-500">
-                  <tr>
-                    <th className="py-2.5 px-3 font-semibold">Station Name</th>
-                    <th className="py-2.5 px-3 font-semibold">Nearest Neighbor Distance</th>
-                    <th className="py-2.5 px-3 font-semibold">Outlier Score</th>
-                    <th className="py-2.5 px-3 font-semibold">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-ink-100">
-                  {(
-                    spatialMining.top_coverage_gaps ||
-                    spatialMining.extreme_isolation_anomalies ||
-                    spatialMining.coverage_gaps_sample ||
-                    []
-                  )
-                    .slice(0, 15)
-                    .map((gap) => (
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-left text-xs text-ink-700">
+                  <thead className="border-b border-ink-100 bg-ink-50/70 text-ink-500">
+                    <tr>
+                      <th className="py-2.5 px-3 font-semibold">Station Name</th>
+                      <th className="py-2.5 px-3 font-semibold">Nearest Neighbor Distance</th>
+                      {isolationView === "extreme" ? (
+                        <th className="py-2.5 px-3 font-semibold">IQR Outlier Score</th>
+                      ) : (
+                        <th className="py-2.5 px-3 font-semibold">Coordinates</th>
+                      )}
+                      <th className="py-2.5 px-3 font-semibold">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-ink-100">
+                    {(isolationView === "extreme"
+                      ? (spatialMining.top_coverage_gaps || spatialMining.extreme_isolation_anomalies || [])
+                      : (spatialMining.coverage_gaps_sample || spatialMining.top_coverage_gaps || [])
+                    ).map((gap) => (
                       <tr key={gap.station_id} className="hover:bg-ink-50/40">
                         <td className="py-3 px-3 font-medium text-ink-900">{gap.station_name}</td>
                         <td className="py-3 px-3 font-mono font-semibold text-coral-600">
-                          {gap.nearest_distance_km ? gap.nearest_distance_km.toFixed(1) : "N/A"} km
+                          {gap.nearest_distance_km ? `${gap.nearest_distance_km.toFixed(1)} km` : "N/A"}
                         </td>
+                        {isolationView === "extreme" ? (
+                          <td className="py-3 px-3">
+                            <span className="inline-flex rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                              {gap.outlier_score != null ? gap.outlier_score.toFixed(2) : "N/A"}
+                            </span>
+                          </td>
+                        ) : (
+                          <td className="py-3 px-3 font-mono text-ink-500">
+                            {gap.latitude != null && gap.longitude != null
+                              ? `${gap.latitude.toFixed(3)}°N, ${gap.longitude.toFixed(3)}°E`
+                              : "Recorded"}
+                          </td>
+                        )}
                         <td className="py-3 px-3">
-                          <span className="inline-flex rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] font-medium text-amber-800">
-                            {gap.outlier_score != null ? gap.outlier_score.toFixed(2) : "N/A"}
-                          </span>
+                          <Link
+                            href={`/station/${gap.station_id}`}
+                            className="font-medium text-coral-600 hover:text-coral-700"
+                          >
+                            Details &rarr;
+                          </Link>
                         </td>
-                        <td className="py-3 px-3">
-                        <Link
-                          href={`/station/${gap.station_id}`}
-                          className="font-medium text-coral-600 hover:text-coral-700"
-                        >
-                          Details &rarr;
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
+        )
       )}
 
       {/* Tab 3: Demand Grouping (K-Means) */}
       {activeTab === "demand" && (
-        <div className="mt-6 flex flex-col gap-6">
-          <div className="rounded-2xl border border-blue-100 bg-blue-50/40 p-4 text-xs text-blue-900 sm:p-5 sm:text-sm">
-            <h3 className="font-semibold text-blue-950">K-Means Station Grouping (Offline Demonstration)</h3>
-            <p className="mt-1 text-blue-800">
-              Evaluates partitioned clustering ($k=3$) grouping stations by spatial centroid and calculated synthetic demand index.
-              Centroids partition infrastructure into distinct operational profiles (South Mumbai high-throughput hub, Suburb arterial, North peripheral).
+        !miningSummary || !miningSummary.clusters ? (
+          <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-6 text-center">
+            <h3 className="text-sm font-semibold text-blue-900">Demand Grouping Data Unavailable</h3>
+            <p className="mt-1 text-xs text-blue-700">
+              The demand clustering summary artifact is missing or invalid.
             </p>
           </div>
+        ) : (
+          <div className="mt-6 flex flex-col gap-6">
+            <div className="rounded-2xl border border-blue-100 bg-blue-50/40 p-4 text-xs text-blue-900 sm:p-5 sm:text-sm">
+              <h3 className="font-semibold text-blue-950">K-Means Station Grouping (Offline Demonstration)</h3>
+              <p className="mt-1 text-blue-800">
+                Evaluates partitioned clustering ($k=3$) grouping stations by spatial centroid and calculated synthetic demand index.
+                Centroids partition infrastructure into distinct operational profiles (South Mumbai high-throughput hub, Suburb arterial, North peripheral).
+              </p>
+            </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {miningSummary?.clusters.map((kc) => (
-              <div key={kc.cluster_id} className="rounded-2xl border border-ink-100 bg-white p-5 shadow-card">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-ink-900">Cluster {kc.cluster_id}</span>
-                  <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
-                    {kc.station_count} stations
-                  </span>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {miningSummary.clusters.map((kc) => (
+                <div key={kc.cluster_id} className="rounded-2xl border border-ink-100 bg-white p-5 shadow-card">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-ink-900">Cluster {kc.cluster_id}</span>
+                    <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
+                      {kc.station_count} stations
+                    </span>
+                  </div>
+                  <div className="mt-4 space-y-2 text-xs">
+                    <div className="flex justify-between border-b border-ink-50 pb-1.5">
+                      <span className="text-ink-500">Avg Demand Score</span>
+                      <span className="font-semibold text-ink-900">{kc.avg_demand_score.toFixed(1)} / 100</span>
+                    </div>
+                    <div className="flex justify-between border-b border-ink-50 pb-1.5">
+                      <span className="text-ink-500">Centroid Lat</span>
+                      <span className="font-mono text-ink-800">{kc.avg_lat.toFixed(4)}°N</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-ink-500">Centroid Lng</span>
+                      <span className="font-mono text-ink-800">{kc.avg_lng.toFixed(4)}°E</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="mt-4 space-y-2 text-xs">
-                  <div className="flex justify-between border-b border-ink-50 pb-1.5">
-                    <span className="text-ink-500">Avg Demand Score</span>
-                    <span className="font-semibold text-ink-900">{kc.avg_demand_score.toFixed(1)} / 100</span>
-                  </div>
-                  <div className="flex justify-between border-b border-ink-50 pb-1.5">
-                    <span className="text-ink-500">Centroid Lat</span>
-                    <span className="font-mono text-ink-800">{kc.avg_lat.toFixed(4)}°N</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-ink-500">Centroid Lng</span>
-                    <span className="font-mono text-ink-800">{kc.avg_lng.toFixed(4)}°E</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          <div className="rounded-2xl border border-ink-100 bg-white p-5 shadow-card text-xs text-ink-600 space-y-2">
-            <h4 className="font-bold text-ink-900 text-sm">Honest Academic Limitation</h4>
-            <p>
-              In the absence of commercial CPO proprietary session logs, demand scores are derived from synthetic
-              seed observations and connector power characteristics. This demonstrates partitioning mechanics
-              accurately but should not be mistaken for empirical consumer transaction data.
-            </p>
+            <div className="rounded-2xl border border-ink-100 bg-white p-5 shadow-card text-xs text-ink-600 space-y-2">
+              <h4 className="font-bold text-ink-900 text-sm">Honest Academic Limitation</h4>
+              <p>
+                In the absence of commercial CPO proprietary session logs, demand scores are derived from synthetic
+                seed observations and connector power characteristics. This demonstrates partitioning mechanics
+                accurately but should not be mistaken for empirical consumer transaction data.
+              </p>
+            </div>
           </div>
-        </div>
+        )
       )}
 
       {/* Tab 4: Occupancy Regressor */}
-      {activeTab === "regression" && offlineReport && (
-        <div className="mt-6 flex flex-col gap-6">
-          <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 text-xs text-amber-900 sm:p-5 sm:text-sm">
-            <h3 className="font-semibold text-amber-950">Chronological vs Random Train/Test Evaluation</h3>
-            <p className="mt-1 text-amber-800">
-              Evaluated on 17,280 synthetic observation steps. Contrasting historical <em>random split</em> (prone to
-              future data leakage across time) with an honest <strong>chronological 80/20 train/test split</strong> (13,824 train / 3,456 test records).
+      {activeTab === "regression" && (
+        !offlineReport || !offlineReport.evaluations ? (
+          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
+            <h3 className="text-sm font-semibold text-amber-900">Offline Evaluation Report Unavailable</h3>
+            <p className="mt-1 text-xs text-amber-700">
+              The offline evaluation report artifact is missing or invalid.
             </p>
           </div>
+        ) : (
+          <div className="mt-6 flex flex-col gap-6">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 text-xs text-amber-900 sm:p-5 sm:text-sm">
+              <h3 className="font-semibold text-amber-950">Chronological vs Random Train/Test Evaluation</h3>
+              <p className="mt-1 text-amber-800">
+                Evaluated on 17,280 synthetic observation steps. Contrasting historical <em>random split</em> (prone to
+                future data leakage across time) with an honest <strong>chronological 80/20 train/test split</strong> (13,824 train / 3,456 test records).
+              </p>
+            </div>
 
           {/* Model Comparison Matrix */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -638,7 +738,7 @@ export function IntelligenceClient() {
             </div>
           </div>
         </div>
-      )}
+      ))}
 
       {/* Tab 5: Production Governance */}
       {activeTab === "governance" && (

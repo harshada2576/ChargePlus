@@ -32,6 +32,7 @@ When presenting ChargePlus to an academic evaluator, follow this exact sequence:
      - Explain why the Haversine distance metric was used instead of planar Euclidean coordinates.
    - **Tab 2: Station Isolation Analysis:**
      - Show the 254 stations identified with nearest neighbor distance $>5\text{ km}$ in the dataset snapshot.
+     - Toggle between the 17 extreme statistical outliers (IQR upper Tukey fence, range $75.9\text{ km} - 254.8\text{ km}$) and the 25 recorded sample stations.
      - Explain that this measures sparsity within the recorded snapshot rather than an exhaustive area census of Indian infrastructure.
    - **Tab 3: Demand Grouping (K-Means):**
      - Show the 3-cluster operational segmentation based on normalized spatial positioning and demand indices.

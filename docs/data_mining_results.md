@@ -51,8 +51,9 @@ All experiments documented herein are strictly reproducible using the codebase a
 
 - **Isolation Threshold:** Nearest-neighbor Haversine distance $d_{\text{min}} > 5.0\text{ km}$.
 - **Isolated Stations in Snapshot:** **254 stations (46.95%)** have no neighboring station within 5 km in this snapshot.
-- **Extreme Isolation Outliers (IQR Tukey Fences):** 17 stations exceed $25.0\text{ km}$ isolation from any other recorded station.
-- **Sample Isolated Stations:**
+- **Extreme Isolation Outliers (IQR Tukey Fences):** 17 stations exceed the upper Tukey fence ($Q_3 + 1.5 \times IQR \approx 75.4\text{ km}$; observed range $75.9\text{ km} - 254.8\text{ km}$).
+- **Sampled Most Isolated Stations:** 25 stations recorded in the artifact sample ($60.9\text{ km} - 254.8\text{ km}$).
+- **Notable Isolated Stations:**
   - *Tata EV Fast Charging - Lexican Motors, Siliguri* ($254.8\text{ km}$ nearest recorded neighbor)
   - *Electrify Bihar EV Charging Station* ($238.9\text{ km}$ nearest recorded neighbor)
   - *Khajuraho Airport, Madhya Pradesh* ($240.2\text{ km}$ nearest recorded neighbor)

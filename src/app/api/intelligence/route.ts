@@ -7,6 +7,17 @@ export const dynamic = "force-dynamic";
 
 const RATE_LIMIT = { limit: 120, windowMs: 60_000 };
 
+function safeParseJson<T>(filePath: string): T | null {
+  try {
+    if (!fs.existsSync(filePath)) return null;
+    const content = fs.readFileSync(filePath, "utf-8");
+    return JSON.parse(content) as T;
+  } catch {
+    // Malformed JSON or unreadable file returns null safely without path exposure
+    return null;
+  }
+}
+
 export async function GET(request: Request) {
   const rate = checkRateLimit(clientKey(request), RATE_LIMIT);
   if (!rate.allowed) {
@@ -16,12 +27,18 @@ export async function GET(request: Request) {
   try {
     const dataDir = path.resolve(process.cwd(), "data", "ml");
 
-    // 1. Spatial DBSCAN summary
-    const spatialPath = path.join(dataDir, "spatial_mining_summary.json");
+    // 1. Spatial DBSCAN summary with validation
+    const spatialRaw = safeParseJson<any>(path.join(dataDir, "spatial_mining_summary.json"));
     let spatialMining = null;
-    if (fs.existsSync(spatialPath)) {
-      spatialMining = JSON.parse(fs.readFileSync(spatialPath, "utf-8"));
-      if (spatialMining && !spatialMining.top_coverage_gaps) {
+    if (
+      spatialRaw &&
+      typeof spatialRaw === "object" &&
+      spatialRaw.summary &&
+      typeof spatialRaw.summary.total_stations === "number" &&
+      Array.isArray(spatialRaw.clusters)
+    ) {
+      spatialMining = spatialRaw;
+      if (!spatialMining.top_coverage_gaps) {
         spatialMining.top_coverage_gaps =
           spatialMining.extreme_isolation_anomalies ||
           spatialMining.coverage_gaps_sample ||
@@ -29,18 +46,28 @@ export async function GET(request: Request) {
       }
     }
 
-    // 2. Demand mining summary (K-Means + Random Forest)
-    const miningSummaryPath = path.join(dataDir, "mining_summary.json");
+    // 2. Demand mining summary (K-Means + Random Forest) with validation
+    const miningRaw = safeParseJson<any>(path.join(dataDir, "mining_summary.json"));
     let miningSummary = null;
-    if (fs.existsSync(miningSummaryPath)) {
-      miningSummary = JSON.parse(fs.readFileSync(miningSummaryPath, "utf-8"));
+    if (
+      miningRaw &&
+      typeof miningRaw === "object" &&
+      Array.isArray(miningRaw.clusters) &&
+      miningRaw.metrics
+    ) {
+      miningSummary = miningRaw;
     }
 
-    // 3. Offline evaluation report (chronological vs random benchmark)
-    const offlineReportPath = path.join(dataDir, "offline_evaluation_report.json");
+    // 3. Offline evaluation report (chronological vs random benchmark) with validation
+    const offlineRaw = safeParseJson<any>(path.join(dataDir, "offline_evaluation_report.json"));
     let offlineReport = null;
-    if (fs.existsSync(offlineReportPath)) {
-      offlineReport = JSON.parse(fs.readFileSync(offlineReportPath, "utf-8"));
+    if (
+      offlineRaw &&
+      typeof offlineRaw === "object" &&
+      offlineRaw.metadata &&
+      offlineRaw.evaluations
+    ) {
+      offlineReport = offlineRaw;
     }
 
     return NextResponse.json({
@@ -56,8 +83,11 @@ export async function GET(request: Request) {
       miningSummary,
       offlineReport,
     });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Failed to load intelligence data";
-    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  } catch {
+    // Sanitary, non-leaking generic error response
+    return NextResponse.json(
+      { ok: false, error: "Failed to load intelligence data" },
+      { status: 500 }
+    );
   }
 }
