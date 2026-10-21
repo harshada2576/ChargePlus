@@ -1,0 +1,36 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2026-10-18T13:38:14.247799+00:00",
+  "target_region": "India",
+  "priority_regions": [
+    "Maharashtra (Mumbai, Thane, Navi Mumbai, Kalyan-Dombivli, Pune, Kolhapur)",
+    "Karnataka",
+    "Tamil Nadu",
+    "Delhi NCR",
+    "Gujarat",
+    "Kerala"
+  ],
+  "source_adapters": [
+    {
+      "adapter": "OpenChargeMapAdapter",
+      "source_id": "open_charge_map",
+      "endpoint": "https://api.openchargemap.io/v3/poi/?countrycode=IN",
+      "license": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
+      "rate_limit": "Public API quota with configured API key"
+    },
+    {
+      "adapter": "ChargePlusCanonicalCuration",
+      "source_id": "chargeplus_canonical",
+      "source_path": "data/canonical_stations.json",
+      "license": "ChargePlus Engineering Research Ground Truth"
+    }
+  ],
+  "deduplication_policy": {
+    "max_pairwise_distance_meters": 40.0,
+    "resolution_strategy": "Retain more complete record; log collision to duplicate_review.csv"
+  },
+  "provenance_policy": {
+    "is_simulated": false,
+    "attribution_policy": "Full attribution preserved per ODbL and CC BY 4.0 in source_registry.csv"
+  }
+}

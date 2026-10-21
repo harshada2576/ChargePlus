@@ -1,0 +1,32 @@
+id,name,slug,website_url,support_phone,is_simulated,created_at,updated_at
+8b7eff19-b179-5180-bd55-282c84b8ba52,Chargezone (India),chargezone-india,https://www.chargezone.co.in/,+91 72270 25948,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+3e05fe88-0970-5ad4-b0aa-7b0071d17326,Salzer NexCharge (IN),salzer-nexcharge-in,https://salzernexcharge.com,,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+5b22acea-fba2-576f-93a2-e76b4fdca708,Tata Power,tata-power,https://nexonev.tatamotors.com/charging-locator/,,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+279bf924-3986-5e31-b5f8-656ed717e3cb,Shell Recharge (IN),shell-recharge-in,https://www.shell.in/motorists/shell-recharge.html,,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+aa662a71-1760-533a-a03f-6c1fde168a18,JIO BP Pulse (India),jio-bp-pulse-india,https://www.jiobp.com/products-and-services/EV-charging,,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+b447891a-e175-5eef-bc67-6890e8598320,Statiq (IN),statiq-in,https://www.statiq.in/,,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+6a1c2e64-f73c-5687-aee0-a703157cf8ba,Charge_iN by Mahindra,charge_in-by-mahindra,https://www.mahindraelectricsuv.com/technology/Charge_IN.html,+91 8069236278,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+4b60b6c7-77c2-5113-af35-17729a0a80fc,Zeon Charging,zeon-charging,https://zeoncharging.com/,+91 9789 616161,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+4157b7c9-3c1f-528a-8c23-14dad1020424,Adani Gas-EV (TR),adani-gas-ev-tr,https://adanigas.com,+91 7969221100,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+2c7d3f9f-ac4b-540a-9451-fdde6ed754bd,eDrive BPCL (IN),edrive-bpcl-in,https://www.bharatpetroleum.in/our-businesses/fuels-and-services/edrive,,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+08c35b8b-2597-5c93-b3b9-3bb578e59687,Vijaya Power (IN),vijaya-power-in,https://vijayapower.com/,+917448145050,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+7e4d4367-397d-5f41-8557-29794347e977,(Business Owner at Location),business-owner-at-location,,,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+e97b2f78-8cd9-5034-b960-d99681830ade,GO EC (IN),go-ec-in,https://www.goecworld.com/,,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+bfa0539b-b091-5c86-b4d3-6b58e5ae2434,Independent Operator,independent-operator,,,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+a6dae614-7812-5aa0-b8d2-b45da7d9b814,Nikol EV (IN),nikol-ev-in,https://www.nikolev.in/,,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+06e37d28-f1b7-5cc1-8be1-3b3f9506f387,Hydra Charging (IN),hydra-charging-in,https://hydracharging.in,+91 97870 12121,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+1a1e2151-2f31-577b-aecc-cc1f8a41f1ea,Relux Electric (India),relux-electric-india,https://reluxelectric.com/,044 2233 0402,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+743bb1c6-5504-5a94-8085-02237eb63077,EESL (IN),eesl-in,https://eeslindia.org/en/electric-vehicles/,,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+4fabc658-37bd-5080-ac18-0e333a77f46a,Bolt.Earth (IN),bolt-earth-in,https://bolt.earth/,+91 8447746385,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+5715c950-62bd-50ca-bce4-61b0012243df,Rebolt (IN),rebolt-in,https://www.reboltnetwork.com/,,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+417e1bad-5921-5b4a-b83f-a3bb28d18c32,Wheels Drive (IN),wheels-drive-in,https://wheelsdrive.com,+91 8951679693,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+5949f2b2-d41b-51b0-8fb0-0affd7fbbdd4,ChargeMod (IN),chargemod-in,https://chargemod.com/,,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+e89b7fa7-aa35-55f0-ae04-3ab66112655a,E-Fill Electric (IN),e-fill-electric-in,https://efillelectric.com/,,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+3a0b8a09-c263-59c6-80ff-50dc05e904ba,Tryk (IN),tryk-in,https://trykcharge.in/,,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+6526ff8f-44bd-5ea8-a174-eaeeb03c4a87,Xobolt (IN),xobolt-in,https://www.xobolt.in/,+91 7972411983,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+de954ad3-2a93-5e07-9776-b84e8d0076af,Volttic (IN),volttic-in,https://volttic.com/,+91-9711829983,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+6934605b-9111-5c95-805e-8a9b5b567bc5,Ecoplug,ecoplug,http://www.ecoplug.be/index.html,+32 (0) 483 425 255,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+f8a114bb-a559-531e-bdd6-b456c7077335,GE WattStation (No longer active),ge-wattstation-no-longer-active,https://info.chargepoint.com/ge_welcome,,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+ca300a07-2681-596d-b0b0-816e76a5df3f,Joulepoint (IN),joulepoint-in,https://joulepoint.com/,,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+27f0c820-8175-560d-b48f-32aeaf6c76ae,Powerbank (IN),powerbank-in,https://powerbank.green/home.html,+91 99759 50100,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00
+0927728a-3dbf-53ce-a6d6-f34674052d07,Sunfuel Electric (IN),sunfuel-electric-in,https://www.sunfuelelectric.com/,,false,2026-10-18 00:00:00+00,2026-10-18 00:00:00+00

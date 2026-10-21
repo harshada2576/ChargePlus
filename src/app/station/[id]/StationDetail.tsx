@@ -29,6 +29,7 @@ import { connectorPriceDisplay, stationPriceDisplay } from "@/lib/priceDisplay";
 import { StationReportForm } from "@/components/StationReportForm";
 import { StationReviewForm } from "@/components/StationReviewForm";
 import { MapLibreMap } from "@/components/MapLibreMap";
+import { WeatherBadge } from "@/components/WeatherBadge";
 
 export function StationDetail({ station, reviews }: { station: Station; reviews: ApprovedReview[] }) {
   const { t } = useI18n();
@@ -99,16 +100,19 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
             <p className="mt-1 text-[14px] text-ink-700">
               {station.operator} · {station.area}
             </p>
-            {station.rating != null && (
-              <div className="mt-2 inline-flex items-center gap-1.5 text-[13px] text-ink-800">
-                <span className="inline-flex items-center gap-0.5 text-coral-600">
-                  <StarFilledIcon size={14} />
-                </span>
-                <span className="font-semibold">{station.rating.toFixed(1)}</span>
-                <span className="text-ink-500">·</span>
-                <span className="text-ink-600">{t("station.reviews.count", { n: station.reviewCount })}</span>
-              </div>
-            )}
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {hasCoords && <WeatherBadge lat={station.lat} lng={station.lng} />}
+              {station.rating != null && (
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-ink-100 bg-white px-2.5 py-1 text-[12.5px] text-ink-800 shadow-sm">
+                  <span className="inline-flex items-center gap-0.5 text-coral-600">
+                    <StarFilledIcon size={14} />
+                  </span>
+                  <span className="font-semibold">{station.rating.toFixed(1)}</span>
+                  <span className="text-ink-500">·</span>
+                  <span className="text-ink-600">{t("station.reviews.count", { n: station.reviewCount })}</span>
+                </div>
+              )}
+            </div>
           </div>
           <IconButton
             label={saved ? t("common.remove") : t("common.save")}

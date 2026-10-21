@@ -1,0 +1,17 @@
+entity,field,data_type,description
+stations,id,uuid,"Deterministic internal primary key generated via UUIDv5(namespace, ocm:id)"
+stations,slug,text,URL-safe unique identifier constrained by chk_stations_slug_format
+stations,name,text,Authentic source-backed station name (1 to 300 characters)
+stations,operator_id,uuid,Foreign key reference to public.operators(id)
+stations,postal_code,text,Indian 6-digit PIN code or NULL; validated against ^[1-9][0-9]{5}$
+stations,latitude,double precision,WGS84 latitude coordinate
+stations,longitude,double precision,WGS84 longitude coordinate
+stations,geom,"geography(Point,4326)",PostGIS point geometry: SRID=4326;POINT(lng lat)
+stations,is_24_hours,boolean,True if published 24/7 access; False if scheduled or unknown
+stations,is_simulated,boolean,False for genuine real-world sourced records
+connectors,id,uuid,Deterministic primary key generated via UUIDv5
+connectors,station_id,uuid,Foreign key reference to public.stations(id)
+connectors,connector_type,text,"Standard connector vocabulary (CCS2, Type 2, CHAdeMO, GB/T, Bharat AC001)"
+connectors,power_kw,"numeric(8,2)",Charging power in kilowatts (>0 or NULL if unknown)
+connectors,price_per_kwh,"numeric(10,2)",Verified source-published per-kWh tariff (or NULL)
+connectors,price_estimate_per_kwh,"numeric(10,2)",Unverified estimate preserved separately from verified price

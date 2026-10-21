@@ -1,0 +1,2 @@
+id,name,source_type,base_url,source_priority,is_active,created_at
+8418e395-84f0-5eb8-95c9-43f2bdb0a2ec,open_charge_map,api,https://api.openchargemap.io/v3/poi/,100,true,2026-10-18 00:00:00+00

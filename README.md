@@ -57,35 +57,39 @@
 ## 🚀 Key Features
 
 ### 1. Data Ingestion & Canonical Dataset (`backend/ingestion/`)
-- Curated canonical records for **12 major charging hubs** across Greater Mumbai (BKC, Nariman Point, Airport T2, Powai, Goregaon, Lower Parel, Dadar, Thane, Vashi).
-- Normalizes **8 major CPOs** (Tata Power, Jio-bp, Ather Energy, Statiq, ChargeZone, Fortum, Kazam, Magenta).
+- Curated canonical records spanning the entire **Mumbai Metropolitan Region (MMR)** (1,600+ stations, 4,150+ connectors across South Mumbai, Western Suburbs, Central Suburbs, Thane, Navi Mumbai, Mira-Bhayandar, and Kalyan-Dombivli).
+- Strict **Provenance Isolation**: 8 genuine live MMR stations from OpenChargeMap are preserved with verified telemetry; demo stations carry explicit `is_simulated = true` markings so synthetic data never masks or overwrites genuine operational state.
+- Normalizes major Indian CPOs (Tata Power, Jio-bp, Ather Energy, Statiq, ChargeZone, Fortum, Kazam, Magenta, Bolt.Earth, Zeon).
 - Multi-standard connectors: CCS-2, Type 2 AC, CHAdeMO, and Bharat AC-001.
 
-### 2. Operational History Generation (`backend/ingestion/seed_observations.py`)
-- Synthesizes **17,280 hourly observations** across a 30-day monitoring window.
-- Realistic diurnal traffic modeling with morning rush (8:00–10:00 AM) and evening peak (6:00–9:00 PM) utilization curves.
+### 2. Operational Telemetry & Historical Observations
+- Houses **80,000 operational observations** and **50,300+ daily station aggregates** (`analytics.fact_station_daily_agg`).
+- Realistic diurnal traffic modeling with peak morning rush and evening commute curves.
+- Live weather telemetry integration (`/api/weather`) fetching ambient temperature and atmospheric conditions via Open-Meteo.
 
-### 3. Star Schema ETL Pipeline (`backend/etl/etl_pipeline.py`)
+### 3. Star Schema ETL Pipeline (`backend/etl/`)
 - **Conformed Dimensions**:
-  - `analytics.dim_operator` (8 operators)
-  - `analytics.dim_location` (12 localities)
-  - `analytics.dim_station` (12 physical stations, SCD-Type 2 compatible)
-  - `analytics.dim_connector` (24 connector configurations)
-- **Fact Table**:
-  - `analytics.fact_station_daily` (360 daily summaries aggregating utilization %, uptime %, and fault ticks).
+  - `analytics.dim_operator` (CPO registry with alias mapping)
+  - `analytics.dim_location` (MMR spatial zones & localities)
+  - `analytics.dim_station` (Physical stations, SCD-Type 2 compatible)
+  - `analytics.dim_connector` (Standardized connector configurations)
+  - `analytics.dim_date` (3,288 calendar entries) & `analytics.dim_time` (96 quarter-hour slots)
+- **Fact Tables**:
+  - `analytics.fact_station_observation` (Atomic telemetry observations)
+  - `analytics.fact_station_daily_agg` (Daily summaries aggregating utilization %, uptime %, and fault ticks).
 
-### 4. Data Mining & Predictive Modeling (`backend/ml/demand_mining.py`)
+### 4. Data Mining & Predictive Modeling (`backend/ml/`)
 - **Unsupervised Clustering (K-Means)**:
-  - Partitions network into 3 distinct spatial clusters (Western Suburban Corridor, Peripheral Suburbs, High-Density Core Hubs).
+  - Partitions network into spatial clusters identifying high-density charging demand corridors.
 - **Supervised Forecasting (Random Forest Regressor)**:
-  - Predicts queue occupancy based on temporal and geographic features.
-  - **Baseline (Hourly Mean)**: $\text{MAE} = 0.2655$, $\text{RMSE} = 0.3186$
-  - **Random Forest Model**: $\text{MAE} = 0.2565$, $\text{RMSE} = 0.3133$, $R^2 = 0.4105$
-  - **Top Predictive Feature**: Hour of Day ($90.1\%$).
+  - Predicts queue occupancy based on temporal and geographic features ($R^2 = 0.41$).
+  - **Production ML Contract**: Gated behind strict data maturity checks (`backend/warehouse/maturity.py`). Production inference strictly returns `NO_MODEL` during cold start to avoid hallucinating fake congestion.
 
-### 5. Interactive Admin Operations Console (`/admin`)
-- Displays live network metrics, moderation queues, and operational status.
-- Area 6 (Forecast / Model Status) displays genuine experimental data mining metrics directly from the model summary.
+### 5. Interactive Driver Discovery & Admin Operations Console
+- **MapLibre GL Map**: Native GPU clustering, vector tiles via OpenFreeMap, station selection, and live geolocation.
+- **Dedicated REST APIs**: `/api/stations` (server-side spatial distance calculation, filters, and progressive pagination) and `/api/weather` (live localized weather badges).
+- **Internationalization**: Full interface localization across English, Hindi (हिन्दी), and Marathi (मराठी).
+- **Admin Operations Console (`/admin`)**: Real-time operational dashboard featuring Station Management with Live vs. Demo provenance split, community Report & Review moderation queues, Ingestion run tracking, and Warehouse analytics.
 
 ---
 
@@ -99,6 +103,7 @@
 | **Operational DB** | PostgreSQL 15+ & PostGIS (Supabase) |
 | **Data Science / ML** | Python 3, Pandas, Scikit-Learn, NumPy |
 | **Warehouse Modeling** | Kimball Dimensional Star Schema (CSV / SQL) |
+| **Weather Telemetry** | Open-Meteo Weather API |
 
 ---
 
@@ -106,36 +111,27 @@
 
 ```text
 ChargePlus/
-├── README2.md                         # This file (DWDM project guide)
-├── README.md                          # Original engineering documentation
+├── README.md                          # DWDM & engineering platform guide
 ├── package.json                       # Next.js scripts and dependencies
 ├── backend/
-│   ├── ingestion/
-│   │   ├── ingest_stations.py         # Canonical Mumbai station generator
-│   │   └── seed_observations.py       # 30-day diurnal telemetry generator
-│   ├── etl/
-│   │   └── etl_pipeline.py            # Star Schema ETL transformation pipeline
-│   └── ml/
-│       └── demand_mining.py           # K-Means clustering & Random Forest ML suite
+│   ├── ingestion/                     # Multi-source adapters, contracts, validation & dedup
+│   ├── etl/                           # Star Schema ETL transformation pipeline
+│   ├── ml/                            # K-Means clustering, Random Forest regressor & registry
+│   └── warehouse/                     # 24-rule Data Quality validator & maturity checks
 ├── data/
 │   ├── canonical_stations.json        # Normalized station & connector entities
-│   ├── observations.json              # 17,280 observation ticks
-│   ├── ml/
-│   │   └── mining_summary.json        # Model metrics (MAE, RMSE, R², feature importances)
+│   ├── observations.json              # Historical observation ticks
+│   ├── ml/                            # Model summary metrics
 │   └── warehouse/                     # Dimensional Star Schema CSV catalogs
-│       ├── dim_station.csv
-│       ├── dim_operator.csv
-│       ├── dim_location.csv
-│       ├── dim_connector.csv
-│       └── fact_station_daily.csv
 ├── docs/
-│   ├── olap/
-│   │   └── olap_queries.sql           # Roll-up, Drill-down, Cube, Window ranking queries
-│   └── data_warehouse.md              # Dimensional grain specifications
+│   ├── olap/                          # Roll-up, Drill-down, Cube, Window ranking queries
+│   └── production.md                  # Operations runbook, security posture & checklists
 └── src/                               # Next.js application source
-    ├── app/                           # App Router routes (/explore, /admin, /station)
-    ├── components/                    # UI components (MapLibreMap, StationCard)
-    └── lib/                           # Utility functions & Supabase client
+    ├── app/                           # App Router routes (/explore, /station, /admin, /api/*)
+    ├── components/                    # UI components (MapLibreMap, StationCard, WeatherBadge)
+    ├── data/                          # Station domain adapter, queries & types
+    ├── i18n/                          # Multi-lingual dictionaries (EN, HI, MR)
+    └── lib/                           # Supabase client, rate limiting, reviews & warehouse helpers
 ```
 
 ---
