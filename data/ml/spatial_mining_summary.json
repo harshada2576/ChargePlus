@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generated_at": "2026-10-21T13:44:50.901165+00:00",
+    "generated_at": "2026-10-21T14:47:45.498017+00:00",
     "pipeline": "backend.ml.run_spatial_mining",
     "algorithm": "DBSCAN (Density-Based Spatial Clustering of Applications with Noise)",
     "distance_metric": "Haversine Great-Circle Distance (Spherical Earth, R = 6371.0088 km)",
@@ -11,6 +11,7 @@
     },
     "data_provenance": {
       "source": "artifacts\\chargeplus-real-dataset\\stations.csv",
+      "geographic_scope": "India Nationwide (Open Charge Map snapshot, 20 states / 293 cities)",
       "total_records": 541,
       "is_synthetic": false,
       "verification_status": "AUTHENTIC_REAL_DATASET"
@@ -1301,6 +1302,127 @@
       "longitude": 76.874074,
       "nearest_station_id": "c28096dc-b0fc-516a-b76b-13851dfa37c4",
       "nearest_distance_km": 60.94
+    }
+  ],
+  "top_coverage_gaps": [
+    {
+      "station_id": "dd1d49bb-c6a3-57bf-a0cd-143b0b22fd45",
+      "station_name": "Saguna Family Restaurant",
+      "nearest_distance_km": 82.738,
+      "nearest_station_id": "c8d4ec7c-626f-5015-860b-32eebbab7d3c",
+      "outlier_score": 0.339
+    },
+    {
+      "station_id": "d9211569-0f3b-5165-b95f-6e8e5464f4fb",
+      "station_name": "E-Fill Electric Hotel Food Mania",
+      "nearest_distance_km": 88.972,
+      "nearest_station_id": "42b41d7f-afb5-503d-9767-b78260953a95",
+      "outlier_score": 0.582
+    },
+    {
+      "station_id": "a13db946-791a-5ed0-b92e-94077c0f4799",
+      "station_name": "Mannat",
+      "nearest_distance_km": 91.571,
+      "nearest_station_id": "0ba53765-f297-5421-92fa-d3e16b10c036",
+      "outlier_score": 0.684
+    },
+    {
+      "station_id": "42b41d7f-afb5-503d-9767-b78260953a95",
+      "station_name": "BPCL EV Dharamshala Road",
+      "nearest_distance_km": 88.972,
+      "nearest_station_id": "d9211569-0f3b-5165-b95f-6e8e5464f4fb",
+      "outlier_score": 0.582
+    },
+    {
+      "station_id": "99add338-e2af-5313-87cc-26d1bae6866f",
+      "station_name": "Shree Kanha International Chargezone",
+      "nearest_distance_km": 100.658,
+      "nearest_station_id": "54a0f701-5dd8-54c6-bed4-aee8881957b5",
+      "outlier_score": 1.038
+    },
+    {
+      "station_id": "85725ca6-7ff1-5e5e-8b50-900a2638b94e",
+      "station_name": "Lakshya Water Park",
+      "nearest_distance_km": 103.348,
+      "nearest_station_id": "d12326a2-9dea-5ee4-83b5-143faf74d867",
+      "outlier_score": 1.143
+    },
+    {
+      "station_id": "d12326a2-9dea-5ee4-83b5-143faf74d867",
+      "station_name": "DME Garoth Rest Area RHS",
+      "nearest_distance_km": 103.348,
+      "nearest_station_id": "85725ca6-7ff1-5e5e-8b50-900a2638b94e",
+      "outlier_score": 1.143
+    },
+    {
+      "station_id": "a9a36158-23bb-5117-96dd-58a4687c0d7e",
+      "station_name": "Khajuraho Airport",
+      "nearest_distance_km": 240.159,
+      "nearest_station_id": "97732c81-ea4d-5fdc-a3bf-d1d3ba30ea9f",
+      "outlier_score": 6.476
+    },
+    {
+      "station_id": "91eaa95d-9a8c-526e-942c-9b5e5caffe30",
+      "station_name": "Green Garden Family Restaurant",
+      "nearest_distance_km": 83.152,
+      "nearest_station_id": "c2438c75-179a-50c2-ba6a-11934216822e",
+      "outlier_score": 0.355
+    },
+    {
+      "station_id": "c9b9448a-1b54-5a9e-9784-11439ea48781",
+      "station_name": "Powerbank Charging Station",
+      "nearest_distance_km": 101.816,
+      "nearest_station_id": "d9211569-0f3b-5165-b95f-6e8e5464f4fb",
+      "outlier_score": 1.083
+    },
+    {
+      "station_id": "b8b1bea8-998f-504e-b34c-28d1c8105c3e",
+      "station_name": "Honest Restaurant- Amardeep food court",
+      "nearest_distance_km": 85.804,
+      "nearest_station_id": "c0e24f3a-d569-5192-8cf9-c641c2f5f539",
+      "outlier_score": 0.459
+    },
+    {
+      "station_id": "c1a0898c-69af-5a3a-8d91-b1a4a1725ead",
+      "station_name": "JCR - The Entertainment World",
+      "nearest_distance_km": 117.354,
+      "nearest_station_id": "b8b1bea8-998f-504e-b34c-28d1c8105c3e",
+      "outlier_score": 1.689
+    },
+    {
+      "station_id": "a04846e3-aa7c-5b88-bf5f-ea8970349b6f",
+      "station_name": "Electrify Bihar EV Charging Station",
+      "nearest_distance_km": 238.871,
+      "nearest_station_id": "91eaa95d-9a8c-526e-942c-9b5e5caffe30",
+      "outlier_score": 6.426
+    },
+    {
+      "station_id": "c421cb44-e4ec-54e4-944e-fee5644cd9e8",
+      "station_name": "Tata EV Fast Charging - Lexican Motors, Siliguri",
+      "nearest_distance_km": 254.837,
+      "nearest_station_id": "a04846e3-aa7c-5b88-bf5f-ea8970349b6f",
+      "outlier_score": 7.048
+    },
+    {
+      "station_id": "97732c81-ea4d-5fdc-a3bf-d1d3ba30ea9f",
+      "station_name": "Madhav Midway Treat",
+      "nearest_distance_km": 136.997,
+      "nearest_station_id": "9b9ce645-f523-5286-8a30-8e8f97e62b21",
+      "outlier_score": 2.454
+    },
+    {
+      "station_id": "0fc72525-fe5d-56bc-934b-d75d12e97db2",
+      "station_name": "Punjabi Haveli",
+      "nearest_distance_km": 147.804,
+      "nearest_station_id": "42b41d7f-afb5-503d-9767-b78260953a95",
+      "outlier_score": 2.876
+    },
+    {
+      "station_id": "0ba53765-f297-5421-92fa-d3e16b10c036",
+      "station_name": "NE-4 KFC Parking",
+      "nearest_distance_km": 75.894,
+      "nearest_station_id": "547624c9-ccc7-53dc-8f93-8f384551d5a6",
+      "outlier_score": 0.072
     }
   ],
   "extreme_isolation_anomalies": [

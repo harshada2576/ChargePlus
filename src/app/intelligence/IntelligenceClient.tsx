@@ -230,7 +230,7 @@ export function IntelligenceClient() {
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
             <CheckIcon size={12} />
-            541 Authentic Stations (MMR)
+            {spatialMining?.summary.total_stations ?? 541} Real Stations (India Snapshot)
           </span>
           <span className="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-800">
             <CompassIcon size={12} />
@@ -245,7 +245,7 @@ export function IntelligenceClient() {
           Station Intelligence & Data Mining
         </h1>
         <p className="max-w-3xl text-sm text-ink-600 sm:text-base">
-          Academic analysis layer evaluating spatial density clustering on authentic Mumbai charging stations,
+          Academic analysis layer evaluating spatial density clustering on authentic Open Charge Map stations across India,
           K-Means station grouping, and chronological Random Forest occupancy regression.
         </p>
       </div>
@@ -279,11 +279,11 @@ export function IntelligenceClient() {
         </div>
 
         <div className="rounded-2xl border border-ink-100 bg-white p-4 shadow-xs">
-          <p className="text-xs font-medium text-ink-500">Coverage Gaps (&gt;5km)</p>
+          <p className="text-xs font-medium text-ink-500">Isolated Stations (&gt;5km)</p>
           <p className="mt-1 text-2xl font-bold text-coral-600 sm:text-3xl">
             {spatialMining?.summary.coverage_gap_count ?? 254}
           </p>
-          <p className="mt-1 text-[11px] text-ink-500">Infrastructure deficit zones</p>
+          <p className="mt-1 text-[11px] text-ink-500">Nearest recorded neighbor &gt;5km</p>
         </div>
       </div>
 
@@ -292,7 +292,7 @@ export function IntelligenceClient() {
         <nav className="flex space-x-6 overflow-x-auto pb-px" aria-label="Tabs">
           {[
             { id: "spatial", label: "Spatial Clusters (DBSCAN)", icon: CompassIcon },
-            { id: "gaps", label: "Coverage Gaps & Outliers", icon: PinIcon },
+            { id: "gaps", label: "Station Isolation Analysis", icon: PinIcon },
             { id: "demand", label: "Demand Grouping (K-Means)", icon: SortIcon },
             { id: "regression", label: "Occupancy Regressor (RF)", icon: BoltIcon },
             { id: "governance", label: "Production Gate Governance", icon: InfoIcon },
@@ -426,23 +426,23 @@ export function IntelligenceClient() {
         </div>
       )}
 
-      {/* Tab 2: Coverage Gaps & Outliers */}
+      {/* Tab 2: Station Isolation Analysis */}
       {activeTab === "gaps" && spatialMining && (
         <div className="mt-6 flex flex-col gap-6">
           <div className="rounded-2xl border border-coral-100 bg-coral-50/40 p-4 text-xs text-coral-900 sm:p-5 sm:text-sm">
-            <h3 className="font-semibold text-coral-950">Coverage Gap Analysis (Threshold &gt; 5.0 km)</h3>
+            <h3 className="font-semibold text-coral-950">Station Isolation Analysis (Threshold &gt; 5.0 km)</h3>
             <p className="mt-1 text-coral-800">
               Identified <strong>{spatialMining.summary.coverage_gap_count} stations</strong> that have no nearest
-              neighbor charger within 5 kilometers. Additionally, {spatialMining.summary.extreme_isolation_outliers} stations
-              exhibit extreme geographical isolation (&gt;25 km). These pinpoint critical infrastructural voids across the
-              extended Mumbai-Pune and peripheral arterial transit corridors.
+              neighbor charger within 5 kilometers in this snapshot. Additionally, {spatialMining.summary.extreme_isolation_outliers} stations
+              exhibit extreme isolation (&gt;25 km). <em>Limitation Note:</em> This evaluates isolation relative to recorded
+              stations in the Open Charge Map snapshot, rather than an exhaustive area census of all Indian charging infrastructure.
             </p>
           </div>
 
           <div className="rounded-2xl border border-ink-100 bg-white p-5 shadow-card">
-            <h3 className="text-base font-bold text-ink-900">Top Isolated Stations (Candidate Expansion Hubs)</h3>
+            <h3 className="text-base font-bold text-ink-900">Most Isolated Recorded Stations (Candidate Network Expansion Points)</h3>
             <p className="text-xs text-ink-500 mt-0.5">
-              High nearest-neighbor distance implies solitary deployment without backup charging options.
+              High nearest-neighbor distance indicates solitary deployment within this dataset snapshot.
             </p>
 
             <div className="mt-4 overflow-x-auto">

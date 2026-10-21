@@ -56,9 +56,9 @@
 
 ## 🚀 Key Features
 
-### 1. Data Ingestion & Canonical Dataset (`backend/ingestion/`)
-- Curated canonical records spanning the entire **Mumbai Metropolitan Region (MMR)** (1,600+ stations, 4,150+ connectors across South Mumbai, Western Suburbs, Central Suburbs, Thane, Navi Mumbai, Mira-Bhayandar, and Kalyan-Dombivli).
-- Strict **Provenance Isolation**: 8 genuine live MMR stations from OpenChargeMap are preserved with verified telemetry; demo stations carry explicit `is_simulated = true` markings so synthetic data never masks or overwrites genuine operational state.
+### 1. Data Ingestion & Canonical Dataset (`artifacts/chargeplus-real-dataset/`, `backend/ingestion/`)
+- Curated canonical records from an authentic **India Nationwide Open Charge Map Snapshot** (541 verified stations, 655 connectors across 20 states and 293 cities, including Maharashtra, Karnataka, Tamil Nadu, Kerala, Delhi NCR, and Gujarat).
+- Strict **Provenance Isolation**: Genuine live stations carry verified source metadata; simulated records carry explicit `is_simulated = true` markings so synthetic data never masks or overwrites genuine operational state.
 - Normalizes major Indian CPOs (Tata Power, Jio-bp, Ather Energy, Statiq, ChargeZone, Fortum, Kazam, Magenta, Bolt.Earth, Zeon).
 - Multi-standard connectors: CCS-2, Type 2 AC, CHAdeMO, and Bharat AC-001.
 
@@ -79,11 +79,14 @@
   - `analytics.fact_station_daily_agg` (Daily summaries aggregating utilization %, uptime %, and fault ticks).
 
 ### 4. Data Mining & Predictive Modeling (`backend/ml/`)
-- **Unsupervised Clustering (K-Means)**:
-  - Partitions network into spatial clusters identifying high-density charging demand corridors.
+- **Spatial Density Clustering (DBSCAN + Haversine Metric)**:
+  - Discovers 24 spatial density clusters across 541 real stations using true spherical great-circle distances ($\epsilon = 2.0\text{ km}$, $\text{min\_samples} = 3$).
+  - Station-isolation analysis flags 254 solitary stations ($>5\text{ km}$ from nearest recorded neighbor in snapshot).
+- **Unsupervised Grouping (K-Means)**:
+  - Partitions network into spatial clusters identifying high-density charging demand archetypes ($K=3$).
 - **Supervised Forecasting (Random Forest Regressor)**:
-  - Predicts queue occupancy based on temporal and geographic features ($R^2 = 0.41$).
-  - **Production ML Contract**: Gated behind strict data maturity checks (`backend/warehouse/maturity.py`). Production inference strictly returns `NO_MODEL` during cold start to avoid hallucinating fake congestion.
+  - Evaluates chronological 80/20 train/test holdout split ($N=17,280$ observation steps) yielding MAE `0.2562`, RMSE `0.3139`, $R^2 = 0.3956$ over hourly mean baseline.
+  - **Production ML Contract**: Gated behind strict fail-closed data maturity checks (`backend/warehouse/maturity.py`). Production inference strictly returns `COLD / NO_MODEL` during cold start to avoid hallucinating fake congestion.
 
 ### 5. Interactive Driver Discovery & Admin Operations Console
 - **MapLibre GL Map**: Native GPU clustering, vector tiles via OpenFreeMap, station selection, and live geolocation.
@@ -154,8 +157,11 @@ Open [http://localhost:3000](http://localhost:3000) to view the driver interface
 # Typecheck
 npm run typecheck
 
-# Full test suite (192 passing unit & integration tests)
+# Full Node.js test suite (200 unit & integration tests: 199 passed, 0 failed, 1 skipped)
 npm test
+
+# Python spatial clustering & ML test suite
+python -u -m pytest tests/test_spatial_clustering.py tests/test_demand_mining.py tests/test_canonical_contracts.py tests/test_maturity.py tests/test_ml_offline_libs.py
 
 # Production build
 npm run build

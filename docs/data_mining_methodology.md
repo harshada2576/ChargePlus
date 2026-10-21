@@ -2,12 +2,12 @@
 
 ## 1. Problem Formulation & Academic Objectives
 
-The ChargePlus platform addresses the infrastructure analysis and charging intelligence problem for the Mumbai Metropolitan Region (MMR). While driver-facing applications typically focus on simple nearest-charger searches, this research applies formal **Data Mining (DM)** techniques to achieve four core analytical capabilities:
+The ChargePlus platform demonstrates empirical infrastructure analysis, spatial mining, and demand intelligence across a verified **India nationwide Open Charge Map snapshot** (541 stations across 20 states and 293 cities). While driver-facing applications typically focus on simple nearest-charger searches, this research applies formal **Data Mining (DM)** techniques to achieve five core analytical capabilities:
 
 1. **Spatial Density Clustering:** Discover geographic agglomerations of EV charging infrastructure without assuming convex cluster geometries or predetermining cluster counts.
-2. **Infrastructure Coverage Gap & Spatial Outlier Mining:** Pinpoint isolated charging points and infrastructure deserts across transit corridors.
+2. **Station-Isolation Analysis:** Pinpoint geographically isolated charging points relative to other recorded infrastructure in the dataset snapshot.
 3. **Operational Profile Partitioning:** Segment charging stations into operational tiers based on capacity, spatial positioning, and synthetic utilization indicators.
-4. **Temporal Occupancy Regression & Honest Chronological Evaluation:** Model diurnal charger occupancy, evaluate regression models against temporal naive baselines, and rigorously detect data leakage.
+4. **Temporal Occupancy Regression & Honest Chronological Evaluation:** Model diurnal charger occupancy, evaluate regression models against temporal naive baselines, and rigorously eliminate data leakage.
 5. **Fail-Closed Model Governance:** Ensure unvalidated models and offline experiments never project fabricated numbers to production drivers.
 
 ---
@@ -15,10 +15,10 @@ The ChargePlus platform addresses the infrastructure analysis and charging intel
 ## 2. Algorithm 1: Spatial Density Clustering (DBSCAN + Haversine Metric)
 
 ### 2.1 Theoretical Rationale
-Traditional partitioning algorithms such as K-Means assume spherical, equally sized clusters and require predefining the cluster count ($k$). However, municipal EV charging networks follow linear transportation corridors (Western Express Highway, Eastern Express Highway, Mumbai-Pune Expressway) and irregularly shaped urban centers (Bandra-Kurla Complex, Lower Parel). 
+Traditional partitioning algorithms such as K-Means assume spherical, equally sized clusters and require predefining the cluster count ($k$). However, EV charging networks across India naturally follow linear transportation corridors (National Highways such as NH-48, NH-44) and irregular municipal boundaries (Delhi NCR, Bengaluru, Pune, Kochi, Coimbatore, Kolhapur). 
 
 **DBSCAN (Density-Based Spatial Clustering of Applications with Noise)** was selected because:
-- It discovers arbitrary-shaped clusters corresponding to natural commercial districts and transit routes.
+- It discovers arbitrary-shaped clusters corresponding to real-world commercial districts and highway corridors.
 - It explicitly classifies isolated points as **noise / spatial outliers** rather than forcing them into artificial groupings.
 - It requires no prior knowledge of cluster count.
 
@@ -35,10 +35,11 @@ Where:
 - $R = 6,371.0088\text{ km}$ (Earth volumetric mean radius).
 - The $\epsilon$ neighborhood parameter in radians is given by $\epsilon_{\text{rad}} = \frac{\epsilon_{\text{km}}}{R}$.
 
-### 2.3 Parameter Calibration
-- **Epsilon ($\epsilon$):** Set to $2.0\text{ km}$. In dense metropolitan areas such as Mumbai, an EV driver within a 2 km radius has access to alternative walking/last-mile transit options.
+### 2.3 Parameter Calibration & Academic Caveats
+- **Epsilon ($\epsilon$):** Set to $2.0\text{ km}$. In metropolitan and suburban areas, an EV driver within a 2 km radius has access to alternative local charging or last-mile transit options.
 - **MinSamples:** Set to $3$ stations. A cluster must represent a genuine localized charging hub (at least 3 independent stations) rather than an isolated pair.
-- **Coverage Gap Threshold:** Stations whose nearest neighbor distance $d_{\text{min}} > 5.0\text{ km}$ are cataloged as coverage gap nodes.
+- **Station-Isolation Threshold:** Set to $5.0\text{ km}$. Stations whose nearest neighbor distance $d_{\text{min}} > 5.0\text{ km}$ are cataloged as isolated stations in the snapshot.
+- **Methodological Limitation Note:** Nearest-neighbor distance identifies solitary stations within the *recorded Open Charge Map dataset snapshot*. It does not constitute an exhaustive municipal area census of all Indian commercial charging infrastructure.
 
 ---
 
@@ -86,10 +87,10 @@ $$R^2 = 1 - \frac{\sum (y_i - \hat{y}_i)^2}{\sum (y_i - \bar{y})^2}$$
 
 ---
 
-## 5. Algorithm 4: Spatial Anomaly & Coverage Gap Mining
+## 5. Algorithm 4: Spatial Outlier Mining (IQR Fences)
 
-1. **Nearest-Neighbor Distance Matrix:** Computed via spatial BallTree with Haversine metric.
+1. **Nearest-Neighbor Distance Matrix:** Computed via spatial BallTree / pairwise Haversine metric.
 2. **IQR Outlier Fences:**
    $$Q_1 = P_{25}(d_{\text{min}}), \quad Q_3 = P_{75}(d_{\text{min}}), \quad \text{IQR} = Q_3 - Q_1$$
    $$\text{Threshold}_{\text{extreme}} = Q_3 + 3.0 \times \text{IQR}$$
-   Stations exceeding this boundary are flagged as extreme isolation outliers.
+   Stations exceeding this boundary are flagged as extreme isolation outliers relative to the recorded network snapshot.

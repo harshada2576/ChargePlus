@@ -143,6 +143,7 @@ def run_spatial_mining(
             },
             "data_provenance": {
                 "source": csv_path,
+                "geographic_scope": "India Nationwide (Open Charge Map snapshot, 20 states / 293 cities)",
                 "total_records": len(stations),
                 "is_synthetic": False,
                 "verification_status": "AUTHENTIC_REAL_DATASET",
@@ -168,6 +169,7 @@ def run_spatial_mining(
             }
             for g in sorted(gaps, key=lambda x: (x.nearest_distance_km or 0), reverse=True)[:25]
         ],
+        "top_coverage_gaps": anomalous_gaps,
         "extreme_isolation_anomalies": anomalous_gaps,
     }
 
