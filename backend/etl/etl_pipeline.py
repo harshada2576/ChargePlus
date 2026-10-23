@@ -1,8 +1,9 @@
 """
 backend/etl/etl_pipeline.py
-ChargePlus — Phase 4 Data Warehouse ETL Pipeline
-Extracts canonical stations and observation streams, transforms into Kimball Star Schema dimensions and facts,
-and generates local data warehouse files.
+ChargePlus — Phase 4 Offline Data Warehouse ETL Demonstration
+Extracts offline canonical stations and observation streams, transforms into Kimball Star Schema dimensions and facts,
+and generates local data warehouse files (data/warehouse/).
+NOTE: Production/CI automated Star Schema ETL uses backend.warehouse.etl against PostgreSQL/Supabase.
 """
 
 import json

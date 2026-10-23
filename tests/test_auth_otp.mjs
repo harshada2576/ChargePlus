@@ -12,6 +12,7 @@ import {
   simulateDevSendOtp,
   simulateDevVerifyOtp,
   clearSimulatedSessions,
+  isDevOrDemoAuth,
   CONTROLLED_TEST_ACCOUNTS,
   AuthValidationError,
   AuthProviderError,
@@ -163,3 +164,29 @@ test("dev/demo simulator verifies controlled test accounts with rate/attempt lim
   const adminVerified = simulateDevVerifyOtp("phone", "9876543219", "123456");
   assert.equal(adminVerified.userId, CONTROLLED_TEST_ACCOUNTS.adminUserId);
 });
+
+test("security: fixed demo OTP strictly fails closed in production even if DEMO_MODE is accidentally true", () => {
+  const origNodeEnv = process.env.NODE_ENV;
+  const origDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE;
+  try {
+    process.env.NODE_ENV = "production";
+    process.env.NEXT_PUBLIC_DEMO_MODE = "true";
+
+    // In production, isDevOrDemoAuth must unconditionally return false
+    assert.equal(isDevOrDemoAuth(), false);
+
+    // Any attempt to call simulateDevSendOtp or simulateDevVerifyOtp must throw AuthProviderError
+    assert.throws(
+      () => simulateDevSendOtp("phone", "9876543210"),
+      /Simulation is disabled in production environments/
+    );
+    assert.throws(
+      () => simulateDevVerifyOtp("phone", "9876543210", "123456"),
+      /Simulation is disabled in production environments/
+    );
+  } finally {
+    process.env.NODE_ENV = origNodeEnv;
+    process.env.NEXT_PUBLIC_DEMO_MODE = origDemoMode;
+  }
+});
+

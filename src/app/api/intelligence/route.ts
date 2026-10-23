@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import fs from "node:fs";
 import path from "node:path";
 import { checkRateLimit, clientKey } from "@/lib/rateLimit";
+import { ML_GATE_THRESHOLDS } from "@/lib/ml";
 
 export const dynamic = "force-dynamic";
 
@@ -78,6 +79,10 @@ export async function GET(request: Request) {
         reason: "NO_MODEL",
         policy: "Fail-Closed: Live production predictions require verified Indian CPO streaming telemetry.",
         isPredictionServing: false,
+        requiredObservations: ML_GATE_THRESHOLDS.minTotalObservations,
+        maxFeatureStalenessHours: ML_GATE_THRESHOLDS.maxFeatureStalenessHours,
+        currentRealObservations: 0,
+        warmingMinObservations: ML_GATE_THRESHOLDS.warmingMinObservations,
       },
       spatialMining,
       miningSummary,

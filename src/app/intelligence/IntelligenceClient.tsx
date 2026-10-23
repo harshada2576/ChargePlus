@@ -145,6 +145,10 @@ interface IntelligencePayload {
     reason: string;
     policy: string;
     isPredictionServing: boolean;
+    requiredObservations?: number;
+    maxFeatureStalenessHours?: number;
+    totalObservations?: number;
+    featureStalenessHours?: number;
   };
   spatialMining: SpatialMiningData | null;
   miningSummary: MiningSummaryData | null;
@@ -759,21 +763,39 @@ export function IntelligenceClient() {
             <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="rounded-xl border border-ink-100 p-4">
                 <p className="text-xs font-medium text-ink-500">Real Warehouse Events</p>
-                <p className="mt-1 text-xl font-bold text-ink-900">0 / 1,000</p>
-                <p className="mt-1 text-[11px] text-rose-600">Gate Requirement: UNMET</p>
+                <p className="mt-1 text-xl font-bold text-ink-900">
+                  {productionGate.totalObservations ?? 0} / {(productionGate.requiredObservations ?? 500).toLocaleString()}
+                </p>
+                <p className="mt-1 text-[11px] text-rose-600">Gate Requirement: UNMET (Need Real Telemetry)</p>
               </div>
 
               <div className="rounded-xl border border-ink-100 p-4">
-                <p className="text-xs font-medium text-ink-500">Data Freshness</p>
-                <p className="mt-1 text-xl font-bold text-ink-900">&gt; 168 Hours</p>
-                <p className="mt-1 text-[11px] text-rose-600">Gate Requirement: UNMET</p>
+                <p className="text-xs font-medium text-ink-500">Allowed Feature Staleness</p>
+                <p className="mt-1 text-xl font-bold text-ink-900">
+                  &le; {productionGate.maxFeatureStalenessHours ?? 72} Hours
+                </p>
+                <p className="mt-1 text-[11px] text-rose-600">Gate Requirement: UNMET (Offline)</p>
               </div>
 
               <div className="rounded-xl border border-ink-100 p-4">
-                <p className="text-xs font-medium text-ink-500">Live Endpoint Serving</p>
+                <p className="text-xs font-medium text-ink-500">Live Prediction Serving</p>
                 <p className="mt-1 text-xl font-bold text-amber-700">FAIL-CLOSED</p>
-                <p className="mt-1 text-[11px] text-emerald-600">Safety Guard: ACTIVE</p>
+                <p className="mt-1 text-[11px] text-emerald-600">Driver Safety Guard: ACTIVE</p>
               </div>
+            </div>
+
+            {/* Plain-Language Multilingual Driver Disclosure */}
+            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/60 p-4 text-xs text-amber-900 space-y-1.5">
+              <p className="font-semibold text-amber-950">Driver Summary / चालक सारांश / वाहन चालकांसाठी माहिती:</p>
+              <p>
+                <span className="font-medium">English:</span> Real-time occupancy predictions are currently disabled because authentic live hardware feeds are disconnected. No fake wait-times will be shown.
+              </p>
+              <p>
+                <span className="font-medium">हिन्दी:</span> वास्तविक हार्डवेयर डेटा उपलब्ध न होने के कारण लाइव चार्जिंग अनुमान बंद रखे गए हैं। कोई भी कृत्रिम या गलत डेटा नहीं दिखाया जाएगा।
+              </p>
+              <p>
+                <span className="font-medium">मराठी:</span> थेट हार्डवेअर डेटा उपलब्ध नसल्यामुळे रिअल-टाइम अंदाज बंद ठेवण्यात आले आहेत. वाहन चालकांची दिशाभूल टाळण्यासाठी खोटे अंदाज दाखवले जात नाहीत.
+              </p>
             </div>
 
             <div className="mt-6 space-y-3 rounded-xl bg-ink-50 p-4 text-xs text-ink-700">

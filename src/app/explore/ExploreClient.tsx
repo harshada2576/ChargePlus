@@ -102,8 +102,16 @@ export function ExploreClient() {
         if (query) params.set("q", query);
         if (sort) params.set("sort", sort);
         if (filters.connectorTypes.length > 0) {
+          params.set("connectorTypes", filters.connectorTypes.join(","));
           params.set("connectorType", filters.connectorTypes[0]);
         }
+        if (filters.distanceKm > 0) {
+          params.set("distanceKm", filters.distanceKm.toString());
+        }
+        if (filters.minChargers > 0) {
+          params.set("minChargers", filters.minChargers.toString());
+        }
+        if (filters.lessBusy) params.set("lessBusy", "true");
         if (filters.minPowerKw > 0) {
           params.set("minPowerKw", filters.minPowerKw.toString());
         }

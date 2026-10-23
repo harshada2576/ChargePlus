@@ -111,13 +111,12 @@ export const CONTROLLED_TEST_ACCOUNTS = {
 } as const;
 
 export function isDevOrDemoAuth(): boolean {
-  if (process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_DEMO_MODE !== "true") {
+  // Fail-safe: Under NO circumstances may demo OTP bypass be active in production,
+  // even if NEXT_PUBLIC_DEMO_MODE is accidentally set or misconfigured to "true".
+  if (process.env.NODE_ENV === "production") {
     return false;
   }
-  return (
-    process.env.NODE_ENV !== "production" ||
-    process.env.NEXT_PUBLIC_DEMO_MODE === "true"
-  );
+  return process.env.NEXT_PUBLIC_DEMO_MODE !== "false";
 }
 
 type SimulatedSession = {

@@ -18,8 +18,8 @@
   default branch for GitHub's scheduler to load it. This repository configuration
   does not claim that a live workflow has executed.
 - **CI/CD:** `.github/workflows/ci.yml` runs full validation on every commit:
-  Node typecheck (`tsc --noEmit`), ESLint (`eslint .`), Node unit tests (`npm test` — 135 tests: 134 pass, 1 environment-gated skip),
-  Next.js production build (`npm run build` — 21 routes), Python test suite (`pytest tests/ -q --ignore=tests/test_canonical_postgres_integration.py` — 462 passed, 3 skipped; live-PostgreSQL module excluded locally). Container image builds are a deployment-time concern only, not a CI gate.
+  Node typecheck (`tsc --noEmit`), ESLint (`eslint .`), Node unit tests (`npm test` — 207 tests: 206 pass, 0 fail, 1 environment-gated skip),
+  Next.js production build (`npm run build` — 27 routes), Python test suite (`pytest tests/ -q --ignore=tests/test_canonical_postgres_integration.py` — 749 passed, 3 skipped, 37 subtests passed; live-PostgreSQL module excluded locally). Container image builds are a deployment-time concern only, not a CI gate.
 - **Rollback:** Redeploy previous image tag (or previous Node build). Migrations are non-destructive and
   idempotent (`IF NOT EXISTS` / `ON CONFLICT` / guarded blocks). Reverse migrations are applied
   forward via new migration files, never by mutating applied history.
@@ -61,10 +61,11 @@ Rules:
 ## 5. Abuse Controls & Rate Limiting
 
 - **In-App Token Bucket (`src/lib/rateLimit.ts`):**
+  - Station exploration API (`/api/stations`): 120 requests/min per client IP (`429 Too Many Requests` + `Retry-After`).
   - Admin Warehouse API (`/api/admin/warehouse`): 60 requests/min per credential (`429 Too Many Requests` + `Retry-After`).
   - Health check API (`/api/health`): 300 requests/min per client IP.
 - **Boundary:** Per-instance in-memory token bucket; prevents memory denial-of-service without adding Redis dependencies. Edge-level rate limiting (Cloudflare/Vercel) recommended for multi-instance clusters.
-- **Browsing:** Anonymous station browsing is unthrottled beyond the health ceiling; write paths require authentication and RLS ownership.
+- **Browsing:** Anonymous station browsing is rate-limited to 120 req/min per IP to prevent scraper exhaustion; write paths require authentication and RLS ownership.
 
 ## 6. Observability & Alerting
 

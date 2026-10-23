@@ -157,10 +157,10 @@ Open [http://localhost:3000](http://localhost:3000) to view the driver interface
 # Typecheck
 npm run typecheck
 
-# Full Node.js test suite (201 unit & integration tests: 200 passed, 0 failed, 1 skipped)
+# Full Node.js test suite (207 unit & integration tests: 206 passed, 0 failed, 1 skipped)
 npm test
 
-# Full Python test suite (748 passed, 3 skipped, 0 failed)
+# Full Python test suite (749 passed, 3 skipped, 0 failed)
 python -u -m pytest tests/ -q --ignore=tests/test_canonical_postgres_integration.py
 
 # Production build

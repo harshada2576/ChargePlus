@@ -154,11 +154,11 @@ def temporal_profile(cur: Any, table: str, ts_col: str, extra: str = "") -> dict
 
 
 def station_coverage(cur: Any) -> dict[str, Any]:
-    total = _scalar(cur, "SELECT count(*) FROM public.stations")
+    total = _scalar(cur, "SELECT count(*) FROM public.stations WHERE is_simulated = false")
     with_obs = _scalar(cur,
-        "SELECT count(DISTINCT station_id) FROM public.station_observations")
+        "SELECT count(DISTINCT station_id) FROM public.station_observations WHERE is_simulated = false")
     with_10 = _scalar(cur,
-        "SELECT count(*) FROM (SELECT station_id FROM public.station_observations "
+        "SELECT count(*) FROM (SELECT station_id FROM public.station_observations WHERE is_simulated = false "
         "GROUP BY station_id HAVING count(*) >= %s) t", (SUFFICIENT_HISTORY_OBS,))
     return {"total_current": total, "with_ge_1_obs": with_obs,
             f"with_ge_{SUFFICIENT_HISTORY_OBS}_obs": with_10}
@@ -250,15 +250,15 @@ def ingestion_vs_evidence(cur: Any) -> dict[str, Any]:
 
 def target_assessment(cur: Any) -> list[dict[str, Any]]:
     avail = _scalar(cur,
-        "SELECT count(*) FROM public.station_observations WHERE availability_status <> 'unknown'")
+        "SELECT count(*) FROM public.station_observations WHERE is_simulated = false AND availability_status <> 'unknown'")
     avail_dates = _scalar(cur,
         "SELECT count(DISTINCT (observed_at AT TIME ZONE 'UTC')::date) "
-        "FROM public.station_observations WHERE availability_status <> 'unknown'")
+        "FROM public.station_observations WHERE is_simulated = false AND availability_status <> 'unknown'")
     queue = _scalar(cur,
-        "SELECT count(*) FROM public.station_observations WHERE queue_level NOT IN ('unknown')")
+        "SELECT count(*) FROM public.station_observations WHERE is_simulated = false AND queue_level NOT IN ('unknown')")
     queue_dates = _scalar(cur,
         "SELECT count(DISTINCT (observed_at AT TIME ZONE 'UTC')::date) "
-        "FROM public.station_observations WHERE queue_level NOT IN ('unknown')")
+        "FROM public.station_observations WHERE is_simulated = false AND queue_level NOT IN ('unknown')")
     tasks = [
         {"task": "availability forecasting", "target": "observed availability_status <> 'unknown'",
          "events": avail, "dates": avail_dates},
@@ -271,9 +271,9 @@ def target_assessment(cur: Any) -> list[dict[str, Any]]:
         {"task": "price prediction", "target": "temporal price changes",
          "events": 0, "dates": 0, "note": "static inventory only"},
         {"task": "station recommendation", "target": "behavioral usage events",
-         "events": _scalar(cur, "SELECT count(*) FROM public.favorites")
-                 + _scalar(cur, "SELECT count(*) FROM public.user_reports")
-                 + _scalar(cur, "SELECT count(*) FROM public.reviews"),
+         "events": _scalar(cur, "SELECT count(*) FROM public.favorites WHERE is_simulated = false")
+                 + _scalar(cur, "SELECT count(*) FROM public.user_reports WHERE is_simulated = false")
+                 + _scalar(cur, "SELECT count(*) FROM public.reviews WHERE is_simulated = false"),
          "dates": 0, "note": "no temporal behavior yet"},
     ]
     for t in tasks:
@@ -288,9 +288,9 @@ def station_maturity(cur: Any) -> dict[str, Any]:
     rows = _rows(cur,
         "SELECT station_id, count(DISTINCT (observed_at AT TIME ZONE 'UTC')::date) "
         "FILTER (WHERE observed_at >= now() - interval '90 days'), count(*) "
-        "FROM public.station_observations GROUP BY station_id")
+        "FROM public.station_observations WHERE is_simulated = false GROUP BY station_id")
     states: dict[str, int] = {"COLD": 0, "WARMING": 0, "READY": 0}
-    total_st = _scalar(cur, "SELECT count(*) FROM public.stations")
+    total_st = _scalar(cur, "SELECT count(*) FROM public.stations WHERE is_simulated = false")
     for _, days90, total in rows:
         states[classify_station(int(days90 or 0), int(total or 0))] += 1
     with_obs = len(rows)

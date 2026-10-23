@@ -352,10 +352,15 @@ def build_evidence_from_records(
     station_obs: dict[str, list[datetime]] = {}
     all_times: list[datetime] = []
     skipped_invalid = 0
+    skipped_simulated = 0
     duplicate_exact = 0
     seen: set[tuple[str, str]] = set()
 
     for obs in observations:
+        if obs.get("is_simulated") is True or obs.get("source_category") == "simulated":
+            skipped_simulated += 1
+            continue
+
         station_id = obs.get("station_id")
         raw_ts = obs.get("observed_at")
 
@@ -419,6 +424,11 @@ def build_evidence_from_records(
     freshness_hours = (as_of - latest).total_seconds() / 3600.0
 
     notes: list[str] = []
+    if skipped_simulated > 0:
+        notes.append(
+            f"{skipped_simulated} simulated/synthetic observation(s) excluded from maturity evaluation "
+            "(Rule 3: synthetic data never satisfies production readiness)."
+        )
     if skipped_invalid > 0:
         notes.append(f"{skipped_invalid} observations skipped (invalid timestamp or missing station_id).")
     if duplicate_exact > 0:

@@ -1,4 +1,5 @@
 import type { FiltersState, Recommendation, SortKey, Station } from "./types";
+export type { FiltersState, SortKey };
 import {
   distanceKm,
   getAvailableChargers,
@@ -34,9 +35,31 @@ export const DEFAULT_EXPLORE_FILTERS: FiltersState = {
  *   specific connector type therefore excludes unknown-type stations.
  * - openNow: hours.kind === "unknown" does not match. Hours are evaluated in the
  *   device-local timezone; station-local timezone is not modeled (limitation).
- * - lessBusy: empty busyWindows (cold start) does not match.
+ * - lessBusy: when busyWindows exist, checks that current time is not in a busy window and station is not busy/broken. In cold start when busyWindows are empty, matches verified live available stations (s.status === 'available') without inventing availability data or returning an empty list.
  * - distanceKm: invalid/missing coordinates yield Infinity and fail a finite radius check.
  */
+export function isStationInBusyWindow(s: Station, now: Date = new Date()): boolean {
+  if (!s.busyWindows || s.busyWindows.length === 0) return false;
+  const cur = now.getHours() * 60 + now.getMinutes();
+  for (const windowStr of s.busyWindows) {
+    const parts = windowStr.split("-").map((p) => p.trim());
+    if (parts.length === 2) {
+      const [sh, sm] = parts[0].split(":").map(Number);
+      const [eh, em] = parts[1].split(":").map(Number);
+      if (!isNaN(sh) && !isNaN(sm) && !isNaN(eh) && !isNaN(em)) {
+        const start = sh * 60 + sm;
+        const end = eh * 60 + em;
+        if (end <= start) {
+          if (cur >= start || cur < end) return true;
+        } else {
+          if (cur >= start && cur < end) return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 export function isOpenNow(s: Station, now: Date = new Date()): boolean {
   if (s.hours.kind === "24h") return true;
   if (s.hours.kind === "unknown") return false;
@@ -111,7 +134,12 @@ export function filterAndSortStations(
     });
   }
   if (filters.lessBusy) {
-    list = list.filter((s) => s.busyWindows.length > 0);
+    list = list.filter((s) => {
+      if (s.busyWindows && s.busyWindows.length > 0) {
+        return !isStationInBusyWindow(s, now) && s.status !== "busy" && s.status !== "broken";
+      }
+      return s.status === "available";
+    });
   }
   if (filters.distanceKm > 0 && userLoc) {
     list = list.filter(
