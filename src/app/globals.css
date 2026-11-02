@@ -37,8 +37,18 @@
   --color-status-unknown: #6B615E;
   --color-status-unknown-bg: #EDE9E7;
 
+  --color-sage-50: #F4F6F4;
+  --color-sage-100: #E4E9E5;
+  --color-sage-200: #C7D3C9;
+  --color-sage-600: #5A7360;
+  --color-sage-700: #3D5443;
+  --color-forest-800: #29483B;
+  --color-forest-900: #1F3528;
+  --color-forest-950: #14241B;
+
   --font-sans: "Inter", "Noto Sans", "Noto Sans Devanagari", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-display: "Inter", "Noto Sans Devanagari", system-ui, sans-serif;
+  --font-editorial: "Instrument Serif", "Georgia", "Cambria", "Noto Serif Devanagari", serif;
 
   --radius-xs: 6px;
   --radius-sm: 10px;
@@ -196,4 +206,14 @@ button:disabled, [role="button"][aria-disabled="true"] {
 }
 .chargeplus-map-popup .maplibregl-popup-tip {
   border-top-color: #ffffff;
+}
+
+/* Editorial typography and analytical utility classes */
+.font-editorial {
+  font-family: var(--font-editorial);
+  letter-spacing: -0.015em;
+}
+
+.table-cell-num {
+  font-variant-numeric: tabular-nums;
 }

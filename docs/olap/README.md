@@ -206,3 +206,18 @@ with open('docs/olap/olap_queries.sql', 'r') as f:
 # Run desired query
 "
 ```
+
+### Option C: Via Interactive Web Analytical Workspace (`/intelligence`)
+ChargePlus provides a first-class interactive analytical workspace on the `/intelligence` route:
+1. Navigate to `http://localhost:3000/intelligence` (or deployed domain).
+2. Select the **Warehouse Analytics (OLAP)** tab.
+3. Switch between all six canonical operations:
+   - **Roll-Up:** Toggle Weekly or Calendar progressive aggregation with subtotals.
+   - **Drill-Down:** Filter by Mumbai localities with congestion event metrics.
+   - **Slice:** Isolate individual CPO networks (Tata Power, Jio-bp, Statiq, etc.).
+   - **Dice:** Multi-filter across operators, business localities (BKC, Lower Parel), and Weekday/Weekend diurnal partitions.
+   - **Pivot / CUBE:** Cross-tabulation matrix with marginal subtotals and grand totals.
+   - **Window Ranking:** `DENSE_RANK() OVER (PARTITION BY operator)` leaderboard with configurable Top-N.
+4. Export analytical tables directly to CSV or toggle the **Academic Viva Defense SQL Viewer** to inspect the server-generated query.
+5. Backed by server-side query endpoint `GET /api/intelligence/olap` with strict dimension whitelisting, parameterized SQL, client rate limiting, and safe offline warehouse fallback.
+

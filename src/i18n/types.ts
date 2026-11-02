@@ -235,7 +235,20 @@ export type TranslationKey =
   | "footer.contact"
   | "footer.privacy"
   | "footer.terms"
-  | "footer.tagline";
+  | "footer.tagline"
+  | "intelligence.title"
+  | "intelligence.subtitle"
+  | "intelligence.tabs.overview"
+  | "intelligence.tabs.olap"
+  | "intelligence.tabs.spatial"
+  | "intelligence.tabs.isolation"
+  | "intelligence.tabs.demand"
+  | "intelligence.tabs.prediction"
+  | "intelligence.tabs.governance"
+  | "intelligence.provenance.title"
+  | "intelligence.provenance.scope"
+  | "intelligence.olap.title"
+  | "intelligence.olap.subtitle";
 
 export type Translations = Record<TranslationKey, string>;
 

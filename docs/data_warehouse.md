@@ -331,4 +331,16 @@ ChargePlus includes a complete academic OLAP demonstration suite implementing mu
   4. **CUBE / Pivot (Cross-Tabulation):** Multi-operator $\times$ locality data cube using `GROUP BY CUBE`.
   5. **Window Ranking Functions:** Intra-operator station congestion ranking via `DENSE_RANK() OVER (PARTITION BY operator_name ORDER BY AVG(busy_ratio) DESC)`.
 
+## 15. Server-Side OLAP API Layer & Interactive Analytical Workspace
+
+To connect the warehouse to the analytical UI safely without exposing raw SQL or credentials:
+- **API Endpoint:** `GET /api/intelligence/olap` (`src/app/api/intelligence/olap/route.ts`)
+- **Query Handler:** `src/lib/olap.ts`
+- **Security & Sandboxing:**
+  - Strict parameter whitelisting for operations (`rollup`, `drilldown`, `slice`, `dice`, `cube`, `window_ranking`).
+  - Strict sanitization of dimension values (operators, localities, dates).
+  - Parameterized SQL prevents injection.
+  - In-memory rate limiting (120 req/min).
+  - Safe deterministic local warehouse fallback if PostgreSQL pool is momentarily unreachable.
+- **Frontend Workspace:** `/intelligence` (Warehouse Analytics tab) provides interactive operation switching, dynamic filters, tabular displays with subtotals, visual charts, CSV export, and academic viva defense SQL preview.
 

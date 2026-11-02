@@ -272,6 +272,19 @@ const en: Translations = {
   "footer.privacy": "Privacy",
   "footer.terms": "Terms",
   "footer.tagline": "Made for everyday EV drivers.",
+  "intelligence.title": "Understanding India's EV Charging Infrastructure",
+  "intelligence.subtitle": "Explore geographic coverage, infrastructure distribution, historical observations and predictive research across the ChargePlus station network.",
+  "intelligence.tabs.overview": "Network Overview",
+  "intelligence.tabs.olap": "Warehouse Analytics (OLAP)",
+  "intelligence.tabs.spatial": "Spatial Density (DBSCAN)",
+  "intelligence.tabs.isolation": "Station Isolation (IQR)",
+  "intelligence.tabs.demand": "Demand Grouping (K-Means)",
+  "intelligence.tabs.prediction": "Occupancy Prediction Research",
+  "intelligence.tabs.governance": "Production Gate Governance",
+  "intelligence.provenance.title": "Data Provenance & Freshness",
+  "intelligence.provenance.scope": "Authentic Nationwide Snapshot & Kimball Warehouse",
+  "intelligence.olap.title": "Warehouse Analytics",
+  "intelligence.olap.subtitle": "Explore the charging infrastructure network through multidimensional analysis.",
 };
 
 const hi: Translations = merge(en, {
@@ -541,6 +554,19 @@ const hi: Translations = merge(en, {
   "footer.privacy": "गोपनीयता",
   "footer.terms": "शर्तें",
   "footer.tagline": "रोज़मर्रा के EV ड्राइवरों के लिए बनाया गया।",
+  "intelligence.title": "भारत के ईवी चार्जिंग इंफ्रास्ट्रक्चर का विश्लेषण",
+  "intelligence.subtitle": "चार्जप्लस स्टेशन नेटवर्क पर भौगोलिक कवरेज, इंफ्रास्ट्रक्चर वितरण, ऐतिहासिक अवलोकन और पूर्वानुमान अनुसंधान का अन्वेषण करें।",
+  "intelligence.tabs.overview": "नेटवर्क अवलोकन",
+  "intelligence.tabs.olap": "वेयरहाउस एनालिटिक्स (OLAP)",
+  "intelligence.tabs.spatial": "स्थानिक घनत्व (DBSCAN)",
+  "intelligence.tabs.isolation": "स्टेशन अलगाव (IQR)",
+  "intelligence.tabs.demand": "मांग समूहीकरण (K-Means)",
+  "intelligence.tabs.prediction": "ऑक्यूपेंसी पूर्वानुमान अनुसंधान",
+  "intelligence.tabs.governance": "उत्पादन गेट गवर्नेंस",
+  "intelligence.provenance.title": "डेटा उत्पत्ति एवं ताजगी",
+  "intelligence.provenance.scope": "प्रमाणिक राष्ट्रीय स्नैपशॉट एवं किम्बल वेयरहाउस",
+  "intelligence.olap.title": "वेयरहाउस एनालिटिक्स",
+  "intelligence.olap.subtitle": "बहुआयामी विश्लेषण के माध्यम से चार्जिंग इंफ्रास्ट्रक्चर का अन्वेषण करें।",
 });
 
 const mr: Translations = merge(en, {
@@ -813,6 +839,19 @@ const mr: Translations = merge(en, {
   "footer.privacy": "गोपनीयता",
   "footer.terms": "अटी",
   "footer.tagline": "रोजच्या EV ड्रायव्हर्ससाठी बनवले.",
+  "intelligence.title": "भारतातील ईव्ही चार्जिंग पायाभूत सुविधांचे विश्लेषण",
+  "intelligence.subtitle": "चार्जप्लस स्टेशन नेटवर्कवरील भौगोलिक व्याप्ती, पायाभूत सुविधांचे वितरण, ऐतिहासिक नोंदी आणि भाकीत संशोधनाचा अभ्यास करा.",
+  "intelligence.tabs.overview": "नेटवर्क विहंगावलोकन",
+  "intelligence.tabs.olap": "वेअरहाऊस अ‍ॅनालिटिक्स (OLAP)",
+  "intelligence.tabs.spatial": "स्थानिक घनता (DBSCAN)",
+  "intelligence.tabs.isolation": "स्टेशन अलगीकरण (IQR)",
+  "intelligence.tabs.demand": "मागणी वर्गीकरण (K-Means)",
+  "intelligence.tabs.prediction": "ऑक्युपन्सी अंदाज संशोधन",
+  "intelligence.tabs.governance": "प्रॉडक्शन गेट गव्हर्नन्स",
+  "intelligence.provenance.title": "डेटा उगम आणि ताजेपणा",
+  "intelligence.provenance.scope": "प्रमाणित राष्ट्रीय स्नॅपशॉट आणि किम्बल वेअरहाऊस",
+  "intelligence.olap.title": "वेअरहाऊस अ‍ॅनालिटिक्स",
+  "intelligence.olap.subtitle": "बहुआयामी विश्लेषणाद्वारे चार्जिंग पायाभूत सुविधांचा अभ्यास करा.",
 });
 
 export const dictionaries: Record<"en" | "hi" | "mr", Translations> = {
