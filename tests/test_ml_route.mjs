@@ -169,3 +169,72 @@ test("rate-limit keys distinguish clients by trusted identification", async () =
   // Client B on a different IP is unaffected.
   assert.equal((await POST(req({ features: FEATURES }, "10.9.3.2"))).status, 200);
 });
+
+test("PYTHON_API_URL forwards request to external service with bearer auth", async () => {
+  fresh();
+  const originalFetch = globalThis.fetch;
+  const originalUrl = process.env.PYTHON_API_URL;
+  const originalSecret = process.env.PYTHON_API_SECRET;
+
+  process.env.PYTHON_API_URL = "http://python-ml:8000";
+  process.env.PYTHON_API_SECRET = "test-secret-123";
+
+  let capturedUrl = "";
+  let capturedHeaders = {};
+  let capturedBody = "";
+
+  globalThis.fetch = async (url, opts) => {
+    capturedUrl = String(url);
+    capturedHeaders = opts.headers;
+    capturedBody = opts.body;
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        probability: 0.35,
+        model_version: "v4-remote",
+        horizon: "current",
+      }),
+    };
+  };
+
+  try {
+    const res = await POST(req({ features: FEATURES }));
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.success, true);
+    assert.equal(body.probability, 0.35);
+    assert.equal(body.model_version, "v4-remote");
+    assert.equal(capturedUrl, "http://python-ml:8000/predict");
+    assert.equal(capturedHeaders.Authorization, "Bearer test-secret-123");
+    assert.equal(calls.length, 0); // No subprocess spawned!
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env.PYTHON_API_URL = originalUrl;
+    process.env.PYTHON_API_SECRET = originalSecret;
+  }
+});
+
+test("PYTHON_API_URL failure returns honest 503 unavailable without throwing", async () => {
+  fresh();
+  const originalFetch = globalThis.fetch;
+  const originalUrl = process.env.PYTHON_API_URL;
+
+  process.env.PYTHON_API_URL = "http://python-ml-unreachable:8000";
+  globalThis.fetch = async () => {
+    throw new Error("Connection refused");
+  };
+
+  try {
+    const res = await POST(req({ features: FEATURES }));
+    assert.equal(res.status, 503);
+    const body = await res.json();
+    assert.equal(body.success, false);
+    assert.equal(body.reason, "NO_MODEL");
+    assert.ok(body.message.includes("ML inference service unavailable"));
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env.PYTHON_API_URL = originalUrl;
+  }
+});

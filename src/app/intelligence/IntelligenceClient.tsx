@@ -271,9 +271,17 @@ export function IntelligenceClient() {
   }, [olapOp, rollupMode, drillLocality, sliceOp, diceOps, diceLocs, diceDayType, windowTopN]);
 
   useEffect(() => {
+    let ignore = false;
     if (activeTab === "olap") {
-      fetchOlapData();
+      void Promise.resolve().then(() => {
+        if (!ignore) {
+          void fetchOlapData();
+        }
+      });
     }
+    return () => {
+      ignore = true;
+    };
   }, [activeTab, fetchOlapData]);
 
   // Safe CSV export for OLAP result table

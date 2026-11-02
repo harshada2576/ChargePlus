@@ -70,6 +70,60 @@ export async function POST(request: Request) {
     );
   }
 
+  // 1. If PYTHON_API_URL is configured, proxy request via authenticated HTTP to Python service
+  const pythonApiUrl = process.env.PYTHON_API_URL;
+  if (pythonApiUrl) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const secret = process.env.PYTHON_API_SECRET || process.env.INTERNAL_SERVICE_SECRET;
+      const resp = await fetch(`${pythonApiUrl.replace(/\/$/, "")}/predict`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(secret ? { Authorization: `Bearer ${secret}` } : {}),
+        },
+        body: JSON.stringify({
+          features: validated.features,
+          latest_observation_at: validated.latestObservationAt,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      const result = (await resp.json()) as Record<string, unknown>;
+      if (typeof result.success !== "boolean") {
+        throw new Error("Python API returned a malformed payload.");
+      }
+      if (result.success === true) {
+        const checked = validatePredictResult(result);
+        if (!checked.ok) {
+          return Response.json(
+            { success: false, reason: checked.reason, message: checked.message },
+            { status: 502 },
+          );
+        }
+        return Response.json({
+          ...result,
+          probability: checked.value.probability,
+          model_version: checked.value.modelVersion,
+        });
+      }
+      return Response.json(result, { status: resp.ok ? 200 : resp.status });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("Python ML service error:", message);
+      return Response.json(
+        {
+          success: false,
+          reason: "NO_MODEL",
+          message: "ML inference service unavailable; no prediction available.",
+        },
+        { status: 503 },
+      );
+    }
+  }
+
+  // 2. Otherwise fall back to local subprocess CLI execution
   const cliArgs = [
     "-m",
     "backend.ml.cli",

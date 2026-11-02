@@ -13,15 +13,20 @@ export function getPool(): Pool {
   if (!databaseUrl) {
     throw new Error("DATABASE_URL is required");
   }
+  const isProduction = process.env.NODE_ENV === "production";
   const pool = new Pool({
     connectionString: databaseUrl,
+    max: Number(process.env.DB_POOL_MAX || (isProduction ? 2 : 10)),
     connectionTimeoutMillis: 10_000,
     statement_timeout: 30_000,
-    idleTimeoutMillis: 30_000,
+    idleTimeoutMillis: 10_000,
+    ssl:
+      databaseUrl.includes("supabase.co") || databaseUrl.includes("pooler.supabase.com")
+        ? { rejectUnauthorized: false }
+        : undefined,
   });
-  if (process.env.NODE_ENV !== "production") {
-    globalForDb.__arenaNextJsPostgresqlPool = pool;
-  }
+  // Cache pool unconditionally across warm serverless container invocations
+  globalForDb.__arenaNextJsPostgresqlPool = pool;
   return pool;
 }
 
