@@ -771,3 +771,33 @@ Every entry should include:
 
 
 
+
+### 11 Oct 2026 - Secondary sources + Phase 5 ML + CPO integrations (completion mission)
+- Phase / Step: Mission completion (secondary ingestion, Phase 5 ML, OCPI/OICP)
+- What we built/changed: OSM Overpass + data.gov.in adapters through the canonical pipeline with shared retry/SSRF-hardened transport; multi-source runner (--source) + unattended-scheduling guard; ML gates/training/registry/inference/CLI + /api/ml/status + /api/ml/predict (no UI changes); OCPI 2.2.1 Locations + OICP 2.3 PullEVSEData subset with partner lifecycle, sync cursors, simulator; docs secondary_sources/phase5_ml/cpo_partners; env template + workflow least-privilege. No migrations, no Docker, no commits.
+- Current state: pytest 603 passed + 2 skipped (7 pre-existing live-DB tests blocked: placeholder DB host); eslint clean; tsc clean on new files (pre-existing MapLibre + stale .next errors untouched); next build blocked by pre-existing maplibre-gl default-export drift. Production ML correctly disabled (COLD, NO_MODEL); all partners NOT_CONFIGURED; secondary sources manual/dry-run only.
+- Post-script (merge 11 Oct 2026): remote dev had moved ahead (PR #8 incl. phase-6-production). Merged origin/dev into dev per owner direction: kept this mission's fail-closed ml/gates+registry+inference and test_phase5 (their weaker-gate variant + models.py removed as incompatible/unconsumed; their self-contained ml helper modules retained), adopted their workflow/warehouse/CI/tests. Merged tree: pytest 673 passed + 9 skipped, eslint clean, tsc zero source errors, next build SUCCESS (incl. /api/ml/*).
+- Conceptual verification: unknown!=zero and missing!=free preserved in every adapter; STALE!=UNAVAILABLE; synthetic test data never promotable; partner isolation + credential redaction tested; no fabricated evidence anywhere.
+- Blockers / waiting on: data.gov.in API key + verified resource ID; OSM approved endpoint + supervised first run; real observation history (>=500 obs / 5 stations / 30 days) for ML; bilateral CPO agreements + credentials for any partner (all external, precisely scoped in docs).
+- Next step: Supervised secondary-source dry-runs; observation collection; partner onboarding per docs/cpo_partners.md.
+
+### 11 Oct 2026 — Ultimate Repository Completion, Repair, Data Mining & Release Assurance Mission
+- Phase / Step: All Phases / Release Assurance Audit & Verification
+- What we built/changed:
+  1. Repaired `backend/ingestion/runner.py`: fixed dry-run database initialization to gracefully fall back to in-memory persistence service `IngestionPersistenceService(None)` when the configured `DATABASE_URL` is unreachable or a placeholder, allowing `--dry-run` to execute completely offline across all sources without crashes.
+  2. Implemented `backend/ml/spatial_clustering.py`: full DBSCAN density-based spatial clustering using true Haversine distance metric in kilometers on Earth's surface (spherical radius 6371.0088 km; zero naive Euclidean approximations), identifying station clusters, core centroids, bounding spans, and unclustered noise points. Built `find_coverage_gaps` computing nearest-neighbor distances in km to pinpoint geographically isolated stations and underserved areas.
+  3. Added `tests/test_spatial_clustering.py` (5 tests, 100% pass) verifying spatial cluster boundaries, zero-station edge cases, dense vs isolated geometry, and canonical Mumbai stations dataset.
+  4. Verified end-to-end pricing integrity (source -> adapter -> normalization -> DB views -> explore query -> UI components): confirmed missing prices remain `null`/`Price unavailable` and are never coerced to zero or free.
+  5. Verified all secondary sources (`open_charge_map`, `osm`, `datagovin`), multi-source runner dry-runs, and unattended scheduling guards.
+  6. Verified Kimball Star Schema data warehouse models, ETL pipelines, 24-rule data quality framework, and OLAP queries.
+  7. Verified ML maturity gates (fail-closed, COLD state when observations are 0, blocking models without real evidence), held-out evaluation baselines, artifact registry, and inference API.
+  8. Verified CPO OCPI 2.2.1 and OICP 2.3 frameworks, partner isolation, sync cursors, and simulator conformance suites.
+- Current state:
+  - Python tests (`pytest`): 687 collected, 678 passed, 9 skipped (100% pass rate on runnable tests; all 9 skips strictly gated by live database target guard).
+  - Node tests (`npm test`): 135 collected, 134 passed, 1 skipped (live Supabase opt-in), 0 failed.
+  - TypeScript (`npm run typecheck`): 0 errors.
+  - ESLint (`npm run lint`): 0 errors.
+  - Next.js Production Build (`npm run build`): SUCCESS (all 23 app routes compiled and optimized).
+- Conceptual verification: Hard 3-layer architecture strictly intact (public OLTP, analytics OLAP, ml metadata). Zero synthetic data manufactured in production. Unknowns preserved as NULL. Fail-safe token-bucket rate limits and structured JSON logs verified.
+- Blockers / waiting on: External dashboard configurations (production domain cutover, SMS provider credentials, real partner sandbox credentials).
+- Release Verdict: GO_FOR_CONTROLLED_BETA (subject to documented external credential provisioning).

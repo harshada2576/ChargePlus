@@ -1,141 +1,386 @@
-"""ChargePlus — ML metadata registry writers (Phase 5/6, Step 5.9).
+"""ChargePlus — Phase 5 Model Registry / Artifact Lifecycle.
 
-Writes ONLY to ml.* (control/metadata layer): features, datasets,
-experiments, model_versions, metrics. Never stores model bytes, secrets,
-or predictions. Status transitions respect the schema CHECK vocabularies.
-Invoked only when a real training event occurs; with no evidence there is
-nothing to register.
+Phase: 5/6 (Data Mining, Forecasting & Recommendations)
+Steps: 5.5–5.6 (Artifact Management, Promotion & Rollback)
+
+File-based approved-model registry operating on the sidecar metadata written
+by MLTrainingPipeline. Works offline (no database required); optional
+ml.* warehouse recording is handled by training.record_to_db().
+
+Lifecycle rules (fail-closed):
+  - Only checksum-verified, schema-compatible artifacts can be approved.
+  - Synthetic test artifacts are NEVER promotable unless the registry was
+    explicitly constructed with allow_synthetic_promotion=True (test seam;
+    production registries always refuse).
+  - A model that does not beat its baseline needs an explicit recorded
+    override reason to be approved.
+  - Exactly one active model pointer; rollback re-points to the previously
+    approved version from the append-only audit log.
+  - Artifact paths are always resolved inside artifact_dir. Request-supplied
+    absolute paths or path traversal (..) are rejected.
+
+CURRENT STATE (2026-10):
+  Production has no approved model (COLD maturity, zero real observations).
+  get_active() returns None and inference answers NO_MODEL until a genuine
+  training run on sufficient real evidence is approved here.
 """
 
 from __future__ import annotations
 
+import hashlib
+import json
+import logging
+import os
+import tempfile
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Optional
 
-MODEL_TYPES = {"baseline", "gradient_boosting", "linear_regression",
-               "logistic_regression", "random_forest", "xgboost",
-               "lightgbm", "neural_network", "other"}
-MODEL_STATUSES = {"proposed", "training", "validation", "ready", "archived", "deprecated"}
-EXPERIMENT_STATUSES = {"proposed", "running", "completed", "failed"}
-DATA_MATURITY = {"cold", "warming", "ready"}
-METRIC_SPLITS = {"train", "validation", "test", "holdout"}
+from backend.ml.training import FEATURE_NAMES, FEATURE_SCHEMA_VERSION
+
+logger = logging.getLogger("chargeplus.ml.registry")
+
+ACTIVE_POINTER_FILENAME = "active_model.json"
+REGISTRY_LOG_FILENAME = "registry_log.jsonl"
+ARTIFACT_SUFFIX = ".pkl"
+METADATA_SUFFIX = ".json"
 
 
-def _one(cur: Any) -> Optional[tuple]:
-    row = cur.fetchone()
-    return tuple(row) if row is not None else None
+class RegistryError(RuntimeError):
+    """Raised when a registry operation violates lifecycle rules."""
+    pass
 
 
-def register_feature(cur: Any, name: str, feature_type: str, feature_group: str,
-                     description: str = "", source_column: Optional[str] = None,
-                     formula: Optional[str] = None, generated_by: str = "raw_attribute") -> str:
-    cur.execute(
-        "INSERT INTO ml.features (feature_name, feature_type, feature_group, description,"
-        " source_column, formula, generated_by) VALUES (%s,%s,%s,%s,%s,%s,%s)"
-        " ON CONFLICT (feature_name) DO UPDATE SET description = EXCLUDED.description,"
-        " updated_at = now() RETURNING feature_key;",
-        (name, feature_type, feature_group, description, source_column, formula, generated_by),
-    )
-    row = _one(cur)
-    if not row:
-        raise RuntimeError(f"register_feature returned no key for '{name}'")
-    return str(row[0])
+@dataclass
+class VerificationResult:
+    """Outcome of verifying one model artifact."""
+    ok: bool
+    model_version: str
+    errors: list[str] = field(default_factory=list)
+    metadata: Optional[dict[str, Any]] = None
 
 
-def register_dataset(cur: Any, name: str, version: str, time_start: Any, time_end: Any,
-                     row_count: int, feature_count: int, maturity: str = "cold",
-                     role: str = "training") -> str:
-    flags = {"is_training": role == "training", "is_validation": role == "validation",
-             "is_test": role == "test"}
-    if role not in ("training", "validation", "test"):
-        raise ValueError(f"unknown dataset role '{role}'")
-    if maturity not in DATA_MATURITY:
-        raise ValueError(f"unknown data_maturity '{maturity}'")
-    cur.execute(
-        "INSERT INTO ml.datasets (dataset_name, version_str, time_range_start, time_range_end,"
-        " row_count, feature_count, data_maturity, is_training, is_validation, is_test)"
-        " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
-        " ON CONFLICT (dataset_name, version_str) DO UPDATE SET row_count = EXCLUDED.row_count,"
-        " feature_count = EXCLUDED.feature_count, data_maturity = EXCLUDED.data_maturity,"
-        " updated_at = now() RETURNING dataset_key;",
-        (name, version, time_start, time_end, row_count, feature_count, maturity,
-         flags["is_training"], flags["is_validation"], flags["is_test"]),
-    )
-    row = _one(cur)
-    if not row:
-        raise RuntimeError(f"register_dataset returned no key for '{name}/{version}'")
-    return str(row[0])
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
-def register_experiment(cur: Any, name: str, dataset_key: str,
-                        description: str = "") -> str:
-    cur.execute(
-        "INSERT INTO ml.experiments (experiment_name, description, dataset_key)"
-        " VALUES (%s,%s,%s)"
-        " ON CONFLICT (experiment_name) DO NOTHING RETURNING experiment_key;",
-        (name, description, str(dataset_key)),
-    )
-    row = _one(cur)
-    if row:
-        return str(row[0])
-    cur.execute("SELECT experiment_key FROM ml.experiments WHERE experiment_name = %s;", (name,))
-    row = _one(cur)
-    if not row:
-        raise RuntimeError(f"register_experiment could not resolve '{name}'")
-    return str(row[0])
+class ModelRegistry:
+    """Versioned, checksummed, auditable model artifact registry.
 
+    Usage:
+        registry = ModelRegistry(artifact_dir="backend/ml/artifacts")
+        registry.approve("v1-20260101-000000", approver="operator@example.com")
+        active = registry.get_active()  # None until something is approved
+    """
 
-def set_experiment_status(cur: Any, experiment_key: str, status: str) -> None:
-    if status not in EXPERIMENT_STATUSES:
-        raise ValueError(f"unknown experiment status '{status}'")
-    cur.execute("UPDATE ml.experiments SET status = %s, updated_at = now() WHERE experiment_key = %s;",
-                (status, str(experiment_key)))
+    def __init__(
+        self,
+        artifact_dir: str = "backend/ml/artifacts",
+        *,
+        allow_synthetic_promotion: bool = False,
+    ) -> None:
+        self._artifact_dir = Path(artifact_dir)
+        self._allow_synthetic = allow_synthetic_promotion
 
+    # ------------------------------------------------------------------
+    # Path containment (never load operator-external or user paths)
+    # ------------------------------------------------------------------
 
-def register_model_version(cur: Any, experiment_key: str, version: str, model_type: str,
-                           maturity: str = "cold") -> str:
-    if model_type not in MODEL_TYPES:
-        raise ValueError(f"unknown model_type '{model_type}'")
-    if maturity not in DATA_MATURITY:
-        raise ValueError(f"unknown data_maturity '{maturity}'")
-    cur.execute(
-        "INSERT INTO ml.model_versions (experiment_key, version_str, model_type, data_maturity)"
-        " VALUES (%s,%s,%s,%s)"
-        " ON CONFLICT (experiment_key, version_str) DO NOTHING RETURNING model_key;",
-        (str(experiment_key), version, model_type, maturity),
-    )
-    row = _one(cur)
-    if row:
-        return str(row[0])
-    cur.execute("SELECT model_key FROM ml.model_versions WHERE experiment_key = %s AND version_str = %s;",
-                (str(experiment_key), version))
-    row = _one(cur)
-    if not row:
-        raise RuntimeError("register_model_version could not resolve key")
-    return str(row[0])
+    def _resolve_artifact(self, model_version: str) -> Path:
+        """Resolves model_version to its .pkl path, contained in artifact_dir."""
+        if not model_version or not isinstance(model_version, str):
+            raise RegistryError("model_version must be a non-empty string")
+        # Reject traversal and absolute/subdirectory games outright.
+        if (
+            "/" in model_version
+            or "\\" in model_version
+            or ".." in model_version
+            or model_version.startswith(".")
+        ):
+            raise RegistryError(
+                f"Refusing to resolve suspicious model_version {model_version!r}: "
+                "only plain version names inside the artifact directory are allowed"
+            )
+        candidate = (self._artifact_dir / f"model_{model_version}{ARTIFACT_SUFFIX}").resolve()
+        root = self._artifact_dir.resolve()
+        try:
+            candidate.relative_to(root)
+        except ValueError as exc:
+            raise RegistryError(
+                f"Refusing to resolve {model_version!r} outside the artifact directory"
+            ) from exc
+        return candidate
 
+    def _metadata_path(self, model_version: str) -> Path:
+        return self._resolve_artifact(model_version).with_suffix(METADATA_SUFFIX)
 
-def set_model_status(cur: Any, model_key: str, status: str) -> None:
-    """Enforces the schema rule: 'ready' requires warming/ready maturity."""
-    if status not in MODEL_STATUSES:
-        raise ValueError(f"unknown model status '{status}'")
-    if status == "ready":
-        cur.execute("SELECT data_maturity FROM ml.model_versions WHERE model_key = %s;",
-                    (str(model_key),))
-        row = _one(cur)
-        if not row or str(row[0]) not in ("warming", "ready"):
-            raise ValueError("model cannot be ready without warming/ready data maturity")
-    cur.execute("UPDATE ml.model_versions SET status = %s, updated_at = now() WHERE model_key = %s;",
-                (status, str(model_key)))
+    # ------------------------------------------------------------------
+    # Listing & verification
+    # ------------------------------------------------------------------
 
+    def list_versions(self) -> list[dict[str, Any]]:
+        """Lists every artifact metadata sidecar in the directory."""
+        if not self._artifact_dir.is_dir():
+            return []
+        out: list[dict[str, Any]] = []
+        for meta_path in sorted(self._artifact_dir.glob(f"model_*{METADATA_SUFFIX}")):
+            if meta_path.name in (ACTIVE_POINTER_FILENAME,):
+                continue
+            try:
+                out.append(json.loads(meta_path.read_text()))
+            except (OSError, ValueError) as exc:
+                logger.warning("Unreadable artifact metadata %s: %s", meta_path, exc)
+        return out
 
-def record_metric(cur: Any, model_key: str, name: str, value: Optional[float],
-                  split: str) -> None:
-    if split not in METRIC_SPLITS:
-        raise ValueError(f"unknown metric split '{split}'")
-    cur.execute(
-        "INSERT INTO ml.metrics (model_key, metric_name, metric_value, split)"
-        " VALUES (%s,%s,%s,%s)"
-        " ON CONFLICT (model_key, metric_name, split) DO UPDATE SET"
-        " metric_value = EXCLUDED.metric_value, updated_at = now();",
-        (str(model_key), name, value, split),
-    )
+    def verify(self, model_version: str) -> VerificationResult:
+        """Verifies metadata presence, checksum, and schema compatibility."""
+        errors: list[str] = []
+        try:
+            artifact_path = self._resolve_artifact(model_version)
+        except RegistryError as exc:
+            return VerificationResult(ok=False, model_version=model_version, errors=[str(exc)])
+
+        meta_path = artifact_path.with_suffix(METADATA_SUFFIX)
+        try:
+            metadata = json.loads(meta_path.read_text())
+        except FileNotFoundError:
+            return VerificationResult(
+                ok=False, model_version=model_version,
+                errors=[f"Artifact metadata missing: {meta_path.name}"],
+            )
+        except ValueError as exc:
+            return VerificationResult(
+                ok=False, model_version=model_version,
+                errors=[f"Artifact metadata is not valid JSON: {exc}"],
+            )
+
+        if not artifact_path.is_file():
+            errors.append(f"Artifact bytes missing: {artifact_path.name}")
+
+        # Schema compatibility: inference only serves the locked schema.
+        if metadata.get("feature_schema_version") != FEATURE_SCHEMA_VERSION:
+            errors.append(
+                f"Feature schema mismatch: artifact={metadata.get('feature_schema_version')!r} "
+                f"expected={FEATURE_SCHEMA_VERSION!r}"
+            )
+        if list(metadata.get("feature_names") or []) != list(FEATURE_NAMES):
+            errors.append(
+                f"Feature list mismatch: artifact={metadata.get('feature_names')!r} "
+                f"expected={FEATURE_NAMES!r}"
+            )
+
+        # Integrity: recompute checksum over the stored bytes.
+        expected = metadata.get("artifact_checksum")
+        if not expected:
+            errors.append("Artifact metadata has no checksum; cannot verify integrity")
+        elif artifact_path.is_file():
+            try:
+                actual = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
+            except OSError as exc:
+                errors.append(f"Cannot read artifact bytes: {exc}")
+            else:
+                if actual != expected:
+                    errors.append(
+                        "Artifact checksum mismatch: bytes differ from recorded "
+                        "sha256 (tampered or partially written artifact)"
+                    )
+
+        if errors:
+            logger.warning("Artifact %s FAILED verification: %s", model_version, errors)
+            return VerificationResult(ok=False, model_version=model_version, errors=errors, metadata=metadata)
+        return VerificationResult(ok=True, model_version=model_version, metadata=metadata)
+
+    # ------------------------------------------------------------------
+    # Approval / promotion
+    # ------------------------------------------------------------------
+
+    def approve(
+        self,
+        model_version: str,
+        *,
+        approver: str,
+        allow_non_baseline_beating: bool = False,
+        override_reason: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Promotes a verified artifact to the active model.
+
+        Rules:
+          - Artifact must verify (checksum + schema).
+          - Synthetic test artifacts are refused unless this registry was
+            constructed with allow_synthetic_promotion=True.
+          - Model must beat its baseline, unless allow_non_baseline_beating
+            is set together with a non-empty override_reason (recorded).
+        """
+        if not approver or not approver.strip():
+            raise RegistryError("approver must be a non-empty identifier")
+        verification = self.verify(model_version)
+        if not verification.ok:
+            raise RegistryError(
+                f"Cannot approve {model_version!r}: " + "; ".join(verification.errors)
+            )
+        metadata = verification.metadata or {}
+
+        if metadata.get("is_synthetic_test") and not self._allow_synthetic:
+            raise RegistryError(
+                f"Cannot approve {model_version!r}: artifact is marked synthetic "
+                "(test-only). Synthetic artifacts NEVER qualify for production inference."
+            )
+
+        beats = metadata.get("model_beats_baseline")
+        if beats is not True and not allow_non_baseline_beating:
+            raise RegistryError(
+                f"Cannot approve {model_version!r}: model does not beat its baseline "
+                "(MAE comparison on the validation split). Re-run with an explicit "
+                "override reason if promotion is still justified."
+            )
+        if beats is not True and not (override_reason and override_reason.strip()):
+            raise RegistryError(
+                f"Cannot approve {model_version!r} without a recorded override_reason: "
+                "non-baseline-beating promotions must be justified in the audit log."
+            )
+
+        # Persist approval into the sidecar (atomic rewrite).
+        metadata["approved"] = True
+        metadata["approved_at"] = _utcnow().isoformat()
+        metadata["approved_by"] = approver.strip()
+        if override_reason:
+            metadata["approval_override_reason"] = override_reason.strip()
+        self._write_json_atomic(self._metadata_path(model_version), metadata)
+
+        self._append_log({
+            "event": "approve",
+            "model_version": model_version,
+            "approver": approver.strip(),
+            "override_reason": (override_reason or "").strip() or None,
+            "at": _utcnow().isoformat(),
+        })
+        self._write_json_atomic(
+            self._artifact_dir / ACTIVE_POINTER_FILENAME,
+            {"model_version": model_version, "updated_at": _utcnow().isoformat()},
+        )
+        logger.info("Model %s approved by %s (active)", model_version, approver)
+        return metadata
+
+    # ------------------------------------------------------------------
+    # Active model & rollback
+    # ------------------------------------------------------------------
+
+    def get_active(self) -> Optional[dict[str, Any]]:
+        """Returns verified metadata of the active approved model, else None."""
+        pointer = self._artifact_dir / ACTIVE_POINTER_FILENAME
+        if not pointer.is_file():
+            return None
+        try:
+            data = json.loads(pointer.read_text())
+            version = data.get("model_version")
+        except (OSError, ValueError):
+            logger.warning("Active-model pointer unreadable; treating as NO_MODEL")
+            return None
+        if not version:
+            return None
+        verification = self.verify(version)
+        if not verification.ok or not (verification.metadata or {}).get("approved"):
+            logger.warning(
+                "Active-model pointer is stale (artifact missing/invalid/unapproved); "
+                "treating as NO_MODEL"
+            )
+            return None
+        return verification.metadata
+
+    def rollback(self, *, approver: str) -> dict[str, Any]:
+        """Re-points the active model to the previously approved version."""
+        if not approver or not approver.strip():
+            raise RegistryError("approver must be a non-empty identifier")
+        current = self.get_active()
+        current_version = (current or {}).get("model_version")
+        # Walk the audit log backwards for the latest approved version that is
+        # not current and still verifies.
+        for entry in reversed(self._read_log()):
+            if entry.get("event") != "approve":
+                continue
+            version = entry.get("model_version")
+            if not version or version == current_version:
+                continue
+            verification = self.verify(version)
+            if verification.ok and (verification.metadata or {}).get("approved"):
+                self._append_log({
+                    "event": "rollback",
+                    "model_version": version,
+                    "from_version": current_version,
+                    "approver": approver.strip(),
+                    "at": _utcnow().isoformat(),
+                })
+                self._write_json_atomic(
+                    self._artifact_dir / ACTIVE_POINTER_FILENAME,
+                    {"model_version": version, "updated_at": _utcnow().isoformat()},
+                )
+                logger.info("Rolled back active model %s -> %s", current_version, version)
+                return verification.metadata or {}
+        raise RegistryError("No previously approved model available for rollback")
+
+    # ------------------------------------------------------------------
+    # Loading (verified bytes only, contained paths only)
+    # ------------------------------------------------------------------
+
+    def load_model_bundle(self, model_version: str) -> dict[str, Any]:
+        """Verifies then unpickles the artifact bundle.
+
+        Unpickling is safe here ONLY because: the path is contained in
+        artifact_dir (no user-controlled paths), and the bytes must match the
+        recorded sha256 BEFORE deserialization. Verification failure refuses
+        to load — never fall back to unverified bytes.
+        """
+        verification = self.verify(model_version)
+        if not verification.ok:
+            raise RegistryError(
+                f"Refusing to load unverified artifact {model_version!r}: "
+                + "; ".join(verification.errors)
+            )
+        import pickle
+
+        try:
+            return pickle.loads(self._resolve_artifact(model_version).read_bytes())
+        except Exception as exc:
+            raise RegistryError(
+                f"Artifact {model_version!r} failed to deserialize: {exc}"
+            ) from exc
+
+    # ------------------------------------------------------------------
+    # Internals
+    # ------------------------------------------------------------------
+
+    def _write_json_atomic(self, path: Path, payload: dict[str, Any]) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp_name = tempfile.mkstemp(dir=str(path.parent), prefix=".tmp-", suffix=".json")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                json.dump(payload, fh, indent=2, default=str)
+            os.replace(tmp_name, path)
+        except BaseException:
+            try:
+                os.unlink(tmp_name)
+            except OSError:
+                pass
+            raise
+
+    def _append_log(self, entry: dict[str, Any]) -> None:
+        self._artifact_dir.mkdir(parents=True, exist_ok=True)
+        log_path = self._artifact_dir / REGISTRY_LOG_FILENAME
+        with open(log_path, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(entry, default=str) + "\n")
+
+    def _read_log(self) -> list[dict[str, Any]]:
+        log_path = self._artifact_dir / REGISTRY_LOG_FILENAME
+        if not log_path.is_file():
+            return []
+        entries: list[dict[str, Any]] = []
+        for line in log_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entries.append(json.loads(line))
+            except ValueError:
+                continue
+        return entries

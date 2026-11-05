@@ -16,6 +16,7 @@ import { StatusBadge } from "./StatusBadge";
 import { Button } from "./Button";
 import { HeartIcon, HeartFilledIcon, BoltIcon } from "./Icon";
 import { cx } from "@/lib/util";
+import { stationPriceDisplay } from "@/lib/priceDisplay";
 import { Link } from "@/i18n/Link";
 
 export function StationCard({
@@ -44,6 +45,7 @@ export function StationCard({
     : null;
   const maxKw = getMaxPowerKw(station);
   const chargers = getTotalChargers(station);
+  const priceDisplay = stationPriceDisplay(station, t);
 
   return (
     <article
@@ -111,13 +113,19 @@ export function StationCard({
       <div className="mt-4 flex items-end justify-between gap-3">
         <div>
           <div className="text-[14px] font-semibold text-ink-900">
-            {station.isFree
-              ? "Free"
-              : station.pricePerKwh == null
-              ? t("station.priceUnavailable")
-              : t("station.perKwh", { price: station.pricePerKwh })}
+            {priceDisplay.text}
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            {(station.isSimulated || station.sourceCategory === "simulated") && (
+              <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10.5px] font-medium text-amber-800 border border-amber-200">
+                Demo
+              </span>
+            )}
+            {station.sourceCategory === "historical" && (
+              <span className="rounded bg-ink-100 px-1.5 py-0.5 text-[10.5px] font-medium text-ink-700">
+                Historical
+              </span>
+            )}
             <StatusBadge status={station.status} size="sm" />
             <span className="text-[11.5px] text-ink-500">
               {station.minutesSinceUpdate == null

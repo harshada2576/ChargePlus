@@ -1275,6 +1275,59 @@ def normalize_postal_code(
 # Normalization Domain H: Pricing / Tariff Normalization
 # ------------------------------------------------------------------------------
 
+def parse_price_estimate(raw_pricing_text: Optional[str]) -> Optional[float]:
+    """Parse a conservative INR/kWh estimate without changing verified tariff fields.
+
+    Accepts only one unambiguous per-kWh/unit rate. Any indication of a range,
+    competing amount, foreign currency, parking/session/time fee, or explicit free
+    charging makes the text ineligible. This parser is deliberately separate from
+    normalize_pricing(), whose outputs represent canonical pricing semantics.
+    """
+    if not isinstance(raw_pricing_text, str):
+        return None
+    raw = raw_pricing_text.strip()
+    if not raw or len(raw) > 500:
+        return None
+    text = raw.lower()
+    if re.search(r"\b(free|no charge|complimentary|zero cost|free charging)\b", text):
+        return None
+    if re.search(r"\b(parking|session|connection fee|per\s*(?:hour|hr|minute|min|day|month)|/\s*(?:hour|hr|minute|min|session))\b", text):
+        return None
+    if re.search(r"\b(?:usd|eur|gbp|aed|cad|aud|jpy|cny)\b|[$€£¥]", text):
+        return None
+    if re.search(r"\b(?:from|between)\s+\d|\d\s*(?:-|–|—|to)\s*(?:₹|rs\.?\s*|inr\s*)?\d", text):
+        return None
+    # A minus sign attached to an amount indicates a negative price or a range
+    # fragment; never coerce it into a confident positive rate.
+    if re.search(r"-\s*(?:₹|rs\.?|inr)?\s*\d", text):
+        return None
+    # GST/tax wording is permitted, but another monetary amount is not.
+    matches = list(re.finditer(
+        r"(?:(?:₹|rs\.?|inr)\s*)?([0-9]+(?:\.[0-9]{1,2})?)\s*(?:/\s*|per\s+)(?:kwh|unit)\b",
+        text,
+        flags=re.IGNORECASE,
+    ))
+    if len(matches) != 1:
+        return None
+    match = matches[0]
+    # A second explicit currency marker suggests mixed or competing tariff terms.
+    currency_markers = re.findall(r"₹|\brs\.?\b|\binr\b", text, flags=re.IGNORECASE)
+    if len(currency_markers) > 1:
+        return None
+    # Reject any additional numeric amount outside the one rate (percent tax rates
+    # are intentionally not parsed as prices; safest MVP is to reject them too).
+    residue = text[:match.start(1)] + text[match.end(1):]
+    if re.search(r"\d", residue):
+        return None
+    try:
+        rate = float(match.group(1))
+    except (TypeError, ValueError):
+        return None
+    if not 0.0 < rate <= 500.0:
+        return None
+    return round(rate, 2)
+
+
 def normalize_pricing(
     raw_pricing_text: Optional[str] = None,
     pricing_type: Optional[PricingType] = None,
@@ -1760,9 +1813,21 @@ def normalize_station_record(
     )
     field_statuses["operating_hours"] = norm_hours.status
 
-    # 5. Normalize Connectors
+    # 5. Normalize Connectors. OCM UsageCost is station-level free text; it is
+    # stored only as a clearly unverified estimate and never passed to normalize_pricing.
     normalized_connectors: list[NormalizedConnector] = []
     clean_child_records: list[NormalizedConnectorRecord] = []
+    raw_usage_cost = record.extra_metadata.get("usage_cost_raw")
+    is_ocm_usage_cost = record.source_id == "open_charge_map"
+    price_estimate = parse_price_estimate(raw_usage_cost) if is_ocm_usage_cost else None
+    estimate_raw = (
+        str(raw_usage_cost).strip()[:500]
+        if is_ocm_usage_cost and isinstance(raw_usage_cost, str) and raw_usage_cost.strip()
+        else None
+    )
+    # Source presence is retained even when text is unparseable so an OCM refresh
+    # can clear a previously stored estimate instead of leaving a stale rate behind.
+    estimate_source = "ocm_usage_cost" if is_ocm_usage_cost else None
 
     for c in record.connectors:
         norm_c = normalize_connector_record(c)
@@ -1782,6 +1847,13 @@ def normalize_station_record(
             pricing_type=norm_c.pricing.pricing_type,
             price_per_kwh=norm_c.pricing.price_per_kwh,
             price_per_session=norm_c.pricing.price_per_session,
+            price_estimate_per_kwh=(
+                price_estimate
+                if c.pricing_type != PricingType.FREE and c.price_per_kwh is None
+                else None
+            ),
+            price_estimate_raw=estimate_raw,
+            price_estimate_source=estimate_source,
             currency=norm_c.pricing.currency or "INR",
             status=norm_c.status,
         )

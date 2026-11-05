@@ -9,6 +9,11 @@ import {
   sendOtp,
   verifyOtpCode,
   signOut,
+  simulateDevSendOtp,
+  simulateDevVerifyOtp,
+  clearSimulatedSessions,
+  isDevOrDemoAuth,
+  CONTROLLED_TEST_ACCOUNTS,
   AuthValidationError,
   AuthProviderError,
 } from "../src/lib/auth.ts";
@@ -128,3 +133,60 @@ test("signOut delegates to the provider", async () => {
   await signOut(mockAuth({ calls }));
   assert.deepEqual(calls, [["signout", null]]);
 });
+
+test("dev/demo simulator verifies controlled test accounts with rate/attempt limits", () => {
+  clearSimulatedSessions();
+  // 1. Controlled driver test account verifies with testCode
+  const contact = simulateDevSendOtp("phone", "9876543210");
+  assert.equal(contact.contact, CONTROLLED_TEST_ACCOUNTS.driverPhone);
+
+  // Wrong code fails and increments attempts
+  assert.throws(
+    () => simulateDevVerifyOtp("phone", "9876543210", "999999"),
+    /That code didn't work/
+  );
+
+  // Correct code succeeds and returns driver user id
+  const verified = simulateDevVerifyOtp("phone", "9876543210", "123456");
+  assert.equal(verified.userId, CONTROLLED_TEST_ACCOUNTS.driverUserId);
+  assert.equal(verified.contact.contact, "+919876543210");
+
+  // 2. Attempt limit protection (>3 attempts locks out session)
+  simulateDevSendOtp("email", "driver@chargeplus.internal");
+  assert.throws(() => simulateDevVerifyOtp("email", "driver@chargeplus.internal", "000001"), /That code didn't work/);
+  assert.throws(() => simulateDevVerifyOtp("email", "driver@chargeplus.internal", "000002"), /That code didn't work/);
+  assert.throws(() => simulateDevVerifyOtp("email", "driver@chargeplus.internal", "000003"), /That code didn't work/);
+  assert.throws(() => simulateDevVerifyOtp("email", "driver@chargeplus.internal", "000004"), /Too many failed verification attempts/);
+
+  // 3. Admin test account resolves admin user id
+  const adminContact = simulateDevSendOtp("phone", "9876543219");
+  assert.equal(adminContact.contact, CONTROLLED_TEST_ACCOUNTS.adminPhone);
+  const adminVerified = simulateDevVerifyOtp("phone", "9876543219", "123456");
+  assert.equal(adminVerified.userId, CONTROLLED_TEST_ACCOUNTS.adminUserId);
+});
+
+test("security: fixed demo OTP strictly fails closed in production even if DEMO_MODE is accidentally true", () => {
+  const origNodeEnv = process.env.NODE_ENV;
+  const origDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE;
+  try {
+    process.env.NODE_ENV = "production";
+    process.env.NEXT_PUBLIC_DEMO_MODE = "true";
+
+    // In production, isDevOrDemoAuth must unconditionally return false
+    assert.equal(isDevOrDemoAuth(), false);
+
+    // Any attempt to call simulateDevSendOtp or simulateDevVerifyOtp must throw AuthProviderError
+    assert.throws(
+      () => simulateDevSendOtp("phone", "9876543210"),
+      /Simulation is disabled in production environments/
+    );
+    assert.throws(
+      () => simulateDevVerifyOtp("phone", "9876543210", "123456"),
+      /Simulation is disabled in production environments/
+    );
+  } finally {
+    process.env.NODE_ENV = origNodeEnv;
+    process.env.NEXT_PUBLIC_DEMO_MODE = origDemoMode;
+  }
+});
+

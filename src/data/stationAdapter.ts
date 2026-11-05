@@ -1,4 +1,4 @@
-import type { Connector, ConnectorType, Station, StationStatus } from "./types";
+import type { Connector, ConnectorType, FreshnessState, SourceCategory, Station, StationStatus } from "./types";
 
 export type DbStationRow = {
   id: string;
@@ -41,6 +41,10 @@ export type DbStationRow = {
   minutes_since_observation?: number | null;
   avg_rating?: number | null;
   review_count?: number | null;
+  source_id?: string | null;
+  source_name?: string | null;
+  is_simulated?: boolean | null;
+  observation_is_simulated?: boolean | null;
 };
 
 export type DbConnectorRow = {
@@ -53,11 +57,19 @@ export type DbConnectorRow = {
   pricing_type?: string | null;
   price_per_kwh?: number | null;
   price_per_session?: number | null;
+  price_estimate_per_kwh?: number | null;
+  price_estimate_raw?: string | null;
+  price_estimate_source?: string | null;
   currency?: string | null;
+  latest_observation_id?: string | null;
   latest_availability_status?: string | null;
   latest_available_connectors?: number | null;
   latest_observed_at?: string | null;
   minutes_since_observation?: number | null;
+  source_id?: string | null;
+  source_name?: string | null;
+  is_simulated?: boolean | null;
+  observation_is_simulated?: boolean | null;
 };
 
 /**
@@ -95,13 +107,71 @@ export function normalizeConnectorType(raw: string | null | undefined): Connecto
 }
 
 /**
+ * Evaluates the categorical freshness state of an observation.
+ * Follows Step 2.9 Invariants: fresh <= 30m, aging <= 120m, stale > 120m, unknown if missing/invalid.
+ */
+export function deriveFreshnessState(
+  minutesSinceObservation: number | null | undefined,
+  staleThresholdMinutes = 120
+): FreshnessState {
+  if (minutesSinceObservation == null || isNaN(Number(minutesSinceObservation))) {
+    return "unknown";
+  }
+  const mins = Number(minutesSinceObservation);
+  if (mins < 0) return "unknown";
+  if (mins <= 30) return "fresh";
+  if (mins <= staleThresholdMinutes) return "aging";
+  return "stale";
+}
+
+/**
+ * Maps provenance signals to one of the 5 authoritative source categories.
+ */
+export function deriveSourceCategory(params: {
+  isSimulated?: boolean;
+  hasObservation: boolean;
+  freshness: FreshnessState;
+  sourceName?: string | null;
+}): SourceCategory {
+  if (params.isSimulated) {
+    return "simulated";
+  }
+  if (!params.hasObservation) {
+    return "unknown";
+  }
+  if (params.freshness === "stale") {
+    return "historical";
+  }
+  if (params.sourceName && /cpo|ocpi|oicp|live|verified/i.test(params.sourceName)) {
+    return "verified_live";
+  }
+  return "recent_observation";
+}
+
+/**
  * Derives operational status. Telemetry observations take strict precedence.
  * Without telemetry, operational stations resolve to "unknown" (Rule 5: static != live).
+ * Expired observations (> 120 min) are marked unknown to prevent projecting false availability (Rule 4).
  */
 export function deriveStationStatus(
   latestAvailabilityStatus: string | null | undefined,
-  operationalStatus: string | null | undefined
+  operationalStatus: string | null | undefined,
+  minutesSinceObservation?: number | null,
+  staleThresholdMinutes = 120
 ): StationStatus {
+  // If observation is explicitly stale (> threshold), it cannot guarantee current availability
+  if (
+    minutesSinceObservation != null &&
+    !isNaN(Number(minutesSinceObservation)) &&
+    Number(minutesSinceObservation) > staleThresholdMinutes
+  ) {
+    const op = (operationalStatus || "").trim().toLowerCase();
+    if (op === "temporarily_unavailable" || op === "decommissioned" || op === "out_of_service") {
+      return "broken";
+    }
+    return "unknown";
+  }
+
   if (latestAvailabilityStatus) {
     const s = latestAvailabilityStatus.trim().toLowerCase();
     if (s === "available") return "available";
@@ -182,7 +252,9 @@ export function derivePricing(row: DbStationRow): {
   pricePerKwh: number | null;
   isFree: boolean | null;
 } {
-  if (row.min_price_per_kwh != null && !isNaN(Number(row.min_price_per_kwh))) {
+  // Finite only: NaN/±Infinity must never enter canonical pricing as valid
+  // prices (an Infinity tariff would render as "₹Infinity/kWh").
+  if (row.min_price_per_kwh != null && Number.isFinite(Number(row.min_price_per_kwh))) {
     const price = Number(row.min_price_per_kwh);
     return {
       pricePerKwh: price,
@@ -226,12 +298,51 @@ export function mapDbConnectorToConnector(
     available = total != null ? Math.max(0, Math.min(total, rawAvail)) : Math.max(0, rawAvail);
   }
 
+  const minutesSince =
+    row.minutes_since_observation != null && !isNaN(Number(row.minutes_since_observation))
+      ? Math.round(Number(row.minutes_since_observation))
+      : null;
+
+  const freshnessState = deriveFreshnessState(minutesSince);
+  const hasObs = row.latest_availability_status != null || row.latest_available_connectors != null;
+  const isSimulated = row.is_simulated === true;
+  const observationIsSimulated = row.observation_is_simulated === true;
+  const sourceCategory = deriveSourceCategory({
+    isSimulated: isSimulated || observationIsSimulated,
+    hasObservation: hasObs,
+    freshness: freshnessState,
+    sourceName: row.source_name,
+  });
+
   return {
     id: row.id,
     type: normalizeConnectorType(row.connector_type),
     powerKw,
     total,
     available,
+    latestObservationId: row.latest_observation_id ?? (row as any).latestObservationId ?? null,
+    latestObservedAt: row.latest_observed_at ?? (row as any).latestObservedAt ?? null,
+    minutesSinceObservation: minutesSince,
+    freshnessState,
+    sourceCategory,
+    isSimulated,
+    pricePerKwh:
+      row.price_per_kwh != null && Number.isFinite(Number(row.price_per_kwh))
+        ? Number(row.price_per_kwh)
+        : null,
+    pricePerSession:
+      row.price_per_session != null && Number.isFinite(Number(row.price_per_session))
+        ? Number(row.price_per_session)
+        : null,
+    priceEstimatePerKwh:
+      row.price_estimate_per_kwh != null &&
+      Number.isFinite(Number(row.price_estimate_per_kwh)) &&
+      Number(row.price_estimate_per_kwh) > 0 &&
+      Number(row.price_estimate_per_kwh) <= 500
+        ? Number(row.price_estimate_per_kwh)
+        : null,
+    priceEstimateRaw: row.price_estimate_raw ?? null,
+    priceEstimateSource: row.price_estimate_source ?? null,
   };
 }
 
@@ -249,24 +360,45 @@ export function mapDbStationToStation(
   row: DbStationRow,
   connectors: DbConnectorRow[] = []
 ): Station {
-  const status = deriveStationStatus(
-    row.latest_availability_status,
-    row.operational_status
-  );
-  const pricing = derivePricing(row);
-  const hours = deriveHours(row);
-  const area = deriveArea(row);
-  const address = deriveAddress(row);
-
   const minutesSinceUpdate =
     row.minutes_since_observation != null &&
     !isNaN(Number(row.minutes_since_observation))
       ? Math.round(Number(row.minutes_since_observation))
       : null;
 
-  const mappedConnectors = connectors.map((c) =>
-    mapDbConnectorToConnector(c, status)
+  const freshnessState = deriveFreshnessState(minutesSinceUpdate);
+  const hasObs = row.latest_availability_status != null || row.latest_observation_id != null;
+  const isSimulated = row.is_simulated === true;
+  const observationIsSimulated = row.observation_is_simulated === true;
+  const sourceCategory = deriveSourceCategory({
+    isSimulated: isSimulated || observationIsSimulated,
+    hasObservation: hasObs,
+    freshness: freshnessState,
+    sourceName: row.source_name,
+  });
+
+  const status = deriveStationStatus(
+    row.latest_availability_status,
+    row.operational_status,
+    minutesSinceUpdate
   );
+  const pricing = derivePricing(row);
+  const hours = deriveHours(row);
+  const area = deriveArea(row);
+  const address = deriveAddress(row);
+
+  const mappedConnectors = connectors.length > 0
+    ? connectors.map((c) => mapDbConnectorToConnector(c, status))
+    : (row.connector_types || []).map((ct, idx) => ({
+        id: `${row.id}-stub-${idx}`,
+        type: normalizeConnectorType(ct),
+        powerKw: row.max_power_kw != null && Number.isFinite(Number(row.max_power_kw)) ? Number(row.max_power_kw) : null,
+        total: row.total_plugs != null && Number.isFinite(Number(row.total_plugs)) ? Number(row.total_plugs) : null,
+        available: null,
+        isSimulated: isSimulated,
+        sourceCategory: (isSimulated ? "simulated" : "unknown") as SourceCategory,
+        freshnessState: freshnessState,
+      }));
 
   const operator = row.operator_name?.trim() || "Unknown Operator";
 
@@ -293,5 +425,11 @@ export function mapDbStationToStation(
         ? Number(row.review_count)
         : 0,
     busyWindows: [], // Cold start: never fabricate busy windows without ML/temporal evidence
+    latestObservationId: row.latest_observation_id ?? null,
+    latestObservedAt: row.latest_observed_at ?? null,
+    sourceName: row.source_name ?? null,
+    sourceCategory,
+    freshnessState,
+    isSimulated: row.is_simulated === true,
   };
 }

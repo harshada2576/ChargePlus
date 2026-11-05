@@ -1,0 +1,1001 @@
+tariff_key,tariff_id,tariff_name,tier_type,rate_per_kwh
+1,TAR-00001,Tariff Plan 1,Peak,23.54
+2,TAR-00002,Tariff Plan 2,Off-Peak,17.93
+3,TAR-00003,Tariff Plan 3,Critical Surge,8.15
+4,TAR-00004,Tariff Plan 4,Off-Peak,8.97
+5,TAR-00005,Tariff Plan 5,Peak,11.92
+6,TAR-00006,Tariff Plan 6,Critical Surge,9.77
+7,TAR-00007,Tariff Plan 7,Critical Surge,23.54
+8,TAR-00008,Tariff Plan 8,Standard,24.59
+9,TAR-00009,Tariff Plan 9,Standard,10.56
+10,TAR-00010,Tariff Plan 10,Peak,20.81
+11,TAR-00011,Tariff Plan 11,Critical Surge,22.47
+12,TAR-00012,Tariff Plan 12,Off-Peak,23.68
+13,TAR-00013,Tariff Plan 13,Standard,24.05
+14,TAR-00014,Tariff Plan 14,Critical Surge,24.75
+15,TAR-00015,Tariff Plan 15,Standard,15.66
+16,TAR-00016,Tariff Plan 16,Standard,9.1
+17,TAR-00017,Tariff Plan 17,Off-Peak,9.42
+18,TAR-00018,Tariff Plan 18,Off-Peak,10.41
+19,TAR-00019,Tariff Plan 19,Critical Surge,11.82
+20,TAR-00020,Tariff Plan 20,Peak,20.33
+21,TAR-00021,Tariff Plan 21,Off-Peak,10.66
+22,TAR-00022,Tariff Plan 22,Off-Peak,18.95
+23,TAR-00023,Tariff Plan 23,Standard,9.47
+24,TAR-00024,Tariff Plan 24,Peak,9.17
+25,TAR-00025,Tariff Plan 25,Critical Surge,27.06
+26,TAR-00026,Tariff Plan 26,Critical Surge,22.94
+27,TAR-00027,Tariff Plan 27,Peak,12.83
+28,TAR-00028,Tariff Plan 28,Peak,13.66
+29,TAR-00029,Tariff Plan 29,Critical Surge,11.97
+30,TAR-00030,Tariff Plan 30,Critical Surge,19.84
+31,TAR-00031,Tariff Plan 31,Peak,23.56
+32,TAR-00032,Tariff Plan 32,Peak,17.6
+33,TAR-00033,Tariff Plan 33,Peak,14.15
+34,TAR-00034,Tariff Plan 34,Off-Peak,15.82
+35,TAR-00035,Tariff Plan 35,Peak,8.37
+36,TAR-00036,Tariff Plan 36,Critical Surge,13.4
+37,TAR-00037,Tariff Plan 37,Peak,15.95
+38,TAR-00038,Tariff Plan 38,Peak,24.38
+39,TAR-00039,Tariff Plan 39,Standard,16.48
+40,TAR-00040,Tariff Plan 40,Peak,16.3
+41,TAR-00041,Tariff Plan 41,Peak,12.37
+42,TAR-00042,Tariff Plan 42,Off-Peak,8.33
+43,TAR-00043,Tariff Plan 43,Peak,19.62
+44,TAR-00044,Tariff Plan 44,Standard,22.3
+45,TAR-00045,Tariff Plan 45,Peak,24.15
+46,TAR-00046,Tariff Plan 46,Off-Peak,16.02
+47,TAR-00047,Tariff Plan 47,Standard,18.23
+48,TAR-00048,Tariff Plan 48,Critical Surge,27.66
+49,TAR-00049,Tariff Plan 49,Critical Surge,25.33
+50,TAR-00050,Tariff Plan 50,Peak,16.2
+51,TAR-00051,Tariff Plan 51,Critical Surge,23.59
+52,TAR-00052,Tariff Plan 52,Standard,21.58
+53,TAR-00053,Tariff Plan 53,Off-Peak,26.89
+54,TAR-00054,Tariff Plan 54,Critical Surge,19.59
+55,TAR-00055,Tariff Plan 55,Critical Surge,22.13
+56,TAR-00056,Tariff Plan 56,Critical Surge,25.25
+57,TAR-00057,Tariff Plan 57,Off-Peak,20.85
+58,TAR-00058,Tariff Plan 58,Peak,16.58
+59,TAR-00059,Tariff Plan 59,Standard,11.16
+60,TAR-00060,Tariff Plan 60,Peak,27.24
+61,TAR-00061,Tariff Plan 61,Standard,10.82
+62,TAR-00062,Tariff Plan 62,Critical Surge,8.94
+63,TAR-00063,Tariff Plan 63,Off-Peak,10.79
+64,TAR-00064,Tariff Plan 64,Peak,16.45
+65,TAR-00065,Tariff Plan 65,Critical Surge,10.74
+66,TAR-00066,Tariff Plan 66,Peak,22.52
+67,TAR-00067,Tariff Plan 67,Peak,23.28
+68,TAR-00068,Tariff Plan 68,Off-Peak,18.85
+69,TAR-00069,Tariff Plan 69,Peak,12.81
+70,TAR-00070,Tariff Plan 70,Off-Peak,27.02
+71,TAR-00071,Tariff Plan 71,Critical Surge,16.7
+72,TAR-00072,Tariff Plan 72,Critical Surge,12.09
+73,TAR-00073,Tariff Plan 73,Off-Peak,23.6
+74,TAR-00074,Tariff Plan 74,Critical Surge,18.62
+75,TAR-00075,Tariff Plan 75,Critical Surge,9.17
+76,TAR-00076,Tariff Plan 76,Peak,11.43
+77,TAR-00077,Tariff Plan 77,Off-Peak,10.67
+78,TAR-00078,Tariff Plan 78,Peak,13.98
+79,TAR-00079,Tariff Plan 79,Off-Peak,14.34
+80,TAR-00080,Tariff Plan 80,Standard,23.36
+81,TAR-00081,Tariff Plan 81,Standard,12.65
+82,TAR-00082,Tariff Plan 82,Off-Peak,10.67
+83,TAR-00083,Tariff Plan 83,Standard,14.71
+84,TAR-00084,Tariff Plan 84,Peak,11.2
+85,TAR-00085,Tariff Plan 85,Critical Surge,18.05
+86,TAR-00086,Tariff Plan 86,Peak,11.14
+87,TAR-00087,Tariff Plan 87,Critical Surge,17.11
+88,TAR-00088,Tariff Plan 88,Standard,15.04
+89,TAR-00089,Tariff Plan 89,Off-Peak,9.95
+90,TAR-00090,Tariff Plan 90,Critical Surge,12.43
+91,TAR-00091,Tariff Plan 91,Peak,22.66
+92,TAR-00092,Tariff Plan 92,Off-Peak,15.91
+93,TAR-00093,Tariff Plan 93,Standard,15.65
+94,TAR-00094,Tariff Plan 94,Peak,13.62
+95,TAR-00095,Tariff Plan 95,Peak,13.01
+96,TAR-00096,Tariff Plan 96,Peak,27.87
+97,TAR-00097,Tariff Plan 97,Off-Peak,26.67
+98,TAR-00098,Tariff Plan 98,Off-Peak,23.1
+99,TAR-00099,Tariff Plan 99,Standard,22.91
+100,TAR-00100,Tariff Plan 100,Peak,24.61
+101,TAR-00101,Tariff Plan 101,Peak,24.46
+102,TAR-00102,Tariff Plan 102,Off-Peak,11.93
+103,TAR-00103,Tariff Plan 103,Standard,11.66
+104,TAR-00104,Tariff Plan 104,Off-Peak,14.52
+105,TAR-00105,Tariff Plan 105,Peak,22.5
+106,TAR-00106,Tariff Plan 106,Standard,21.87
+107,TAR-00107,Tariff Plan 107,Critical Surge,18.86
+108,TAR-00108,Tariff Plan 108,Standard,25.8
+109,TAR-00109,Tariff Plan 109,Critical Surge,17.47
+110,TAR-00110,Tariff Plan 110,Critical Surge,10.55
+111,TAR-00111,Tariff Plan 111,Standard,12.89
+112,TAR-00112,Tariff Plan 112,Peak,8.61
+113,TAR-00113,Tariff Plan 113,Critical Surge,24.11
+114,TAR-00114,Tariff Plan 114,Peak,13.58
+115,TAR-00115,Tariff Plan 115,Off-Peak,15.27
+116,TAR-00116,Tariff Plan 116,Off-Peak,11.25
+117,TAR-00117,Tariff Plan 117,Peak,9.85
+118,TAR-00118,Tariff Plan 118,Critical Surge,16.63
+119,TAR-00119,Tariff Plan 119,Standard,16.26
+120,TAR-00120,Tariff Plan 120,Standard,16.2
+121,TAR-00121,Tariff Plan 121,Peak,14.7
+122,TAR-00122,Tariff Plan 122,Standard,16.45
+123,TAR-00123,Tariff Plan 123,Off-Peak,17.93
+124,TAR-00124,Tariff Plan 124,Peak,27.41
+125,TAR-00125,Tariff Plan 125,Off-Peak,17.91
+126,TAR-00126,Tariff Plan 126,Off-Peak,27.53
+127,TAR-00127,Tariff Plan 127,Standard,17.5
+128,TAR-00128,Tariff Plan 128,Peak,21.34
+129,TAR-00129,Tariff Plan 129,Standard,25.82
+130,TAR-00130,Tariff Plan 130,Standard,26.07
+131,TAR-00131,Tariff Plan 131,Standard,24.87
+132,TAR-00132,Tariff Plan 132,Critical Surge,26.53
+133,TAR-00133,Tariff Plan 133,Critical Surge,12.17
+134,TAR-00134,Tariff Plan 134,Standard,23.99
+135,TAR-00135,Tariff Plan 135,Off-Peak,9.34
+136,TAR-00136,Tariff Plan 136,Standard,10.67
+137,TAR-00137,Tariff Plan 137,Peak,11.89
+138,TAR-00138,Tariff Plan 138,Peak,22.77
+139,TAR-00139,Tariff Plan 139,Peak,11.28
+140,TAR-00140,Tariff Plan 140,Critical Surge,27.96
+141,TAR-00141,Tariff Plan 141,Critical Surge,10.18
+142,TAR-00142,Tariff Plan 142,Off-Peak,27.31
+143,TAR-00143,Tariff Plan 143,Peak,25.1
+144,TAR-00144,Tariff Plan 144,Off-Peak,14.86
+145,TAR-00145,Tariff Plan 145,Peak,14.79
+146,TAR-00146,Tariff Plan 146,Peak,9.08
+147,TAR-00147,Tariff Plan 147,Critical Surge,11.29
+148,TAR-00148,Tariff Plan 148,Critical Surge,10.65
+149,TAR-00149,Tariff Plan 149,Off-Peak,20.1
+150,TAR-00150,Tariff Plan 150,Standard,18.34
+151,TAR-00151,Tariff Plan 151,Off-Peak,27.51
+152,TAR-00152,Tariff Plan 152,Standard,19.98
+153,TAR-00153,Tariff Plan 153,Off-Peak,20.07
+154,TAR-00154,Tariff Plan 154,Standard,21.61
+155,TAR-00155,Tariff Plan 155,Off-Peak,20.57
+156,TAR-00156,Tariff Plan 156,Off-Peak,14.47
+157,TAR-00157,Tariff Plan 157,Peak,10.21
+158,TAR-00158,Tariff Plan 158,Off-Peak,18.7
+159,TAR-00159,Tariff Plan 159,Standard,14.57
+160,TAR-00160,Tariff Plan 160,Critical Surge,21.76
+161,TAR-00161,Tariff Plan 161,Standard,9.42
+162,TAR-00162,Tariff Plan 162,Off-Peak,22.92
+163,TAR-00163,Tariff Plan 163,Peak,19.01
+164,TAR-00164,Tariff Plan 164,Critical Surge,22.93
+165,TAR-00165,Tariff Plan 165,Off-Peak,14.25
+166,TAR-00166,Tariff Plan 166,Critical Surge,26.34
+167,TAR-00167,Tariff Plan 167,Off-Peak,16.39
+168,TAR-00168,Tariff Plan 168,Off-Peak,20.38
+169,TAR-00169,Tariff Plan 169,Standard,15.38
+170,TAR-00170,Tariff Plan 170,Peak,21.04
+171,TAR-00171,Tariff Plan 171,Standard,17.3
+172,TAR-00172,Tariff Plan 172,Off-Peak,18.18
+173,TAR-00173,Tariff Plan 173,Off-Peak,23.16
+174,TAR-00174,Tariff Plan 174,Standard,11.82
+175,TAR-00175,Tariff Plan 175,Standard,26.3
+176,TAR-00176,Tariff Plan 176,Critical Surge,26.58
+177,TAR-00177,Tariff Plan 177,Peak,14.95
+178,TAR-00178,Tariff Plan 178,Standard,26.31
+179,TAR-00179,Tariff Plan 179,Off-Peak,20.37
+180,TAR-00180,Tariff Plan 180,Peak,16.37
+181,TAR-00181,Tariff Plan 181,Off-Peak,11.08
+182,TAR-00182,Tariff Plan 182,Peak,16.74
+183,TAR-00183,Tariff Plan 183,Standard,17.6
+184,TAR-00184,Tariff Plan 184,Peak,10.1
+185,TAR-00185,Tariff Plan 185,Critical Surge,16.48
+186,TAR-00186,Tariff Plan 186,Peak,11.93
+187,TAR-00187,Tariff Plan 187,Peak,25.12
+188,TAR-00188,Tariff Plan 188,Critical Surge,18.56
+189,TAR-00189,Tariff Plan 189,Peak,9.05
+190,TAR-00190,Tariff Plan 190,Critical Surge,11.78
+191,TAR-00191,Tariff Plan 191,Critical Surge,16.45
+192,TAR-00192,Tariff Plan 192,Off-Peak,15.71
+193,TAR-00193,Tariff Plan 193,Off-Peak,21.59
+194,TAR-00194,Tariff Plan 194,Critical Surge,13.79
+195,TAR-00195,Tariff Plan 195,Off-Peak,25.58
+196,TAR-00196,Tariff Plan 196,Peak,21.42
+197,TAR-00197,Tariff Plan 197,Critical Surge,23.77
+198,TAR-00198,Tariff Plan 198,Standard,19.56
+199,TAR-00199,Tariff Plan 199,Standard,25.91
+200,TAR-00200,Tariff Plan 200,Off-Peak,17.24
+201,TAR-00201,Tariff Plan 201,Standard,17.98
+202,TAR-00202,Tariff Plan 202,Critical Surge,12.64
+203,TAR-00203,Tariff Plan 203,Standard,26.16
+204,TAR-00204,Tariff Plan 204,Off-Peak,8.89
+205,TAR-00205,Tariff Plan 205,Critical Surge,21.45
+206,TAR-00206,Tariff Plan 206,Peak,20.71
+207,TAR-00207,Tariff Plan 207,Peak,20.98
+208,TAR-00208,Tariff Plan 208,Peak,11.08
+209,TAR-00209,Tariff Plan 209,Off-Peak,12.74
+210,TAR-00210,Tariff Plan 210,Peak,24.4
+211,TAR-00211,Tariff Plan 211,Off-Peak,14.81
+212,TAR-00212,Tariff Plan 212,Peak,22.12
+213,TAR-00213,Tariff Plan 213,Critical Surge,26.66
+214,TAR-00214,Tariff Plan 214,Peak,21.72
+215,TAR-00215,Tariff Plan 215,Critical Surge,22.08
+216,TAR-00216,Tariff Plan 216,Off-Peak,21.58
+217,TAR-00217,Tariff Plan 217,Standard,15.71
+218,TAR-00218,Tariff Plan 218,Standard,22.67
+219,TAR-00219,Tariff Plan 219,Off-Peak,9.72
+220,TAR-00220,Tariff Plan 220,Off-Peak,11.93
+221,TAR-00221,Tariff Plan 221,Critical Surge,8.55
+222,TAR-00222,Tariff Plan 222,Peak,24.56
+223,TAR-00223,Tariff Plan 223,Standard,10.69
+224,TAR-00224,Tariff Plan 224,Standard,12.68
+225,TAR-00225,Tariff Plan 225,Off-Peak,26.05
+226,TAR-00226,Tariff Plan 226,Critical Surge,16.58
+227,TAR-00227,Tariff Plan 227,Peak,9.83
+228,TAR-00228,Tariff Plan 228,Standard,10.02
+229,TAR-00229,Tariff Plan 229,Off-Peak,16.41
+230,TAR-00230,Tariff Plan 230,Off-Peak,21.43
+231,TAR-00231,Tariff Plan 231,Off-Peak,9.01
+232,TAR-00232,Tariff Plan 232,Standard,23.6
+233,TAR-00233,Tariff Plan 233,Critical Surge,18.77
+234,TAR-00234,Tariff Plan 234,Off-Peak,14.86
+235,TAR-00235,Tariff Plan 235,Peak,21.3
+236,TAR-00236,Tariff Plan 236,Critical Surge,26.33
+237,TAR-00237,Tariff Plan 237,Peak,19.83
+238,TAR-00238,Tariff Plan 238,Peak,27.29
+239,TAR-00239,Tariff Plan 239,Peak,15.18
+240,TAR-00240,Tariff Plan 240,Off-Peak,24.64
+241,TAR-00241,Tariff Plan 241,Standard,8.83
+242,TAR-00242,Tariff Plan 242,Off-Peak,12.56
+243,TAR-00243,Tariff Plan 243,Peak,14.37
+244,TAR-00244,Tariff Plan 244,Standard,21.34
+245,TAR-00245,Tariff Plan 245,Peak,26.31
+246,TAR-00246,Tariff Plan 246,Standard,26.78
+247,TAR-00247,Tariff Plan 247,Critical Surge,15.88
+248,TAR-00248,Tariff Plan 248,Peak,24.99
+249,TAR-00249,Tariff Plan 249,Peak,17.4
+250,TAR-00250,Tariff Plan 250,Standard,14.43
+251,TAR-00251,Tariff Plan 251,Critical Surge,15.67
+252,TAR-00252,Tariff Plan 252,Critical Surge,12.61
+253,TAR-00253,Tariff Plan 253,Standard,12.49
+254,TAR-00254,Tariff Plan 254,Standard,24.58
+255,TAR-00255,Tariff Plan 255,Critical Surge,19.46
+256,TAR-00256,Tariff Plan 256,Critical Surge,24.49
+257,TAR-00257,Tariff Plan 257,Peak,15.02
+258,TAR-00258,Tariff Plan 258,Peak,10.94
+259,TAR-00259,Tariff Plan 259,Peak,22.44
+260,TAR-00260,Tariff Plan 260,Peak,19.27
+261,TAR-00261,Tariff Plan 261,Off-Peak,15.53
+262,TAR-00262,Tariff Plan 262,Peak,10.21
+263,TAR-00263,Tariff Plan 263,Critical Surge,16.58
+264,TAR-00264,Tariff Plan 264,Off-Peak,16.25
+265,TAR-00265,Tariff Plan 265,Critical Surge,17.38
+266,TAR-00266,Tariff Plan 266,Standard,17.84
+267,TAR-00267,Tariff Plan 267,Standard,10.28
+268,TAR-00268,Tariff Plan 268,Standard,9.18
+269,TAR-00269,Tariff Plan 269,Critical Surge,15.29
+270,TAR-00270,Tariff Plan 270,Peak,21.32
+271,TAR-00271,Tariff Plan 271,Critical Surge,26.32
+272,TAR-00272,Tariff Plan 272,Peak,18.89
+273,TAR-00273,Tariff Plan 273,Standard,14.84
+274,TAR-00274,Tariff Plan 274,Peak,8.63
+275,TAR-00275,Tariff Plan 275,Peak,13.24
+276,TAR-00276,Tariff Plan 276,Off-Peak,12.8
+277,TAR-00277,Tariff Plan 277,Off-Peak,10.34
+278,TAR-00278,Tariff Plan 278,Standard,27.11
+279,TAR-00279,Tariff Plan 279,Critical Surge,10.01
+280,TAR-00280,Tariff Plan 280,Critical Surge,20.1
+281,TAR-00281,Tariff Plan 281,Off-Peak,24.08
+282,TAR-00282,Tariff Plan 282,Peak,16.0
+283,TAR-00283,Tariff Plan 283,Off-Peak,25.07
+284,TAR-00284,Tariff Plan 284,Critical Surge,11.08
+285,TAR-00285,Tariff Plan 285,Critical Surge,9.29
+286,TAR-00286,Tariff Plan 286,Off-Peak,18.18
+287,TAR-00287,Tariff Plan 287,Peak,24.95
+288,TAR-00288,Tariff Plan 288,Peak,9.7
+289,TAR-00289,Tariff Plan 289,Standard,10.66
+290,TAR-00290,Tariff Plan 290,Peak,27.67
+291,TAR-00291,Tariff Plan 291,Off-Peak,20.24
+292,TAR-00292,Tariff Plan 292,Critical Surge,18.46
+293,TAR-00293,Tariff Plan 293,Peak,18.59
+294,TAR-00294,Tariff Plan 294,Critical Surge,15.93
+295,TAR-00295,Tariff Plan 295,Standard,14.53
+296,TAR-00296,Tariff Plan 296,Peak,15.89
+297,TAR-00297,Tariff Plan 297,Critical Surge,13.29
+298,TAR-00298,Tariff Plan 298,Standard,24.58
+299,TAR-00299,Tariff Plan 299,Off-Peak,13.84
+300,TAR-00300,Tariff Plan 300,Peak,9.18
+301,TAR-00301,Tariff Plan 301,Peak,25.18
+302,TAR-00302,Tariff Plan 302,Standard,21.74
+303,TAR-00303,Tariff Plan 303,Standard,12.0
+304,TAR-00304,Tariff Plan 304,Peak,18.45
+305,TAR-00305,Tariff Plan 305,Standard,18.5
+306,TAR-00306,Tariff Plan 306,Off-Peak,15.58
+307,TAR-00307,Tariff Plan 307,Critical Surge,13.44
+308,TAR-00308,Tariff Plan 308,Standard,23.41
+309,TAR-00309,Tariff Plan 309,Critical Surge,19.81
+310,TAR-00310,Tariff Plan 310,Peak,23.15
+311,TAR-00311,Tariff Plan 311,Off-Peak,12.19
+312,TAR-00312,Tariff Plan 312,Peak,13.8
+313,TAR-00313,Tariff Plan 313,Standard,12.81
+314,TAR-00314,Tariff Plan 314,Critical Surge,20.46
+315,TAR-00315,Tariff Plan 315,Peak,27.12
+316,TAR-00316,Tariff Plan 316,Off-Peak,14.66
+317,TAR-00317,Tariff Plan 317,Standard,22.11
+318,TAR-00318,Tariff Plan 318,Off-Peak,11.26
+319,TAR-00319,Tariff Plan 319,Off-Peak,8.57
+320,TAR-00320,Tariff Plan 320,Standard,12.13
+321,TAR-00321,Tariff Plan 321,Peak,8.34
+322,TAR-00322,Tariff Plan 322,Off-Peak,15.06
+323,TAR-00323,Tariff Plan 323,Off-Peak,23.24
+324,TAR-00324,Tariff Plan 324,Standard,26.22
+325,TAR-00325,Tariff Plan 325,Peak,26.61
+326,TAR-00326,Tariff Plan 326,Off-Peak,18.08
+327,TAR-00327,Tariff Plan 327,Peak,25.42
+328,TAR-00328,Tariff Plan 328,Peak,22.27
+329,TAR-00329,Tariff Plan 329,Standard,10.55
+330,TAR-00330,Tariff Plan 330,Off-Peak,25.36
+331,TAR-00331,Tariff Plan 331,Peak,14.19
+332,TAR-00332,Tariff Plan 332,Critical Surge,11.8
+333,TAR-00333,Tariff Plan 333,Critical Surge,13.82
+334,TAR-00334,Tariff Plan 334,Standard,18.08
+335,TAR-00335,Tariff Plan 335,Off-Peak,24.2
+336,TAR-00336,Tariff Plan 336,Peak,18.7
+337,TAR-00337,Tariff Plan 337,Standard,11.95
+338,TAR-00338,Tariff Plan 338,Off-Peak,20.96
+339,TAR-00339,Tariff Plan 339,Standard,14.73
+340,TAR-00340,Tariff Plan 340,Standard,18.28
+341,TAR-00341,Tariff Plan 341,Critical Surge,26.56
+342,TAR-00342,Tariff Plan 342,Standard,20.52
+343,TAR-00343,Tariff Plan 343,Standard,19.24
+344,TAR-00344,Tariff Plan 344,Peak,17.48
+345,TAR-00345,Tariff Plan 345,Peak,17.67
+346,TAR-00346,Tariff Plan 346,Critical Surge,22.74
+347,TAR-00347,Tariff Plan 347,Standard,14.09
+348,TAR-00348,Tariff Plan 348,Off-Peak,18.48
+349,TAR-00349,Tariff Plan 349,Peak,27.16
+350,TAR-00350,Tariff Plan 350,Off-Peak,11.2
+351,TAR-00351,Tariff Plan 351,Standard,25.4
+352,TAR-00352,Tariff Plan 352,Critical Surge,18.63
+353,TAR-00353,Tariff Plan 353,Standard,16.65
+354,TAR-00354,Tariff Plan 354,Peak,23.33
+355,TAR-00355,Tariff Plan 355,Standard,11.13
+356,TAR-00356,Tariff Plan 356,Peak,24.46
+357,TAR-00357,Tariff Plan 357,Peak,12.16
+358,TAR-00358,Tariff Plan 358,Off-Peak,14.46
+359,TAR-00359,Tariff Plan 359,Standard,14.1
+360,TAR-00360,Tariff Plan 360,Off-Peak,24.28
+361,TAR-00361,Tariff Plan 361,Off-Peak,23.08
+362,TAR-00362,Tariff Plan 362,Standard,20.83
+363,TAR-00363,Tariff Plan 363,Off-Peak,22.97
+364,TAR-00364,Tariff Plan 364,Standard,21.02
+365,TAR-00365,Tariff Plan 365,Standard,17.64
+366,TAR-00366,Tariff Plan 366,Critical Surge,16.52
+367,TAR-00367,Tariff Plan 367,Critical Surge,25.49
+368,TAR-00368,Tariff Plan 368,Off-Peak,18.0
+369,TAR-00369,Tariff Plan 369,Standard,10.65
+370,TAR-00370,Tariff Plan 370,Standard,11.18
+371,TAR-00371,Tariff Plan 371,Critical Surge,25.09
+372,TAR-00372,Tariff Plan 372,Standard,10.49
+373,TAR-00373,Tariff Plan 373,Standard,17.42
+374,TAR-00374,Tariff Plan 374,Peak,26.05
+375,TAR-00375,Tariff Plan 375,Off-Peak,16.37
+376,TAR-00376,Tariff Plan 376,Peak,22.71
+377,TAR-00377,Tariff Plan 377,Off-Peak,24.1
+378,TAR-00378,Tariff Plan 378,Off-Peak,12.88
+379,TAR-00379,Tariff Plan 379,Standard,25.15
+380,TAR-00380,Tariff Plan 380,Peak,25.76
+381,TAR-00381,Tariff Plan 381,Standard,26.02
+382,TAR-00382,Tariff Plan 382,Peak,20.15
+383,TAR-00383,Tariff Plan 383,Critical Surge,15.62
+384,TAR-00384,Tariff Plan 384,Peak,20.0
+385,TAR-00385,Tariff Plan 385,Peak,9.92
+386,TAR-00386,Tariff Plan 386,Peak,26.04
+387,TAR-00387,Tariff Plan 387,Standard,20.49
+388,TAR-00388,Tariff Plan 388,Critical Surge,16.82
+389,TAR-00389,Tariff Plan 389,Off-Peak,27.41
+390,TAR-00390,Tariff Plan 390,Peak,13.59
+391,TAR-00391,Tariff Plan 391,Peak,9.99
+392,TAR-00392,Tariff Plan 392,Critical Surge,20.93
+393,TAR-00393,Tariff Plan 393,Standard,12.75
+394,TAR-00394,Tariff Plan 394,Peak,13.93
+395,TAR-00395,Tariff Plan 395,Peak,19.61
+396,TAR-00396,Tariff Plan 396,Standard,24.13
+397,TAR-00397,Tariff Plan 397,Off-Peak,23.78
+398,TAR-00398,Tariff Plan 398,Standard,17.42
+399,TAR-00399,Tariff Plan 399,Standard,16.25
+400,TAR-00400,Tariff Plan 400,Peak,15.08
+401,TAR-00401,Tariff Plan 401,Off-Peak,23.17
+402,TAR-00402,Tariff Plan 402,Peak,13.36
+403,TAR-00403,Tariff Plan 403,Off-Peak,25.99
+404,TAR-00404,Tariff Plan 404,Standard,10.12
+405,TAR-00405,Tariff Plan 405,Off-Peak,22.93
+406,TAR-00406,Tariff Plan 406,Critical Surge,17.01
+407,TAR-00407,Tariff Plan 407,Critical Surge,25.8
+408,TAR-00408,Tariff Plan 408,Critical Surge,12.29
+409,TAR-00409,Tariff Plan 409,Off-Peak,21.48
+410,TAR-00410,Tariff Plan 410,Peak,21.44
+411,TAR-00411,Tariff Plan 411,Off-Peak,18.79
+412,TAR-00412,Tariff Plan 412,Standard,10.81
+413,TAR-00413,Tariff Plan 413,Standard,24.51
+414,TAR-00414,Tariff Plan 414,Off-Peak,14.45
+415,TAR-00415,Tariff Plan 415,Off-Peak,20.31
+416,TAR-00416,Tariff Plan 416,Peak,19.39
+417,TAR-00417,Tariff Plan 417,Off-Peak,20.41
+418,TAR-00418,Tariff Plan 418,Peak,11.91
+419,TAR-00419,Tariff Plan 419,Standard,12.99
+420,TAR-00420,Tariff Plan 420,Peak,11.29
+421,TAR-00421,Tariff Plan 421,Off-Peak,18.89
+422,TAR-00422,Tariff Plan 422,Off-Peak,15.12
+423,TAR-00423,Tariff Plan 423,Standard,24.69
+424,TAR-00424,Tariff Plan 424,Critical Surge,20.98
+425,TAR-00425,Tariff Plan 425,Critical Surge,16.23
+426,TAR-00426,Tariff Plan 426,Off-Peak,17.97
+427,TAR-00427,Tariff Plan 427,Standard,11.6
+428,TAR-00428,Tariff Plan 428,Peak,26.13
+429,TAR-00429,Tariff Plan 429,Peak,20.02
+430,TAR-00430,Tariff Plan 430,Off-Peak,12.97
+431,TAR-00431,Tariff Plan 431,Off-Peak,14.48
+432,TAR-00432,Tariff Plan 432,Off-Peak,19.53
+433,TAR-00433,Tariff Plan 433,Peak,11.75
+434,TAR-00434,Tariff Plan 434,Critical Surge,24.4
+435,TAR-00435,Tariff Plan 435,Critical Surge,8.19
+436,TAR-00436,Tariff Plan 436,Standard,25.57
+437,TAR-00437,Tariff Plan 437,Standard,13.48
+438,TAR-00438,Tariff Plan 438,Off-Peak,20.03
+439,TAR-00439,Tariff Plan 439,Critical Surge,27.35
+440,TAR-00440,Tariff Plan 440,Critical Surge,18.06
+441,TAR-00441,Tariff Plan 441,Standard,24.69
+442,TAR-00442,Tariff Plan 442,Standard,22.7
+443,TAR-00443,Tariff Plan 443,Off-Peak,20.19
+444,TAR-00444,Tariff Plan 444,Off-Peak,22.91
+445,TAR-00445,Tariff Plan 445,Critical Surge,17.17
+446,TAR-00446,Tariff Plan 446,Critical Surge,19.97
+447,TAR-00447,Tariff Plan 447,Standard,15.86
+448,TAR-00448,Tariff Plan 448,Standard,27.68
+449,TAR-00449,Tariff Plan 449,Off-Peak,27.57
+450,TAR-00450,Tariff Plan 450,Standard,21.69
+451,TAR-00451,Tariff Plan 451,Critical Surge,10.28
+452,TAR-00452,Tariff Plan 452,Standard,12.26
+453,TAR-00453,Tariff Plan 453,Standard,10.14
+454,TAR-00454,Tariff Plan 454,Standard,24.38
+455,TAR-00455,Tariff Plan 455,Peak,24.0
+456,TAR-00456,Tariff Plan 456,Critical Surge,10.48
+457,TAR-00457,Tariff Plan 457,Standard,17.61
+458,TAR-00458,Tariff Plan 458,Peak,24.36
+459,TAR-00459,Tariff Plan 459,Critical Surge,20.63
+460,TAR-00460,Tariff Plan 460,Standard,10.75
+461,TAR-00461,Tariff Plan 461,Standard,15.16
+462,TAR-00462,Tariff Plan 462,Peak,9.32
+463,TAR-00463,Tariff Plan 463,Off-Peak,22.73
+464,TAR-00464,Tariff Plan 464,Peak,26.36
+465,TAR-00465,Tariff Plan 465,Off-Peak,26.19
+466,TAR-00466,Tariff Plan 466,Standard,15.15
+467,TAR-00467,Tariff Plan 467,Off-Peak,23.16
+468,TAR-00468,Tariff Plan 468,Peak,10.23
+469,TAR-00469,Tariff Plan 469,Critical Surge,26.37
+470,TAR-00470,Tariff Plan 470,Standard,18.33
+471,TAR-00471,Tariff Plan 471,Standard,16.51
+472,TAR-00472,Tariff Plan 472,Critical Surge,11.53
+473,TAR-00473,Tariff Plan 473,Peak,26.81
+474,TAR-00474,Tariff Plan 474,Critical Surge,14.15
+475,TAR-00475,Tariff Plan 475,Off-Peak,9.09
+476,TAR-00476,Tariff Plan 476,Critical Surge,20.12
+477,TAR-00477,Tariff Plan 477,Peak,22.66
+478,TAR-00478,Tariff Plan 478,Standard,26.43
+479,TAR-00479,Tariff Plan 479,Peak,21.84
+480,TAR-00480,Tariff Plan 480,Off-Peak,16.61
+481,TAR-00481,Tariff Plan 481,Standard,24.1
+482,TAR-00482,Tariff Plan 482,Peak,15.85
+483,TAR-00483,Tariff Plan 483,Critical Surge,25.31
+484,TAR-00484,Tariff Plan 484,Off-Peak,27.26
+485,TAR-00485,Tariff Plan 485,Off-Peak,14.22
+486,TAR-00486,Tariff Plan 486,Peak,23.89
+487,TAR-00487,Tariff Plan 487,Peak,15.01
+488,TAR-00488,Tariff Plan 488,Standard,16.86
+489,TAR-00489,Tariff Plan 489,Critical Surge,12.65
+490,TAR-00490,Tariff Plan 490,Standard,13.75
+491,TAR-00491,Tariff Plan 491,Critical Surge,24.35
+492,TAR-00492,Tariff Plan 492,Standard,11.32
+493,TAR-00493,Tariff Plan 493,Peak,9.42
+494,TAR-00494,Tariff Plan 494,Standard,26.04
+495,TAR-00495,Tariff Plan 495,Standard,9.09
+496,TAR-00496,Tariff Plan 496,Off-Peak,21.68
+497,TAR-00497,Tariff Plan 497,Critical Surge,14.73
+498,TAR-00498,Tariff Plan 498,Off-Peak,17.79
+499,TAR-00499,Tariff Plan 499,Off-Peak,8.49
+500,TAR-00500,Tariff Plan 500,Standard,27.36
+501,TAR-00501,Tariff Plan 501,Critical Surge,12.23
+502,TAR-00502,Tariff Plan 502,Critical Surge,13.6
+503,TAR-00503,Tariff Plan 503,Critical Surge,22.62
+504,TAR-00504,Tariff Plan 504,Peak,21.13
+505,TAR-00505,Tariff Plan 505,Peak,15.22
+506,TAR-00506,Tariff Plan 506,Standard,13.02
+507,TAR-00507,Tariff Plan 507,Off-Peak,18.58
+508,TAR-00508,Tariff Plan 508,Standard,23.27
+509,TAR-00509,Tariff Plan 509,Critical Surge,27.59
+510,TAR-00510,Tariff Plan 510,Standard,23.9
+511,TAR-00511,Tariff Plan 511,Critical Surge,18.0
+512,TAR-00512,Tariff Plan 512,Off-Peak,12.82
+513,TAR-00513,Tariff Plan 513,Off-Peak,12.11
+514,TAR-00514,Tariff Plan 514,Critical Surge,15.48
+515,TAR-00515,Tariff Plan 515,Critical Surge,27.87
+516,TAR-00516,Tariff Plan 516,Standard,20.19
+517,TAR-00517,Tariff Plan 517,Off-Peak,15.78
+518,TAR-00518,Tariff Plan 518,Off-Peak,17.61
+519,TAR-00519,Tariff Plan 519,Peak,9.68
+520,TAR-00520,Tariff Plan 520,Off-Peak,12.42
+521,TAR-00521,Tariff Plan 521,Standard,8.07
+522,TAR-00522,Tariff Plan 522,Critical Surge,8.45
+523,TAR-00523,Tariff Plan 523,Standard,11.55
+524,TAR-00524,Tariff Plan 524,Critical Surge,21.37
+525,TAR-00525,Tariff Plan 525,Off-Peak,24.78
+526,TAR-00526,Tariff Plan 526,Off-Peak,14.36
+527,TAR-00527,Tariff Plan 527,Off-Peak,15.0
+528,TAR-00528,Tariff Plan 528,Standard,12.03
+529,TAR-00529,Tariff Plan 529,Standard,8.65
+530,TAR-00530,Tariff Plan 530,Standard,15.56
+531,TAR-00531,Tariff Plan 531,Off-Peak,8.67
+532,TAR-00532,Tariff Plan 532,Standard,21.9
+533,TAR-00533,Tariff Plan 533,Critical Surge,18.14
+534,TAR-00534,Tariff Plan 534,Critical Surge,17.03
+535,TAR-00535,Tariff Plan 535,Standard,24.29
+536,TAR-00536,Tariff Plan 536,Peak,18.23
+537,TAR-00537,Tariff Plan 537,Critical Surge,8.99
+538,TAR-00538,Tariff Plan 538,Off-Peak,9.36
+539,TAR-00539,Tariff Plan 539,Critical Surge,11.25
+540,TAR-00540,Tariff Plan 540,Critical Surge,18.18
+541,TAR-00541,Tariff Plan 541,Off-Peak,22.31
+542,TAR-00542,Tariff Plan 542,Off-Peak,12.06
+543,TAR-00543,Tariff Plan 543,Critical Surge,23.22
+544,TAR-00544,Tariff Plan 544,Off-Peak,23.41
+545,TAR-00545,Tariff Plan 545,Critical Surge,8.34
+546,TAR-00546,Tariff Plan 546,Peak,20.84
+547,TAR-00547,Tariff Plan 547,Off-Peak,9.74
+548,TAR-00548,Tariff Plan 548,Off-Peak,19.92
+549,TAR-00549,Tariff Plan 549,Critical Surge,12.53
+550,TAR-00550,Tariff Plan 550,Critical Surge,9.9
+551,TAR-00551,Tariff Plan 551,Critical Surge,11.17
+552,TAR-00552,Tariff Plan 552,Standard,12.36
+553,TAR-00553,Tariff Plan 553,Peak,8.25
+554,TAR-00554,Tariff Plan 554,Peak,18.36
+555,TAR-00555,Tariff Plan 555,Standard,23.81
+556,TAR-00556,Tariff Plan 556,Standard,27.56
+557,TAR-00557,Tariff Plan 557,Critical Surge,9.07
+558,TAR-00558,Tariff Plan 558,Standard,12.46
+559,TAR-00559,Tariff Plan 559,Critical Surge,26.07
+560,TAR-00560,Tariff Plan 560,Off-Peak,22.91
+561,TAR-00561,Tariff Plan 561,Standard,23.46
+562,TAR-00562,Tariff Plan 562,Critical Surge,15.01
+563,TAR-00563,Tariff Plan 563,Off-Peak,21.63
+564,TAR-00564,Tariff Plan 564,Standard,22.47
+565,TAR-00565,Tariff Plan 565,Standard,20.0
+566,TAR-00566,Tariff Plan 566,Off-Peak,18.92
+567,TAR-00567,Tariff Plan 567,Standard,13.99
+568,TAR-00568,Tariff Plan 568,Standard,23.08
+569,TAR-00569,Tariff Plan 569,Standard,23.23
+570,TAR-00570,Tariff Plan 570,Off-Peak,25.47
+571,TAR-00571,Tariff Plan 571,Critical Surge,23.88
+572,TAR-00572,Tariff Plan 572,Peak,20.45
+573,TAR-00573,Tariff Plan 573,Critical Surge,26.5
+574,TAR-00574,Tariff Plan 574,Peak,26.78
+575,TAR-00575,Tariff Plan 575,Standard,11.66
+576,TAR-00576,Tariff Plan 576,Off-Peak,20.99
+577,TAR-00577,Tariff Plan 577,Critical Surge,13.35
+578,TAR-00578,Tariff Plan 578,Critical Surge,16.49
+579,TAR-00579,Tariff Plan 579,Critical Surge,24.1
+580,TAR-00580,Tariff Plan 580,Standard,26.67
+581,TAR-00581,Tariff Plan 581,Standard,11.68
+582,TAR-00582,Tariff Plan 582,Critical Surge,20.92
+583,TAR-00583,Tariff Plan 583,Critical Surge,10.42
+584,TAR-00584,Tariff Plan 584,Standard,8.41
+585,TAR-00585,Tariff Plan 585,Off-Peak,15.06
+586,TAR-00586,Tariff Plan 586,Peak,11.17
+587,TAR-00587,Tariff Plan 587,Off-Peak,10.87
+588,TAR-00588,Tariff Plan 588,Off-Peak,22.08
+589,TAR-00589,Tariff Plan 589,Critical Surge,24.29
+590,TAR-00590,Tariff Plan 590,Standard,26.76
+591,TAR-00591,Tariff Plan 591,Standard,9.57
+592,TAR-00592,Tariff Plan 592,Peak,23.7
+593,TAR-00593,Tariff Plan 593,Standard,18.71
+594,TAR-00594,Tariff Plan 594,Critical Surge,18.29
+595,TAR-00595,Tariff Plan 595,Critical Surge,19.91
+596,TAR-00596,Tariff Plan 596,Critical Surge,22.51
+597,TAR-00597,Tariff Plan 597,Critical Surge,27.22
+598,TAR-00598,Tariff Plan 598,Critical Surge,24.35
+599,TAR-00599,Tariff Plan 599,Standard,24.37
+600,TAR-00600,Tariff Plan 600,Critical Surge,27.31
+601,TAR-00601,Tariff Plan 601,Standard,20.8
+602,TAR-00602,Tariff Plan 602,Critical Surge,22.9
+603,TAR-00603,Tariff Plan 603,Off-Peak,11.24
+604,TAR-00604,Tariff Plan 604,Peak,11.83
+605,TAR-00605,Tariff Plan 605,Critical Surge,18.92
+606,TAR-00606,Tariff Plan 606,Critical Surge,27.04
+607,TAR-00607,Tariff Plan 607,Peak,8.48
+608,TAR-00608,Tariff Plan 608,Peak,19.43
+609,TAR-00609,Tariff Plan 609,Critical Surge,9.89
+610,TAR-00610,Tariff Plan 610,Critical Surge,21.23
+611,TAR-00611,Tariff Plan 611,Standard,11.46
+612,TAR-00612,Tariff Plan 612,Critical Surge,27.61
+613,TAR-00613,Tariff Plan 613,Critical Surge,24.65
+614,TAR-00614,Tariff Plan 614,Standard,11.9
+615,TAR-00615,Tariff Plan 615,Standard,22.89
+616,TAR-00616,Tariff Plan 616,Off-Peak,13.93
+617,TAR-00617,Tariff Plan 617,Peak,22.34
+618,TAR-00618,Tariff Plan 618,Peak,19.62
+619,TAR-00619,Tariff Plan 619,Peak,11.18
+620,TAR-00620,Tariff Plan 620,Standard,12.29
+621,TAR-00621,Tariff Plan 621,Critical Surge,8.12
+622,TAR-00622,Tariff Plan 622,Critical Surge,13.16
+623,TAR-00623,Tariff Plan 623,Standard,14.49
+624,TAR-00624,Tariff Plan 624,Peak,25.95
+625,TAR-00625,Tariff Plan 625,Standard,17.92
+626,TAR-00626,Tariff Plan 626,Off-Peak,21.53
+627,TAR-00627,Tariff Plan 627,Peak,14.7
+628,TAR-00628,Tariff Plan 628,Critical Surge,22.13
+629,TAR-00629,Tariff Plan 629,Critical Surge,8.85
+630,TAR-00630,Tariff Plan 630,Standard,18.13
+631,TAR-00631,Tariff Plan 631,Off-Peak,12.85
+632,TAR-00632,Tariff Plan 632,Peak,18.67
+633,TAR-00633,Tariff Plan 633,Off-Peak,18.04
+634,TAR-00634,Tariff Plan 634,Critical Surge,15.9
+635,TAR-00635,Tariff Plan 635,Off-Peak,20.61
+636,TAR-00636,Tariff Plan 636,Critical Surge,18.01
+637,TAR-00637,Tariff Plan 637,Peak,8.81
+638,TAR-00638,Tariff Plan 638,Critical Surge,17.41
+639,TAR-00639,Tariff Plan 639,Critical Surge,26.35
+640,TAR-00640,Tariff Plan 640,Standard,21.12
+641,TAR-00641,Tariff Plan 641,Critical Surge,9.19
+642,TAR-00642,Tariff Plan 642,Standard,26.88
+643,TAR-00643,Tariff Plan 643,Peak,24.05
+644,TAR-00644,Tariff Plan 644,Peak,12.61
+645,TAR-00645,Tariff Plan 645,Critical Surge,11.58
+646,TAR-00646,Tariff Plan 646,Critical Surge,11.45
+647,TAR-00647,Tariff Plan 647,Standard,25.88
+648,TAR-00648,Tariff Plan 648,Off-Peak,16.82
+649,TAR-00649,Tariff Plan 649,Critical Surge,24.0
+650,TAR-00650,Tariff Plan 650,Peak,20.24
+651,TAR-00651,Tariff Plan 651,Critical Surge,25.52
+652,TAR-00652,Tariff Plan 652,Peak,27.34
+653,TAR-00653,Tariff Plan 653,Critical Surge,27.85
+654,TAR-00654,Tariff Plan 654,Off-Peak,8.23
+655,TAR-00655,Tariff Plan 655,Off-Peak,24.32
+656,TAR-00656,Tariff Plan 656,Standard,21.35
+657,TAR-00657,Tariff Plan 657,Standard,12.22
+658,TAR-00658,Tariff Plan 658,Standard,13.27
+659,TAR-00659,Tariff Plan 659,Standard,16.12
+660,TAR-00660,Tariff Plan 660,Off-Peak,19.57
+661,TAR-00661,Tariff Plan 661,Critical Surge,11.22
+662,TAR-00662,Tariff Plan 662,Off-Peak,20.42
+663,TAR-00663,Tariff Plan 663,Critical Surge,23.67
+664,TAR-00664,Tariff Plan 664,Standard,22.24
+665,TAR-00665,Tariff Plan 665,Off-Peak,27.23
+666,TAR-00666,Tariff Plan 666,Peak,26.37
+667,TAR-00667,Tariff Plan 667,Standard,22.61
+668,TAR-00668,Tariff Plan 668,Peak,24.33
+669,TAR-00669,Tariff Plan 669,Standard,8.64
+670,TAR-00670,Tariff Plan 670,Standard,13.62
+671,TAR-00671,Tariff Plan 671,Peak,26.49
+672,TAR-00672,Tariff Plan 672,Standard,16.59
+673,TAR-00673,Tariff Plan 673,Off-Peak,27.15
+674,TAR-00674,Tariff Plan 674,Standard,9.3
+675,TAR-00675,Tariff Plan 675,Standard,13.81
+676,TAR-00676,Tariff Plan 676,Off-Peak,23.73
+677,TAR-00677,Tariff Plan 677,Critical Surge,26.84
+678,TAR-00678,Tariff Plan 678,Critical Surge,15.9
+679,TAR-00679,Tariff Plan 679,Off-Peak,17.75
+680,TAR-00680,Tariff Plan 680,Critical Surge,21.29
+681,TAR-00681,Tariff Plan 681,Off-Peak,12.29
+682,TAR-00682,Tariff Plan 682,Off-Peak,10.49
+683,TAR-00683,Tariff Plan 683,Critical Surge,22.71
+684,TAR-00684,Tariff Plan 684,Peak,24.36
+685,TAR-00685,Tariff Plan 685,Peak,9.04
+686,TAR-00686,Tariff Plan 686,Peak,23.22
+687,TAR-00687,Tariff Plan 687,Peak,9.26
+688,TAR-00688,Tariff Plan 688,Critical Surge,8.98
+689,TAR-00689,Tariff Plan 689,Off-Peak,14.78
+690,TAR-00690,Tariff Plan 690,Critical Surge,22.11
+691,TAR-00691,Tariff Plan 691,Off-Peak,14.69
+692,TAR-00692,Tariff Plan 692,Standard,15.21
+693,TAR-00693,Tariff Plan 693,Critical Surge,13.9
+694,TAR-00694,Tariff Plan 694,Peak,13.19
+695,TAR-00695,Tariff Plan 695,Critical Surge,8.02
+696,TAR-00696,Tariff Plan 696,Peak,13.38
+697,TAR-00697,Tariff Plan 697,Off-Peak,11.56
+698,TAR-00698,Tariff Plan 698,Standard,27.27
+699,TAR-00699,Tariff Plan 699,Peak,27.74
+700,TAR-00700,Tariff Plan 700,Off-Peak,27.03
+701,TAR-00701,Tariff Plan 701,Peak,13.23
+702,TAR-00702,Tariff Plan 702,Critical Surge,14.25
+703,TAR-00703,Tariff Plan 703,Off-Peak,22.44
+704,TAR-00704,Tariff Plan 704,Critical Surge,12.47
+705,TAR-00705,Tariff Plan 705,Standard,22.89
+706,TAR-00706,Tariff Plan 706,Standard,14.24
+707,TAR-00707,Tariff Plan 707,Peak,20.64
+708,TAR-00708,Tariff Plan 708,Peak,26.14
+709,TAR-00709,Tariff Plan 709,Off-Peak,21.81
+710,TAR-00710,Tariff Plan 710,Standard,8.33
+711,TAR-00711,Tariff Plan 711,Off-Peak,9.6
+712,TAR-00712,Tariff Plan 712,Peak,27.28
+713,TAR-00713,Tariff Plan 713,Critical Surge,19.24
+714,TAR-00714,Tariff Plan 714,Off-Peak,12.45
+715,TAR-00715,Tariff Plan 715,Off-Peak,17.52
+716,TAR-00716,Tariff Plan 716,Off-Peak,11.62
+717,TAR-00717,Tariff Plan 717,Standard,18.97
+718,TAR-00718,Tariff Plan 718,Off-Peak,22.28
+719,TAR-00719,Tariff Plan 719,Critical Surge,24.03
+720,TAR-00720,Tariff Plan 720,Peak,21.29
+721,TAR-00721,Tariff Plan 721,Standard,19.46
+722,TAR-00722,Tariff Plan 722,Critical Surge,23.91
+723,TAR-00723,Tariff Plan 723,Critical Surge,17.5
+724,TAR-00724,Tariff Plan 724,Off-Peak,13.48
+725,TAR-00725,Tariff Plan 725,Standard,20.44
+726,TAR-00726,Tariff Plan 726,Off-Peak,8.83
+727,TAR-00727,Tariff Plan 727,Off-Peak,16.25
+728,TAR-00728,Tariff Plan 728,Off-Peak,27.12
+729,TAR-00729,Tariff Plan 729,Off-Peak,25.48
+730,TAR-00730,Tariff Plan 730,Critical Surge,26.36
+731,TAR-00731,Tariff Plan 731,Standard,27.68
+732,TAR-00732,Tariff Plan 732,Critical Surge,15.99
+733,TAR-00733,Tariff Plan 733,Standard,26.13
+734,TAR-00734,Tariff Plan 734,Critical Surge,9.58
+735,TAR-00735,Tariff Plan 735,Peak,20.24
+736,TAR-00736,Tariff Plan 736,Critical Surge,10.7
+737,TAR-00737,Tariff Plan 737,Critical Surge,17.6
+738,TAR-00738,Tariff Plan 738,Critical Surge,21.1
+739,TAR-00739,Tariff Plan 739,Standard,26.15
+740,TAR-00740,Tariff Plan 740,Standard,11.51
+741,TAR-00741,Tariff Plan 741,Peak,23.64
+742,TAR-00742,Tariff Plan 742,Off-Peak,13.08
+743,TAR-00743,Tariff Plan 743,Off-Peak,21.99
+744,TAR-00744,Tariff Plan 744,Critical Surge,11.24
+745,TAR-00745,Tariff Plan 745,Critical Surge,26.81
+746,TAR-00746,Tariff Plan 746,Critical Surge,25.47
+747,TAR-00747,Tariff Plan 747,Standard,14.32
+748,TAR-00748,Tariff Plan 748,Off-Peak,21.62
+749,TAR-00749,Tariff Plan 749,Critical Surge,18.13
+750,TAR-00750,Tariff Plan 750,Peak,18.48
+751,TAR-00751,Tariff Plan 751,Standard,26.43
+752,TAR-00752,Tariff Plan 752,Standard,27.68
+753,TAR-00753,Tariff Plan 753,Critical Surge,27.68
+754,TAR-00754,Tariff Plan 754,Standard,10.85
+755,TAR-00755,Tariff Plan 755,Peak,12.35
+756,TAR-00756,Tariff Plan 756,Off-Peak,9.64
+757,TAR-00757,Tariff Plan 757,Off-Peak,25.61
+758,TAR-00758,Tariff Plan 758,Critical Surge,20.54
+759,TAR-00759,Tariff Plan 759,Off-Peak,11.52
+760,TAR-00760,Tariff Plan 760,Off-Peak,26.16
+761,TAR-00761,Tariff Plan 761,Standard,22.63
+762,TAR-00762,Tariff Plan 762,Critical Surge,10.5
+763,TAR-00763,Tariff Plan 763,Off-Peak,14.12
+764,TAR-00764,Tariff Plan 764,Off-Peak,17.86
+765,TAR-00765,Tariff Plan 765,Critical Surge,22.56
+766,TAR-00766,Tariff Plan 766,Critical Surge,10.62
+767,TAR-00767,Tariff Plan 767,Critical Surge,27.97
+768,TAR-00768,Tariff Plan 768,Off-Peak,12.63
+769,TAR-00769,Tariff Plan 769,Critical Surge,25.35
+770,TAR-00770,Tariff Plan 770,Critical Surge,27.44
+771,TAR-00771,Tariff Plan 771,Standard,26.47
+772,TAR-00772,Tariff Plan 772,Critical Surge,25.23
+773,TAR-00773,Tariff Plan 773,Standard,20.15
+774,TAR-00774,Tariff Plan 774,Standard,16.94
+775,TAR-00775,Tariff Plan 775,Off-Peak,21.8
+776,TAR-00776,Tariff Plan 776,Peak,27.65
+777,TAR-00777,Tariff Plan 777,Off-Peak,8.74
+778,TAR-00778,Tariff Plan 778,Peak,24.31
+779,TAR-00779,Tariff Plan 779,Off-Peak,18.9
+780,TAR-00780,Tariff Plan 780,Off-Peak,9.63
+781,TAR-00781,Tariff Plan 781,Off-Peak,25.81
+782,TAR-00782,Tariff Plan 782,Off-Peak,24.24
+783,TAR-00783,Tariff Plan 783,Critical Surge,11.79
+784,TAR-00784,Tariff Plan 784,Critical Surge,8.59
+785,TAR-00785,Tariff Plan 785,Off-Peak,20.52
+786,TAR-00786,Tariff Plan 786,Critical Surge,19.2
+787,TAR-00787,Tariff Plan 787,Standard,19.56
+788,TAR-00788,Tariff Plan 788,Peak,27.24
+789,TAR-00789,Tariff Plan 789,Critical Surge,12.96
+790,TAR-00790,Tariff Plan 790,Critical Surge,9.96
+791,TAR-00791,Tariff Plan 791,Critical Surge,19.84
+792,TAR-00792,Tariff Plan 792,Critical Surge,12.61
+793,TAR-00793,Tariff Plan 793,Standard,15.27
+794,TAR-00794,Tariff Plan 794,Peak,18.97
+795,TAR-00795,Tariff Plan 795,Off-Peak,16.13
+796,TAR-00796,Tariff Plan 796,Standard,18.24
+797,TAR-00797,Tariff Plan 797,Standard,15.16
+798,TAR-00798,Tariff Plan 798,Standard,9.34
+799,TAR-00799,Tariff Plan 799,Critical Surge,11.58
+800,TAR-00800,Tariff Plan 800,Off-Peak,27.36
+801,TAR-00801,Tariff Plan 801,Peak,22.67
+802,TAR-00802,Tariff Plan 802,Standard,21.65
+803,TAR-00803,Tariff Plan 803,Critical Surge,27.68
+804,TAR-00804,Tariff Plan 804,Critical Surge,9.5
+805,TAR-00805,Tariff Plan 805,Peak,11.56
+806,TAR-00806,Tariff Plan 806,Critical Surge,14.93
+807,TAR-00807,Tariff Plan 807,Critical Surge,22.03
+808,TAR-00808,Tariff Plan 808,Peak,9.16
+809,TAR-00809,Tariff Plan 809,Peak,26.73
+810,TAR-00810,Tariff Plan 810,Off-Peak,13.96
+811,TAR-00811,Tariff Plan 811,Critical Surge,23.39
+812,TAR-00812,Tariff Plan 812,Standard,23.87
+813,TAR-00813,Tariff Plan 813,Peak,15.08
+814,TAR-00814,Tariff Plan 814,Off-Peak,12.5
+815,TAR-00815,Tariff Plan 815,Critical Surge,20.53
+816,TAR-00816,Tariff Plan 816,Critical Surge,23.38
+817,TAR-00817,Tariff Plan 817,Critical Surge,21.22
+818,TAR-00818,Tariff Plan 818,Peak,27.74
+819,TAR-00819,Tariff Plan 819,Off-Peak,13.95
+820,TAR-00820,Tariff Plan 820,Off-Peak,18.5
+821,TAR-00821,Tariff Plan 821,Peak,28.0
+822,TAR-00822,Tariff Plan 822,Off-Peak,11.6
+823,TAR-00823,Tariff Plan 823,Standard,11.2
+824,TAR-00824,Tariff Plan 824,Peak,26.88
+825,TAR-00825,Tariff Plan 825,Off-Peak,8.7
+826,TAR-00826,Tariff Plan 826,Peak,11.28
+827,TAR-00827,Tariff Plan 827,Standard,18.56
+828,TAR-00828,Tariff Plan 828,Off-Peak,14.53
+829,TAR-00829,Tariff Plan 829,Standard,12.9
+830,TAR-00830,Tariff Plan 830,Peak,22.88
+831,TAR-00831,Tariff Plan 831,Peak,12.54
+832,TAR-00832,Tariff Plan 832,Standard,18.11
+833,TAR-00833,Tariff Plan 833,Peak,11.92
+834,TAR-00834,Tariff Plan 834,Critical Surge,24.68
+835,TAR-00835,Tariff Plan 835,Off-Peak,8.92
+836,TAR-00836,Tariff Plan 836,Standard,9.07
+837,TAR-00837,Tariff Plan 837,Peak,8.3
+838,TAR-00838,Tariff Plan 838,Off-Peak,15.03
+839,TAR-00839,Tariff Plan 839,Critical Surge,12.37
+840,TAR-00840,Tariff Plan 840,Peak,26.34
+841,TAR-00841,Tariff Plan 841,Off-Peak,27.15
+842,TAR-00842,Tariff Plan 842,Peak,13.4
+843,TAR-00843,Tariff Plan 843,Standard,22.88
+844,TAR-00844,Tariff Plan 844,Standard,27.87
+845,TAR-00845,Tariff Plan 845,Off-Peak,25.38
+846,TAR-00846,Tariff Plan 846,Off-Peak,15.75
+847,TAR-00847,Tariff Plan 847,Peak,17.01
+848,TAR-00848,Tariff Plan 848,Peak,21.61
+849,TAR-00849,Tariff Plan 849,Off-Peak,20.62
+850,TAR-00850,Tariff Plan 850,Standard,22.93
+851,TAR-00851,Tariff Plan 851,Peak,21.89
+852,TAR-00852,Tariff Plan 852,Critical Surge,12.64
+853,TAR-00853,Tariff Plan 853,Off-Peak,14.74
+854,TAR-00854,Tariff Plan 854,Critical Surge,24.06
+855,TAR-00855,Tariff Plan 855,Critical Surge,19.99
+856,TAR-00856,Tariff Plan 856,Peak,9.67
+857,TAR-00857,Tariff Plan 857,Critical Surge,9.55
+858,TAR-00858,Tariff Plan 858,Off-Peak,10.78
+859,TAR-00859,Tariff Plan 859,Standard,11.18
+860,TAR-00860,Tariff Plan 860,Off-Peak,22.92
+861,TAR-00861,Tariff Plan 861,Peak,22.59
+862,TAR-00862,Tariff Plan 862,Off-Peak,11.77
+863,TAR-00863,Tariff Plan 863,Peak,11.53
+864,TAR-00864,Tariff Plan 864,Critical Surge,19.75
+865,TAR-00865,Tariff Plan 865,Standard,20.43
+866,TAR-00866,Tariff Plan 866,Off-Peak,17.55
+867,TAR-00867,Tariff Plan 867,Critical Surge,13.41
+868,TAR-00868,Tariff Plan 868,Peak,17.02
+869,TAR-00869,Tariff Plan 869,Off-Peak,17.8
+870,TAR-00870,Tariff Plan 870,Standard,14.75
+871,TAR-00871,Tariff Plan 871,Off-Peak,14.52
+872,TAR-00872,Tariff Plan 872,Critical Surge,27.07
+873,TAR-00873,Tariff Plan 873,Off-Peak,10.03
+874,TAR-00874,Tariff Plan 874,Off-Peak,23.22
+875,TAR-00875,Tariff Plan 875,Standard,20.29
+876,TAR-00876,Tariff Plan 876,Critical Surge,24.32
+877,TAR-00877,Tariff Plan 877,Critical Surge,20.67
+878,TAR-00878,Tariff Plan 878,Critical Surge,17.85
+879,TAR-00879,Tariff Plan 879,Peak,26.11
+880,TAR-00880,Tariff Plan 880,Off-Peak,22.52
+881,TAR-00881,Tariff Plan 881,Critical Surge,12.76
+882,TAR-00882,Tariff Plan 882,Critical Surge,8.97
+883,TAR-00883,Tariff Plan 883,Critical Surge,18.93
+884,TAR-00884,Tariff Plan 884,Off-Peak,8.09
+885,TAR-00885,Tariff Plan 885,Standard,17.68
+886,TAR-00886,Tariff Plan 886,Critical Surge,21.27
+887,TAR-00887,Tariff Plan 887,Peak,15.31
+888,TAR-00888,Tariff Plan 888,Standard,23.71
+889,TAR-00889,Tariff Plan 889,Critical Surge,13.33
+890,TAR-00890,Tariff Plan 890,Critical Surge,13.58
+891,TAR-00891,Tariff Plan 891,Critical Surge,17.27
+892,TAR-00892,Tariff Plan 892,Standard,24.94
+893,TAR-00893,Tariff Plan 893,Critical Surge,25.69
+894,TAR-00894,Tariff Plan 894,Critical Surge,18.98
+895,TAR-00895,Tariff Plan 895,Standard,22.9
+896,TAR-00896,Tariff Plan 896,Off-Peak,20.88
+897,TAR-00897,Tariff Plan 897,Off-Peak,9.18
+898,TAR-00898,Tariff Plan 898,Peak,10.24
+899,TAR-00899,Tariff Plan 899,Standard,19.47
+900,TAR-00900,Tariff Plan 900,Peak,26.76
+901,TAR-00901,Tariff Plan 901,Critical Surge,12.74
+902,TAR-00902,Tariff Plan 902,Critical Surge,18.9
+903,TAR-00903,Tariff Plan 903,Standard,20.24
+904,TAR-00904,Tariff Plan 904,Peak,20.57
+905,TAR-00905,Tariff Plan 905,Standard,12.0
+906,TAR-00906,Tariff Plan 906,Critical Surge,16.14
+907,TAR-00907,Tariff Plan 907,Standard,27.19
+908,TAR-00908,Tariff Plan 908,Off-Peak,9.94
+909,TAR-00909,Tariff Plan 909,Peak,15.57
+910,TAR-00910,Tariff Plan 910,Peak,26.45
+911,TAR-00911,Tariff Plan 911,Standard,27.48
+912,TAR-00912,Tariff Plan 912,Peak,26.69
+913,TAR-00913,Tariff Plan 913,Critical Surge,9.04
+914,TAR-00914,Tariff Plan 914,Off-Peak,22.38
+915,TAR-00915,Tariff Plan 915,Standard,22.82
+916,TAR-00916,Tariff Plan 916,Peak,11.06
+917,TAR-00917,Tariff Plan 917,Off-Peak,11.85
+918,TAR-00918,Tariff Plan 918,Critical Surge,15.03
+919,TAR-00919,Tariff Plan 919,Standard,27.63
+920,TAR-00920,Tariff Plan 920,Peak,24.53
+921,TAR-00921,Tariff Plan 921,Off-Peak,11.44
+922,TAR-00922,Tariff Plan 922,Critical Surge,17.17
+923,TAR-00923,Tariff Plan 923,Critical Surge,13.57
+924,TAR-00924,Tariff Plan 924,Peak,9.04
+925,TAR-00925,Tariff Plan 925,Off-Peak,18.44
+926,TAR-00926,Tariff Plan 926,Critical Surge,10.33
+927,TAR-00927,Tariff Plan 927,Off-Peak,11.91
+928,TAR-00928,Tariff Plan 928,Peak,24.07
+929,TAR-00929,Tariff Plan 929,Off-Peak,11.12
+930,TAR-00930,Tariff Plan 930,Peak,15.13
+931,TAR-00931,Tariff Plan 931,Critical Surge,13.15
+932,TAR-00932,Tariff Plan 932,Off-Peak,10.34
+933,TAR-00933,Tariff Plan 933,Critical Surge,26.3
+934,TAR-00934,Tariff Plan 934,Off-Peak,23.04
+935,TAR-00935,Tariff Plan 935,Peak,24.63
+936,TAR-00936,Tariff Plan 936,Peak,18.8
+937,TAR-00937,Tariff Plan 937,Standard,23.7
+938,TAR-00938,Tariff Plan 938,Peak,15.26
+939,TAR-00939,Tariff Plan 939,Peak,8.94
+940,TAR-00940,Tariff Plan 940,Critical Surge,24.81
+941,TAR-00941,Tariff Plan 941,Critical Surge,15.01
+942,TAR-00942,Tariff Plan 942,Peak,25.72
+943,TAR-00943,Tariff Plan 943,Standard,11.17
+944,TAR-00944,Tariff Plan 944,Peak,12.11
+945,TAR-00945,Tariff Plan 945,Standard,20.51
+946,TAR-00946,Tariff Plan 946,Standard,14.15
+947,TAR-00947,Tariff Plan 947,Peak,20.69
+948,TAR-00948,Tariff Plan 948,Off-Peak,12.36
+949,TAR-00949,Tariff Plan 949,Off-Peak,8.92
+950,TAR-00950,Tariff Plan 950,Peak,20.94
+951,TAR-00951,Tariff Plan 951,Standard,22.23
+952,TAR-00952,Tariff Plan 952,Off-Peak,14.22
+953,TAR-00953,Tariff Plan 953,Critical Surge,25.38
+954,TAR-00954,Tariff Plan 954,Critical Surge,17.7
+955,TAR-00955,Tariff Plan 955,Critical Surge,26.62
+956,TAR-00956,Tariff Plan 956,Peak,19.31
+957,TAR-00957,Tariff Plan 957,Peak,19.74
+958,TAR-00958,Tariff Plan 958,Off-Peak,9.26
+959,TAR-00959,Tariff Plan 959,Critical Surge,20.94
+960,TAR-00960,Tariff Plan 960,Peak,20.29
+961,TAR-00961,Tariff Plan 961,Critical Surge,13.54
+962,TAR-00962,Tariff Plan 962,Off-Peak,12.8
+963,TAR-00963,Tariff Plan 963,Standard,18.32
+964,TAR-00964,Tariff Plan 964,Off-Peak,12.21
+965,TAR-00965,Tariff Plan 965,Standard,18.05
+966,TAR-00966,Tariff Plan 966,Peak,13.05
+967,TAR-00967,Tariff Plan 967,Critical Surge,25.77
+968,TAR-00968,Tariff Plan 968,Peak,25.78
+969,TAR-00969,Tariff Plan 969,Off-Peak,11.16
+970,TAR-00970,Tariff Plan 970,Standard,24.46
+971,TAR-00971,Tariff Plan 971,Peak,26.2
+972,TAR-00972,Tariff Plan 972,Off-Peak,24.54
+973,TAR-00973,Tariff Plan 973,Critical Surge,24.14
+974,TAR-00974,Tariff Plan 974,Critical Surge,13.91
+975,TAR-00975,Tariff Plan 975,Critical Surge,19.93
+976,TAR-00976,Tariff Plan 976,Standard,27.03
+977,TAR-00977,Tariff Plan 977,Critical Surge,11.34
+978,TAR-00978,Tariff Plan 978,Off-Peak,16.87
+979,TAR-00979,Tariff Plan 979,Critical Surge,26.83
+980,TAR-00980,Tariff Plan 980,Standard,26.53
+981,TAR-00981,Tariff Plan 981,Standard,13.5
+982,TAR-00982,Tariff Plan 982,Off-Peak,25.49
+983,TAR-00983,Tariff Plan 983,Standard,15.41
+984,TAR-00984,Tariff Plan 984,Peak,13.87
+985,TAR-00985,Tariff Plan 985,Off-Peak,25.83
+986,TAR-00986,Tariff Plan 986,Peak,19.19
+987,TAR-00987,Tariff Plan 987,Critical Surge,20.9
+988,TAR-00988,Tariff Plan 988,Critical Surge,22.54
+989,TAR-00989,Tariff Plan 989,Off-Peak,11.81
+990,TAR-00990,Tariff Plan 990,Peak,15.32
+991,TAR-00991,Tariff Plan 991,Standard,24.64
+992,TAR-00992,Tariff Plan 992,Off-Peak,23.65
+993,TAR-00993,Tariff Plan 993,Standard,16.54
+994,TAR-00994,Tariff Plan 994,Standard,19.53
+995,TAR-00995,Tariff Plan 995,Critical Surge,10.54
+996,TAR-00996,Tariff Plan 996,Off-Peak,13.24
+997,TAR-00997,Tariff Plan 997,Peak,21.31
+998,TAR-00998,Tariff Plan 998,Critical Surge,20.23
+999,TAR-00999,Tariff Plan 999,Critical Surge,8.01
+1000,TAR-01000,Tariff Plan 1000,Peak,22.44

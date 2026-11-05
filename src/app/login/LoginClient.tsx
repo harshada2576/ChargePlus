@@ -9,7 +9,7 @@ import { ChevronLeftIcon } from "@/components/Icon";
 import { useToast } from "@/components/Toast";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { normalizeEmail, normalizePhone, sendOtp } from "@/lib/auth";
+import { isDevOrDemoAuth, normalizeEmail, normalizePhone, sendOtp } from "@/lib/auth";
 
 export function LoginClient() {
   const { t } = useI18n();
@@ -25,9 +25,12 @@ export function LoginClient() {
     setSubmitting(true);
     setError(null);
     try {
-      // Real Supabase OTP send; phone delivery needs an SMS provider
-      // configured in the Supabase dashboard (error surfaced, never faked).
-      const { contact } = await sendOtp(supabase, mode, value);
+      // In dev/demo mode the in-process simulator handles the OTP without a
+      // live Supabase or SMS provider.  In production isDevOrDemoAuth() is
+      // false so the real Supabase provider is used unchanged.
+      const { contact } = await sendOtp(supabase, mode, value, {
+        useSimulatorInDev: isDevOrDemoAuth(),
+      });
       sessionStorage.setItem(
         "chargeplus:otp:pending",
         JSON.stringify({ contact, kind: mode })

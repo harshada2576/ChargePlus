@@ -7,7 +7,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --import ./tests/register-hooks.mjs --test tests/test_*.mjs"
+    "test": "node --experimental-test-module-mocks --experimental-strip-types --import ./tests/register-hooks.mjs --test tests/test_*.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

@@ -24,14 +24,12 @@ from __future__ import annotations
 
 import os
 import re
-import logging
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-import requests
 from dateutil import parser as dt_parser
 
-from backend.ingestion.base import BaseSourceAdapter
+from backend.ingestion.base import BaseSourceAdapter, request_with_retry
 from backend.ingestion.constants import (
     AvailabilityStatus,
     OperationalStatus,
@@ -45,8 +43,6 @@ from backend.ingestion.contracts import (
     NormalizedStationRecord,
     RawSourceRecord,
 )
-
-logger = logging.getLogger(__name__)
 
 # Standard slugification regex
 SLUG_CLEAN_REGEX = re.compile(r"[^a-zA-Z0-9_-]+")
@@ -525,31 +521,40 @@ class OpenChargeMapAdapter(BaseSourceAdapter):
                 params["distanceunit"] = "KM"
 
         try:
-            response = requests.get(
+            response = request_with_retry(
+                "get",
                 self.DEFAULT_BASE_URL,
                 headers=headers,
                 params=params,
-                timeout=timeout_sec,
+                timeout_sec=timeout_sec,
             )
+        except TimeoutError as exc:
+            raise TimeoutError(
+                f"OpenChargeMap API request timed out after {timeout_sec}s"
+            ) from exc
+        except ConnectionError as exc:
+            raise ConnectionError(
+                f"Failed to connect to OpenChargeMap API: {exc}"
+            ) from exc
+        except RuntimeError as exc:
+            # Transport retries (429/5xx with backoff+jitter+Retry-After)
+            # exhausted inside request_with_retry; label the source while
+            # preserving the "rate limit"/"server error" vocabulary the
+            # scheduled orchestrator classifies as TRANSIENT.
+            raise RuntimeError(f"OpenChargeMap API: {exc}") from exc
 
-            if response.status_code == 401 or response.status_code == 403:
-                raise PermissionError("OpenChargeMap API authentication failed (invalid or missing API key)")
-            elif response.status_code == 429:
-                raise RuntimeError("OpenChargeMap API rate limit exceeded. Please back off before retrying.")
-            elif response.status_code >= 500:
-                raise RuntimeError(f"OpenChargeMap upstream server error (HTTP {response.status_code})")
+        if response.status_code == 401 or response.status_code == 403:
+            raise PermissionError("OpenChargeMap API authentication failed (invalid or missing API key)")
 
-            response.raise_for_status()
+        response.raise_for_status()
+        try:
             data = response.json()
+        except ValueError as exc:
+            raise ValueError(
+                f"Malformed JSON response from OpenChargeMap API: {exc}"
+            ) from exc
 
-            if not isinstance(data, list):
-                raise ValueError(f"Expected list of POI records from OpenChargeMap, got {type(data).__name__}")
+        if not isinstance(data, list):
+            raise ValueError(f"Expected list of POI records from OpenChargeMap, got {type(data).__name__}")
 
-            return data
-
-        except requests.exceptions.Timeout as e:
-            logger.error("Timeout fetching from OpenChargeMap API: %s", e)
-            raise TimeoutError(f"OpenChargeMap API request timed out after {timeout_sec}s") from e
-        except requests.exceptions.RequestException as e:
-            logger.error("HTTP error fetching from OpenChargeMap API: %s", e)
-            raise ConnectionError(f"Failed to connect to OpenChargeMap API: {e}") from e
+        return data

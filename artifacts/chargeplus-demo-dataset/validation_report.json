@@ -1,0 +1,76 @@
+{
+  "total_rows": 153842,
+  "files": {
+    "alerts.csv": 3000,
+    "connectors.csv": 5002,
+    "data_sources.csv": 5,
+    "dim_date.csv": 1095,
+    "dim_location.csv": 2000,
+    "dim_station.csv": 2000,
+    "dim_tariff.csv": 1000,
+    "dim_time.csv": 1440,
+    "dim_vehicle.csv": 100,
+    "dim_weather.csv": 10000,
+    "fact_charging_session.csv": 30000,
+    "fact_station_daily_agg.csv": 10000,
+    "favorites.csv": 1000,
+    "ingestion_runs.csv": 1000,
+    "operators.csv": 100,
+    "profiles.csv": 100,
+    "reviews.csv": 10000,
+    "station_observations.csv": 70000,
+    "station_source_link.csv": 2000,
+    "stations.csv": 2000,
+    "user_reports.csv": 2000
+  },
+  "checks": {
+    "stations_unique_pk": {
+      "pass": true,
+      "detail": "2000 rows, 2000 unique"
+    },
+    "connectors_unique_pk": {
+      "pass": true,
+      "detail": "5002 rows, 5002 unique"
+    },
+    "connectors_fk_station": {
+      "pass": true,
+      "detail": "0 orphan connectors"
+    },
+    "obs_station_fk": {
+      "pass": true,
+      "detail": "0 orphan observations"
+    },
+    "obs_connector_fk": {
+      "pass": true,
+      "detail": "0 bad connector refs"
+    },
+    "reviews_station_fk": {
+      "pass": true,
+      "detail": "0 bad"
+    },
+    "reviews_user_fk": {
+      "pass": true,
+      "detail": "0 bad"
+    },
+    "pricing_no_estimate_in_verified": {
+      "pass": true,
+      "detail": "estimate never fills verified"
+    },
+    "pricing_counts": {
+      "pass": true,
+      "detail": "verified_kwh=2365, session=893, estimate=879, free=242, none=865"
+    },
+    "station_coords": {
+      "pass": true,
+      "detail": "0 bad"
+    },
+    "obs_time_order": {
+      "pass": true,
+      "detail": "0 bad"
+    },
+    "total_rows_min": {
+      "pass": true,
+      "detail": "total=153842"
+    }
+  }
+}

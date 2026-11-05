@@ -18,7 +18,7 @@ Verifies all 15 required Step 2.3 operational persistence and orchestration guar
 12. One failed record does not corrupt the whole batch (record-level failure isolation).
 13. Dry-run produces zero database writes.
 14. Credentials never appear in logs or errors.
-15. Provenance contract_version remains "1.0.0".
+15. Provenance contract_version is "1.1.0".
 """
 
 from __future__ import annotations
@@ -202,15 +202,19 @@ class InMemoryDbCursor:
                 c for c in self.db.tables["public.connectors"] if str(c["station_id"]) != stn_id
             ]
 
-        # 11. INSERT INTO public.connectors (legacy 6-param + canonical 9-param)
+        # 11. INSERT INTO public.connectors (legacy 6-param + canonical 12-param with estimates)
         elif "INSERT INTO public.connectors" in sql_clean:
             if len(params) >= 9:
                 # Canonical reconcile path:
                 # (id, station_id, connector_type, charging_standard, power_kw,
-                #  quantity, pricing_type, price_per_kwh, price_per_session)
+                #  quantity, pricing_type, price_per_kwh, price_per_session,
+                #  price_estimate_per_kwh, price_estimate_raw, price_estimate_source)
                 cid, stn_id, ctype, std, pkw, qty = params[0], params[1], params[2], params[3], params[4], params[5]
+                est = tuple(params[9:12]) if len(params) >= 12 else (None, None, None)
                 row = {"id": cid, "station_id": stn_id, "connector_type": ctype, "charging_standard": std, "power_kw": pkw, "quantity": qty,
-                       "pricing_type": params[6], "price_per_kwh": params[7], "price_per_session": params[8]}
+                       "pricing_type": params[6], "price_per_kwh": params[7], "price_per_session": params[8],
+                       "price_estimate_per_kwh": est[0], "price_estimate_raw": est[1],
+                       "price_estimate_source": est[2]}
             else:
                 cid, stn_id, ctype, std, pkw, qty = params
                 row = {"id": cid, "station_id": stn_id, "connector_type": ctype, "charging_standard": std, "power_kw": pkw, "quantity": qty}
@@ -227,10 +231,19 @@ class InMemoryDbCursor:
                     else:
                         self._last_result.append((c["id"], c["connector_type"], c.get("power_kw"), c.get("charging_standard"), c.get("quantity"), c.get("pricing_type"), c.get("price_per_kwh"), c.get("price_per_session")))
         # 11c. Canonical connector reconcile: update existing capacity group
+        # (23 params; mirrors the production estimate CASE branch-for-branch:
+        # verified/FREE clears, valid OCM stores, OCM-without-estimate clears,
+        # otherwise the existing estimate is preserved).
         elif "UPDATE public.connectors SET" in sql_clean:
-            # Params: (quantity, pricing_type, price_per_kwh, price_per_session, id)
+            # Params: (quantity, pricing_type, price_per_kwh, price_per_session,
+            #          per estimate column: verified_kwh, pricing_str, est_src,
+            #          est_val, incoming, est_src; then id)
             try:
-                new_qty, p_type, p_kwh, p_sess, conn_id = params[:5]
+                new_qty, p_type, p_kwh, p_sess = params[0], params[1], params[2], params[3]
+                conn_id = str(params[-1])
+                v_kwh, p_str = (params[4], params[5]) if len(params) >= 23 else (None, None)
+                p_str_val = p_str.value if hasattr(p_str, "value") else p_str
+                e_src, e_val = (params[6], params[7]) if len(params) >= 23 else (None, None)
                 for c in self.db.tables["public.connectors"]:
                     if str(c["id"]) == str(conn_id):
                         c["quantity"] = new_qty
@@ -240,12 +253,25 @@ class InMemoryDbCursor:
                             c["price_per_kwh"] = p_kwh
                         if p_sess is not None:
                             c["price_per_session"] = p_sess
+                        if len(params) >= 23:
+                            if v_kwh is not None or p_str_val == "free":
+                                c["price_estimate_per_kwh"] = None
+                                c["price_estimate_raw"] = None
+                                c["price_estimate_source"] = None
+                            elif e_src == "ocm_usage_cost" and e_val is not None:
+                                c["price_estimate_per_kwh"] = params[8]
+                                c["price_estimate_raw"] = params[14]
+                                c["price_estimate_source"] = params[20]
+                            elif e_src == "ocm_usage_cost":
+                                c["price_estimate_per_kwh"] = None
+                                c["price_estimate_raw"] = None
+                                c["price_estimate_source"] = None
                         break
             except Exception:
                 pass
-        # 11d. Canonical warehouse dim_connector mirror (no-op for counts)
+        # 11d. Canonical warehouse dim_connector mirror (captured for isolation asserts)
         elif "INSERT INTO analytics.dim_connector" in sql_clean:
-            pass
+            self.db.tables.setdefault("analytics.dim_connector", []).append(tuple(params))
         # 11e. Canonical observation total-connectors lookup
         elif "SELECT COALESCE(SUM(quantity), 0) FROM public.connectors" in sql_clean:
             stn_id = str(params[0])
@@ -839,15 +865,15 @@ class TestIngestionPersistenceAndRunner(unittest.TestCase):
         self.assertNotIn("SUPER_SECRET_PW_12345", dict_repr)
 
     # --------------------------------------------------------------------------
-    # Test 15: Provenance contract version remains "1.0.0"
+    # Test 15: Provenance contract version is "1.1.0"
     # --------------------------------------------------------------------------
-    def test_15_provenance_contract_version_is_1_0_0(self):
-        """15. Canonical contract version in provenance must be strictly '1.0.0'."""
-        self.assertEqual(CONTRACT_VERSION, "1.0.0")
+    def test_15_provenance_contract_version_is_1_1_0(self):
+        """15. Canonical contract version in provenance must be strictly '1.1.0'."""
+        self.assertEqual(CONTRACT_VERSION, "1.1.0")
 
         res = self.adapter.process_record(OCM_FIXTURE_01_VALID_COMPLETE)
-        self.assertEqual(res.station_record.contract_version, "1.0.0")
-        self.assertEqual(res.raw_record.to_provenance().contract_version, "1.0.0")
+        self.assertEqual(res.station_record.contract_version, "1.1.0")
+        self.assertEqual(res.raw_record.to_provenance().contract_version, "1.1.0")
 
 
 if __name__ == "__main__":

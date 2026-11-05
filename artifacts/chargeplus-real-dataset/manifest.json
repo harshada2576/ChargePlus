@@ -1,0 +1,76 @@
+{
+  "dataset_name": "chargeplus-real-dataset",
+  "dataset_version": "2.1.0-remediated",
+  "generated_at": "2026-10-18T14:00:00Z",
+  "snapshot_retrieval_timestamp": "2026-10-18T13:30:00Z",
+  "pipeline_build_timestamp": "2026-10-18T14:00:00Z",
+  "source_snapshot": "raw_snapshot_india.json",
+  "source_snapshot_sha256": "9e532b13d93b1685c12a84e796e357e73c60e3f546b3b01c8533323a83093c5a",
+  "source_license": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
+  "source_attribution": "Open Charge Map Contributors",
+  "package_classification": {
+    "declared_package_inputs": [
+      "raw_snapshot_india.json",
+      "curated_project_fixtures.json"
+    ],
+    "generated_pipeline_outputs": [
+      "connectors.csv",
+      "data_dictionary.csv",
+      "data_sources.csv",
+      "duplicate_review.csv",
+      "field_provenance.csv",
+      "operators.csv",
+      "quarantine_records.csv",
+      "rejected_records.csv",
+      "source_registry.csv",
+      "station_source_link.csv",
+      "station_sources.csv",
+      "stations.csv",
+      "validation_report.json"
+    ]
+  },
+  "record_counts": {
+    "stations": 541,
+    "connectors": 655,
+    "operators": 31,
+    "station_source_links": 541,
+    "field_provenance_records": 4328,
+    "rejected_records": 2,
+    "quarantined_records": 373,
+    "duplicate_reviews": 9
+  },
+  "pricing_breakdown": {
+    "verified_per_kwh": 489,
+    "verified_free": 2,
+    "unverified_estimates": 82,
+    "unknown_tariffs": 82
+  },
+  "geographic_summary": {
+    "total_states": 20,
+    "total_cities": 293,
+    "karnataka_stations": 176,
+    "tamil_nadu_stations": 99,
+    "kerala_stations": 81,
+    "maharashtra_stations": 79,
+    "delhi_stations": 23,
+    "gujarat_stations": 20,
+    "goa_stations": 6
+  },
+  "all_checks_passed": true,
+  "file_checksums_sha256": {
+    "connectors.csv": "82556a4037d8a1ac47ddbf41498367786582ffdc22a282fd546cb410000ae6f6",
+    "curated_project_fixtures.json": "5bf5122ce8293125b7bf74f7c9044423664956283ca142ecbd6542be7cbf5a30",
+    "data_dictionary.csv": "70241ab2bb17644a782dcf45f595f68fe6f516e120e08cdce0aa697cf30f2788",
+    "data_sources.csv": "b378ca961801816c46ae6c74849b7c55b889afebb175a2d5b101d0b30401add4",
+    "duplicate_review.csv": "b30654131af66dc4aef2ebb77506f8ef6b8f50059db81183003b3274b8346524",
+    "field_provenance.csv": "b514c224fad3388ca38c1d90dd96b6a558904178b6a86ff277b988d1f8df8726",
+    "operators.csv": "3124531569970cd7090a610d6a29a17b27345bdb53dc0c592778b8270b749d6f",
+    "quarantine_records.csv": "38947b829ab24ab710346a7565699b7d0e785516dd1883d49a9911b4e3931b9d",
+    "rejected_records.csv": "17d305bfc9fbcdd5154cbb9d8c12020ef4bb418c60d443f6fa550ea9ccbee162",
+    "source_registry.csv": "e02d06c2018e0e4499fe50b7ca847bf178895ffa27af1c6a1b596c0d036dd78d",
+    "station_source_link.csv": "9d1f48eaf18e237e3df80d62261d303d22252411c5059345164c2516f061630c",
+    "station_sources.csv": "9d1f48eaf18e237e3df80d62261d303d22252411c5059345164c2516f061630c",
+    "stations.csv": "f6037c0a251b3d3a935a0069340b1452d7b9629c9ca41a5f78705d16007ba6c0",
+    "validation_report.json": "22a5532b1d8e37eb7925b48760dd34f09db3ef748b578954ff6325cf38f5f742"
+  }
+}

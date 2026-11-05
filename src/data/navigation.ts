@@ -13,6 +13,7 @@ export const BOTTOM_NAV_ITEMS = [
 
 export const HEADER_NAV_ITEMS = [
   { key: "explore", href: "/explore" },
+  { key: "intelligence", href: "/intelligence" },
   { key: "saved", href: "/saved" },
   { key: "alerts", href: "/alerts" },
 ] as const;

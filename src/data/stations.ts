@@ -8,14 +8,44 @@ import {
 let defaultClient: StationDbClient | null = null;
 
 /**
+ * Detect explicit demo mode configuration.
+ * In production, demo mode is disabled and missing credentials or query failures fail closed.
+ */
+export function isDemoMode(): boolean {
+  return (
+    process.env.NEXT_PUBLIC_DEMO_MODE === "true" ||
+    process.env.DEMO_MODE === "true"
+  );
+}
+
+/**
+ * Returns canonical seed stations explicitly tagged as simulated demo data.
+ */
+export function getDemoStations(): Station[] {
+  return CANONICAL_STATIONS.map((s) => ({
+    ...s,
+    isSimulated: true,
+    sourceCategory: "simulated" as const,
+    sourceName: "Offline Seed Dataset (Demo Mode)",
+  }));
+}
+
+/**
  * Resolve the production Supabase client on first use only. Importing this
  * module must never construct a production client: tests import these loaders
  * and inject their own client, so no environment is required at import time.
  */
-async function getDefaultClient(): Promise<StationDbClient> {
+async function getDefaultClient(): Promise<StationDbClient | null> {
   if (!defaultClient) {
-    const { supabase } = await import("@/lib/supabase");
-    defaultClient = supabase;
+    try {
+      const { supabase } = await import("@/lib/supabase");
+      defaultClient = supabase;
+    } catch (err) {
+      if (isDemoMode()) {
+        return null;
+      }
+      throw err;
+    }
   }
   return defaultClient;
 }
@@ -245,8 +275,24 @@ export type StationDbClient = {
 export async function fetchStations(
   client?: StationDbClient
 ): Promise<Station[]> {
-  const db = client ?? (await getDefaultClient());
+  let db: StationDbClient | null = null;
+  if (client) {
+    db = client;
+  } else {
+    try {
+      db = await getDefaultClient();
+    } catch (err) {
+      if (isDemoMode()) {
+        return getDemoStations();
+      }
+      throw err;
+    }
+  }
+
   if (!db) {
+    if (isDemoMode()) {
+      return getDemoStations();
+    }
     throw new Error(
       "fetchStations: Supabase client not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, or pass a client explicitly."
     );
@@ -265,8 +311,31 @@ export async function fetchStations(
     throw new Error(`fetchStations error: ${connectorsRes.error.message}`);
   }
 
-  const rawStations: DbStationRow[] = (stationsRes.data as DbStationRow[]) || [];
-  const rawConnectors: DbConnectorRow[] = (connectorsRes.data as DbConnectorRow[]) || [];
+  let rawStations: DbStationRow[] = (stationsRes.data as DbStationRow[]) || [];
+  let rawConnectors: DbConnectorRow[] = (connectorsRes.data as DbConnectorRow[]) || [];
+
+  // PostgREST caps at 1000 rows per request. If 1000 rows returned and .range is supported, page remaining stations and connectors.
+  if (rawStations.length === 1000 && typeof (db.from("v_station_current_state").select("*") as any).range === "function") {
+    let offset = 1000;
+    while (true) {
+      const nextRes = await (db.from("v_station_current_state").select("*") as any).range(offset, offset + 999);
+      if (nextRes.error || !nextRes.data || nextRes.data.length === 0) break;
+      rawStations = rawStations.concat(nextRes.data);
+      if (nextRes.data.length < 1000) break;
+      offset += 1000;
+    }
+  }
+
+  if (rawConnectors.length === 1000 && typeof (db.from("v_station_connectors").select("*") as any).range === "function") {
+    let offset = 1000;
+    while (true) {
+      const nextRes = await (db.from("v_station_connectors").select("*") as any).range(offset, offset + 999);
+      if (nextRes.error || !nextRes.data || nextRes.data.length === 0) break;
+      rawConnectors = rawConnectors.concat(nextRes.data);
+      if (nextRes.data.length < 1000) break;
+      offset += 1000;
+    }
+  }
 
   const connsByStation = new Map<string, DbConnectorRow[]>();
   for (const c of rawConnectors) {
@@ -290,8 +359,26 @@ export async function fetchStationById(
   id: string,
   client?: StationDbClient
 ): Promise<Station | null> {
-  const db = client ?? (await getDefaultClient());
+  let db: StationDbClient | null = null;
+  if (client) {
+    db = client;
+  } else {
+    try {
+      db = await getDefaultClient();
+    } catch (err) {
+      if (isDemoMode()) {
+        const found = getDemoStations().find((s) => s.id === id);
+        return found ?? null;
+      }
+      throw err;
+    }
+  }
+
   if (!db) {
+    if (isDemoMode()) {
+      const found = getDemoStations().find((s) => s.id === id);
+      return found ?? null;
+    }
     throw new Error(
       "fetchStationById: Supabase client not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, or pass a client explicitly."
     );

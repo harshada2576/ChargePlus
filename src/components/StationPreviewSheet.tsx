@@ -16,6 +16,7 @@ import {
   getTotalChargers,
 } from "@/data/stations";
 import { stationDetailHref } from "@/data/exploreQuery";
+import { stationPriceDisplay } from "@/lib/priceDisplay";
 
 export function StationPreviewSheet({
   station,
@@ -45,6 +46,7 @@ export function StationPreviewSheet({
     : null;
   const maxKw = getMaxPowerKw(station);
   const chargers = getTotalChargers(station);
+  const priceDisplay = stationPriceDisplay(station, t);
 
   return (
     <BottomSheet
@@ -96,11 +98,7 @@ export function StationPreviewSheet({
           </p>
         )}
         <p className="text-[15px] font-semibold text-ink-900">
-          {station.isFree
-            ? "Free"
-            : station.pricePerKwh == null
-            ? t("station.priceUnavailable")
-            : t("station.perKwh", { price: station.pricePerKwh })}
+          {priceDisplay.text}
         </p>
       </div>
 

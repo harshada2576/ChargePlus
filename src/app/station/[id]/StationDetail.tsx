@@ -25,9 +25,11 @@ import {
 } from "@/components/Icon";
 import { Link } from "@/i18n/Link";
 import { cx, externalMapUrl, isValidCoordinate } from "@/lib/util";
+import { connectorPriceDisplay, stationPriceDisplay } from "@/lib/priceDisplay";
 import { StationReportForm } from "@/components/StationReportForm";
 import { StationReviewForm } from "@/components/StationReviewForm";
 import { MapLibreMap } from "@/components/MapLibreMap";
+import { WeatherBadge } from "@/components/WeatherBadge";
 
 export function StationDetail({ station, reviews }: { station: Station; reviews: ApprovedReview[] }) {
   const { t } = useI18n();
@@ -40,6 +42,7 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
   const [authPromptOpen, setAuthPromptOpen] = useState<null | "review" | "report" | "save">(null);
 
   const saved = isSaved(station.id);
+  const priceDisplay = stationPriceDisplay(station, t);
   // Directions (in-app sheet and external map links) require real coordinates.
   // Without them the actions are omitted; area/address text still renders.
   const hasCoords = isValidCoordinate(station.lat, station.lng);
@@ -97,16 +100,19 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
             <p className="mt-1 text-[14px] text-ink-700">
               {station.operator} · {station.area}
             </p>
-            {station.rating != null && (
-              <div className="mt-2 inline-flex items-center gap-1.5 text-[13px] text-ink-800">
-                <span className="inline-flex items-center gap-0.5 text-coral-600">
-                  <StarFilledIcon size={14} />
-                </span>
-                <span className="font-semibold">{station.rating.toFixed(1)}</span>
-                <span className="text-ink-500">·</span>
-                <span className="text-ink-600">{t("station.reviews.count", { n: station.reviewCount })}</span>
-              </div>
-            )}
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {hasCoords && <WeatherBadge lat={station.lat} lng={station.lng} />}
+              {station.rating != null && (
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-ink-100 bg-white px-2.5 py-1 text-[12.5px] text-ink-800 shadow-sm">
+                  <span className="inline-flex items-center gap-0.5 text-coral-600">
+                    <StarFilledIcon size={14} />
+                  </span>
+                  <span className="font-semibold">{station.rating.toFixed(1)}</span>
+                  <span className="text-ink-500">·</span>
+                  <span className="text-ink-600">{t("station.reviews.count", { n: station.reviewCount })}</span>
+                </div>
+              )}
+            </div>
           </div>
           <IconButton
             label={saved ? t("common.remove") : t("common.save")}
@@ -168,7 +174,24 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
             <h2 className="text-[15px] font-semibold text-ink-900">
               {t("station.chargingNow")}
             </h2>
-            <StatusBadge status={station.status} />
+            <div className="flex items-center gap-2">
+              {(station.isSimulated || station.sourceCategory === "simulated") && (
+                <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-amber-800 border border-amber-200">
+                  Simulated Demo
+                </span>
+              )}
+              {station.sourceCategory === "verified_live" && (
+                <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-800 border border-emerald-200">
+                  Verified Live
+                </span>
+              )}
+              {station.sourceCategory === "historical" && (
+                <span className="inline-flex items-center rounded-full bg-ink-100 px-2.5 py-0.5 text-[11px] font-medium text-ink-700 border border-ink-200">
+                  Historical
+                </span>
+              )}
+              <StatusBadge status={station.status} />
+            </div>
           </div>
           <p className="mt-2 text-[13.5px] text-ink-700">
             {station.status === "unknown" || getAvailableChargers(station) == null || getTotalChargers(station) == null
@@ -178,56 +201,122 @@ export function StationDetail({ station, reviews }: { station: Station; reviews:
                   total: getTotalChargers(station)!,
                 })}
           </p>
-          <p className="mt-1 text-[12.5px] text-ink-500">
-            {station.minutesSinceUpdate == null
-              ? t("station.availabilityUnavailable")
-              : station.minutesSinceUpdate < 1
-              ? t("station.updatedJustNow")
-              : station.minutesSinceUpdate < 60
-              ? t("station.updatedMinutesAgo", { n: station.minutesSinceUpdate })
-              : t("station.updatedEarlier")}
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-ink-500">
+            <span>
+              {station.minutesSinceUpdate == null
+                ? t("station.availabilityUnavailable")
+                : station.minutesSinceUpdate < 1
+                ? t("station.updatedJustNow")
+                : station.minutesSinceUpdate < 60
+                ? t("station.updatedMinutesAgo", { n: station.minutesSinceUpdate })
+                : t("station.updatedEarlier")}
+            </span>
+            {station.sourceName && (
+              <>
+                <span>•</span>
+                <span>Source: {station.sourceName}</span>
+              </>
+            )}
+            {station.latestObservationId && (
+              <>
+                <span>•</span>
+                <span className="font-mono text-[11px]">Obs #{station.latestObservationId.slice(0, 8)}</span>
+              </>
+            )}
+            {station.freshnessState && station.freshnessState !== "unknown" && (
+              <span className={`rounded px-1.5 py-0.2 text-[10.5px] font-medium ${
+                station.freshnessState === "fresh" ? "bg-emerald-50 text-emerald-700" :
+                station.freshnessState === "aging" ? "bg-amber-50 text-amber-700" : "bg-ink-100 text-ink-600"
+              }`}>
+                {station.freshnessState.toUpperCase()}
+              </span>
+            )}
+          </div>
         </section>
 
         {/* Chargers */}
         <section className="mt-4 rounded-[20px] border border-ink-100 bg-white p-5 shadow-card">
           <h2 className="text-[15px] font-semibold text-ink-900">{t("station.chargers")}</h2>
           <div className="mt-3 space-y-3">
-            {station.connectors.map((c) => (
-              <div
-                key={c.id}
-                className="flex items-center justify-between gap-3 rounded-[14px] border border-ink-100 bg-ink-50/40 px-4 py-3"
-              >
-                <div>
-                  <p className="text-[14.5px] font-semibold text-ink-900">{c.type}</p>
-                  <p className="mt-0.5 inline-flex items-center gap-1.5 text-[12.5px] text-ink-600">
-                    <BoltIcon size={12} /> {c.powerKw != null ? `${c.powerKw} kW` : "—"}
+            {station.connectors.map((c) => {
+              const connectorPrice = connectorPriceDisplay(c, t);
+              return (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between gap-3 rounded-[14px] border border-ink-100 bg-ink-50/40 px-4 py-3"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[14.5px] font-semibold text-ink-900">{c.type}</p>
+                      {(c.isSimulated || c.sourceCategory === "simulated") && (
+                        <span className="rounded bg-amber-50 px-1.5 text-[10px] font-medium text-amber-700 border border-amber-200">
+                          Demo
+                        </span>
+                      )}
+                      {c.freshnessState === "stale" && (
+                        <span className="rounded bg-ink-100 px-1.5 text-[10px] font-medium text-ink-600">
+                          Stale
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-2 text-[12px] text-ink-600">
+                      <span className="inline-flex items-center gap-1">
+                        <BoltIcon size={12} /> {c.powerKw != null ? `${c.powerKw} kW` : "—"}
+                      </span>
+                      {c.latestObservationId && (
+                        <span className="font-mono text-[10.5px] text-ink-500">
+                          Obs #{c.latestObservationId.slice(0, 8)}
+                        </span>
+                      )}
+                    </div>
+                    {connectorPrice.state === "verified" && (
+                      <p className="mt-1 text-[12px] font-medium text-ink-800">
+                        {connectorPrice.text} {(c.isSimulated || station.isSimulated) ? <span className="text-[10px] font-normal text-amber-700">(Demo Tariff)</span> : null}
+                      </p>
+                    )}
+                    {connectorPrice.state === "estimate" && (
+                      <div className="mt-1 max-w-xs text-[12px] text-amber-800">
+                        <p className="font-semibold">
+                          {t("station.priceEstimateLabel")}: {connectorPrice.text}
+                        </p>
+                        <p>{t("station.priceEstimateDisclaimer")}</p>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[13px] text-ink-700">
+                    {station.status === "unknown" || c.available == null
+                      ? t("station.availabilityUnavailable")
+                      : c.available > 0
+                      ? `${c.available} ${t("common.open")}`
+                      : t("station.status.busy")}
                   </p>
                 </div>
-                <p className="text-[13px] text-ink-700">
-                  {station.status === "unknown" || c.available == null
-                    ? t("station.availabilityUnavailable")
-                    : c.available > 0
-                    ? `${c.available} ${t("common.open")}`
-                    : t("station.status.busy")}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 
         {/* Price */}
         <section className="mt-4 rounded-[20px] border border-ink-100 bg-white p-5 shadow-card">
-          <h2 className="text-[15px] font-semibold text-ink-900">{t("station.price")}</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-[15px] font-semibold text-ink-900">{t("station.price")}</h2>
+            {(station.isSimulated || station.sourceCategory === "simulated") && (
+              <span className="rounded bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800 border border-amber-200">
+                Demo / Simulated Pricing
+              </span>
+            )}
+          </div>
           <p className="mt-2 text-[20px] font-semibold text-ink-900">
-            {station.isFree === true
-              ? "Free"
-              : station.pricePerKwh == null
-              ? t("station.priceUnavailable")
-              : t("station.perKwh", { price: station.pricePerKwh })}
+            {priceDisplay.text}
           </p>
-          {station.isFree === true && (
+          {(station.isSimulated || station.sourceCategory === "simulated") && (
+            <p className="mt-1 text-[12.5px] text-amber-700">Simulated tariff for demonstration; not verified by operator.</p>
+          )}
+          {priceDisplay.state === "free" && !station.isSimulated && (
             <p className="mt-1 text-[12.5px] text-ink-600">Public charging — please park considerately.</p>
+          )}
+          {priceDisplay.state === "estimate" && (
+            <p className="mt-1 text-[12.5px] text-ink-600">{t("station.priceEstimateDisclaimer")}</p>
           )}
         </section>
 

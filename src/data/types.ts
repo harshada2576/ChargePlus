@@ -1,6 +1,15 @@
 export type StationStatus = "available" | "busy" | "broken" | "unknown";
 export type QueueLevel = "none" | "short" | "medium" | "long";
 
+export type SourceCategory =
+  | "verified_live"
+  | "recent_observation"
+  | "historical"
+  | "simulated"
+  | "unknown";
+
+export type FreshnessState = "fresh" | "aging" | "stale" | "unknown";
+
 export type ConnectorType =
   | "CCS2"
   | "CCS1"
@@ -19,6 +28,28 @@ export type Connector = {
   total: number | null;
   /** number currently available; null if unknown */
   available: number | null;
+  /** underlying observation id tracing this connector status */
+  latestObservationId?: string | null;
+  /** observation time when status was captured */
+  latestObservedAt?: string | null;
+  /** observation age in minutes */
+  minutesSinceObservation?: number | null;
+  /** temporal freshness classification */
+  freshnessState?: FreshnessState;
+  /** provenance source category */
+  sourceCategory?: SourceCategory;
+  /** true when record originates from simulated demo / seed dataset */
+  isSimulated?: boolean;
+  /** verified connector tariff in INR/kWh; null when not verified/reported */
+  pricePerKwh?: number | null;
+  /** verified connector tariff in INR/session; null when not verified/reported */
+  pricePerSession?: number | null;
+  /** explicitly unverified source-derived estimate in INR/kWh */
+  priceEstimatePerKwh?: number | null;
+  /** original source text supporting the unverified estimate */
+  priceEstimateRaw?: string | null;
+  /** provenance source identifier for the unverified estimate (e.g. 'ocm_usage_cost') */
+  priceEstimateSource?: string | null;
 };
 
 export type Station = {
@@ -36,7 +67,9 @@ export type Station = {
   connectors: Connector[];
   /** INR per kWh; null if unknown */
   pricePerKwh: number | null;
-  /** True if charging is free; null if unknown */
+  /** True if charging is free; null if unknown. Free is established only by
+   * this flag === true or by a validated finite zero pricePerKwh — never by
+   * an invalid/missing number (contract lives in src/lib/priceDisplay.ts). */
   isFree: boolean | null;
   /** Opening hours descriptor */
   hours:
@@ -48,6 +81,18 @@ export type Station = {
   reviewCount: number;
   /** Suggested busy windows — local hours like "7 PM – 9 PM" or empty */
   busyWindows: string[];
+  /** underlying station-level observation id */
+  latestObservationId?: string | null;
+  /** observation event timestamp (ISO-8601) */
+  latestObservedAt?: string | null;
+  /** provenance feed or upstream provider identifier */
+  sourceName?: string | null;
+  /** authoritative source category */
+  sourceCategory?: SourceCategory;
+  /** temporal freshness state */
+  freshnessState?: FreshnessState;
+  /** true when record originates from simulated demo / seed dataset */
+  isSimulated?: boolean;
 };
 
 export type Review = {
@@ -78,7 +123,14 @@ export type Alert = {
 
 export type Recommendation = {
   stationId: string;
-  reasons: ("matchConnector" | "availableNow" | "lessBusyNow")[];
+  reasons: (
+    | "matchConnector"
+    | "availableNow"
+    | "knownPower"
+    | "priceAvailable"
+    | "nearby"
+    | "availabilityUnknown"
+  )[];
   /** number of available chargers (if reason: availableNow) */
   availableCount?: number;
 };

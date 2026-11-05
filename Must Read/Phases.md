@@ -172,9 +172,10 @@ We will also perform a conceptual check, not just a code check.
 
 ## Current status
 
-- **Current Phase**: Phase 6/6 — Production & Public Beta
+- **Current Phase**: Phase 7 — Final Integration, Data Reconciliation & Product Validation
 - **Remaining Phases**: 0
-- **Current Step**: Phase 6 VERIFIED COMPLETE — Ready for Controlled Public Beta (Final Environmental Verification Pending)
+- **Current Step**: Phase 7 VERIFIED COMPLETE & SIGNED OFF
+- **Phase 7**: COMPLETE — Mumbai Metropolitan Region demo dataset reconciliation (1,600 stations, 80,000 observations), strict live vs demo provenance isolation verified (`v_station_current_state`), progressive pagination & DOM optimization, weather telemetry, and multi-lingual dictionary completion (`docs/phase_7_final_integration_and_validation_report.md`).
 - **Phase 6**: COMPLETE — Steps 6.1–6.13 implemented, hardened, and verified (`docs/production.md`)
 - **Phase 5**: COMPLETE WITH DATA-DEPENDENT CAPABILITIES BLOCKED — Steps 5.1–5.11 verified
   (`backend/ml/` methodology + `docs/phase_5_methodology.md`); no models trained, no predictions
@@ -184,6 +185,17 @@ We will also perform a conceptual check, not just a code check.
 - **Phase 3**: COMPLETE — Steps 3.1–3.13 verified (`docs/phase_3_closure_report.md`); locked on `feature/phase-3-complete`
 - **Phase 2**: COMPLETE & LIVE VERIFIED — Steps 2.1–2.12 verified (8 genuine MMR stations, 376 tests)
 - **Phase 1**: COMPLETE & SIGNED OFF — Steps 1.1–1.10 verified (29 tables, RLS, PostGIS)
+
+> **Dated note (11 Oct 2026) — completion mission, no phase rewritten:**
+> Secondary-source ingestion (OSM Overpass + data.gov.in adapters through the
+> canonical pipeline, manual/dry-run only), the Phase 5 ML runtime
+> (gates/training/registry/inference + `/api/ml/*`, production inference
+> fail-closed at COLD/NO_MODEL), and the CPO framework (OCPI 2.2.1 Locations
+> + OICP 2.3 PullEVSEData subset, all partners NOT_CONFIGURED) are implemented
+> and pytest-verified (603 passed). Phase 4 warehouse ETL, live secondary
+> rollouts, real observation history for ML, and partner onboarding remain
+> future/external work per `docs/secondary_sources.md`, `docs/phase5_ml.md`,
+> and `docs/cpo_partners.md`. The roadmap steps above are unchanged.
 
 ### What is complete:
 - **Phase 1 — Foundation & Real Database (Steps 1.1–1.10) — COMPLETE & SIGNED OFF**:
@@ -376,8 +388,25 @@ We will also perform a conceptual check, not just a code check.
 - Is login requested only when needed? Yes (public browsing preserved, zero auth barriers for map and station detail).
 - Does the existing UX remain intact? Yes (design tokens, layout, cards, sheets, and views strictly preserved).
 ### Current Phase Verdict:
+- **Phase 7 — Final Integration, Data Reconciliation & Product Validation**: VERIFIED COMPLETE & SIGNED OFF.
 - **Phase 6 — Production & Public Beta**: VERIFIED COMPLETE (Implementation complete, final environmental verification pending).
-- All 6 phases of the ChargePlus build plan are complete.
-- Operations runbook, backup/recovery, rate limiting, structured logging, CI/CD, and data quality suites are fully locked in `docs/production.md`.
+- All phases of the ChargePlus build plan are complete.
+- Operations runbook, backup/recovery, rate limiting, structured logging, CI/CD, and data quality suites are fully locked in `docs/production.md` and `docs/phase_7_final_integration_and_validation_report.md`.
+
+---
+
+# Phase 7 — Final Integration, Data Reconciliation & Product Validation
+**Goal:** import synthetic Mumbai demo data for full spatial UX testing without compromising live operational telemetry, eliminate frontend bottlenecks, and complete end-to-end product verification.
+
+### Steps
+- 7.1 Dataset reconciliation — COMPLETE (137,641 inserted, 101 duplicate rows safely skipped via `ON CONFLICT DO NOTHING`)
+- 7.2 Provenance & Live/Demo Isolation — COMPLETE (DB views prioritize `is_simulated = false`, `test_provenance_isolation.mjs` passing)
+- 7.3 Frontend pagination & DOM optimization — COMPLETE (chunked PostgREST queries + progressive 30-card batching)
+- 7.4 MapLibre GL GPU clustering & Demo badge — COMPLETE
+- 7.5 Live Weather telemetry integration — COMPLETE (`/api/weather` Open-Meteo badge)
+- 7.6 Admin console provenance splitting — COMPLETE (Live vs. Demo station breakdown)
+- 7.7 Multi-lingual dictionary completion — COMPLETE (English, Hindi, Marathi)
+- 7.8 Final verification — COMPLETE (192 Node tests, TypeScript compile 0 errors, build clean)
+
 
 

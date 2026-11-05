@@ -57,6 +57,12 @@ jobs:
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
           OPENCHARGEMAP_API_KEY: ${{ secrets.STAGING_OPENCHARGEMAP_API_KEY }}
+          # Secondary sources stay manual/dry-run until validated; the runner
+          # refuses unattended non-dry-run scheduling for them. Passed through
+          # so authorized manual workflow_dispatch runs can use them.
+          OSM_OVERPASS_ENDPOINT: ${{ secrets.STAGING_OSM_OVERPASS_ENDPOINT }}
+          DATAGOVIN_API_KEY: ${{ secrets.STAGING_DATAGOVIN_API_KEY }}
+          DATAGOVIN_RESOURCE_ID: ${{ vars.STAGING_DATAGOVIN_RESOURCE_ID }}
         run: |
           EXTRA_ARGS=""
           DRY_RUN="${{ inputs.dry_run }}"

@@ -14,11 +14,21 @@ export async function GET(request: Request) {
   if (!rate.allowed) {
     return Response.json({ ok: false, throttled: true }, { status: 429 });
   }
+  const mode = process.env.NEXT_PUBLIC_DEMO_MODE === "true" ? "demo" : "production";
   try {
     await pool.query("select 1");
-    return Response.json({ ok: true });
-  } catch {
-    serverLog("error", "health.db_unreachable", {});
-    return Response.json({ ok: false }, { status: 500 });
+    return Response.json({ ok: true, status: "healthy", mode, database: "connected" });
+  } catch (err) {
+    serverLog("error", "health.db_unreachable", { error: err instanceof Error ? err.message : String(err) });
+    return Response.json(
+      {
+        ok: false,
+        status: "unhealthy",
+        mode,
+        database: "disconnected",
+        error: "Database unreachable or DATABASE_URL unconfigured",
+      },
+      { status: 503 }
+    );
   }
 }

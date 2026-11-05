@@ -41,6 +41,7 @@ export type IngestionRun = {
   recordsAccepted: number;
   stationsPersisted: number;
   errorSummary: string | null;
+  isSimulated?: boolean;
 };
 
 const UUID_RE =
@@ -139,7 +140,7 @@ export async function listIngestionRuns(
   const { data, error } = await client
     .from("ingestion_runs")
     .select(
-      "id,source_name,scope,state,started_at,duration_seconds,records_fetched,records_accepted,stations_persisted,error_summary"
+      "id,source_name,scope,state,started_at,duration_seconds,records_fetched,records_accepted,stations_persisted,error_summary,is_simulated"
     )
     .order("started_at", { ascending: false })
     .limit(limit);
@@ -158,6 +159,7 @@ export async function listIngestionRuns(
     stationsPersisted: Number(r.stations_persisted ?? 0),
     errorSummary:
       typeof r.error_summary === "string" && r.error_summary.length > 0 ? r.error_summary : null,
+    isSimulated: r.is_simulated === true,
   }));
 }
 

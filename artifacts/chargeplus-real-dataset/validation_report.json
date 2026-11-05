@@ -1,0 +1,151 @@
+{
+  "dataset_name": "chargeplus-real-dataset",
+  "dataset_version": "2.1.0-remediated",
+  "evaluated_at": "2026-10-18T14:00:00Z",
+  "snapshot_retrieval_timestamp": "2026-10-18T13:30:00Z",
+  "pipeline_build_timestamp": "2026-10-18T14:00:00Z",
+  "total_stations": 541,
+  "total_connectors": 655,
+  "total_operators": 31,
+  "total_rejected": 2,
+  "total_quarantined": 373,
+  "total_duplicates_flagged": 9,
+  "geographic_distribution": {
+    "by_state": {
+      "Karnataka": 176,
+      "Tamil Nadu": 99,
+      "Kerala": 81,
+      "Maharashtra": 79,
+      "Delhi": 23,
+      "Gujarat": 20,
+      "Telangana": 9,
+      "Madhya Pradesh": 8,
+      "Rajasthan": 7,
+      "Uttarakhand": 7,
+      "Goa": 6,
+      "West Bengal": 6,
+      "Andhra Pradesh": 6,
+      "Uttar Pradesh": 6,
+      "Himachal Pradesh": 2,
+      "Jharkhand": 2,
+      "Punjab": 1,
+      "Bihar": 1,
+      "Jammu and Kashmir": 1,
+      "Haryana": 1
+    },
+    "by_top_cities": {
+      "Bengaluru": 38,
+      "Pune": 27,
+      "New Delhi": 23,
+      "Satara": 15,
+      "Kolhapur": 15,
+      "Mysuru": 15,
+      "Mangaluru": 14,
+      "Hubballi": 11,
+      "Belagavi": 10,
+      "Coimbatore": 9,
+      "Hyderabad": 6,
+      "Karur": 6,
+      "Krishnagiri": 6,
+      "Mumbai": 5,
+      "Madurai": 5
+    }
+  },
+  "pricing_breakdown": {
+    "verified_per_kwh": 489,
+    "verified_free": 2,
+    "unverified_estimates": 82,
+    "unknown_tariffs": 82
+  },
+  "checks": {
+    "stations_unique_pk": {
+      "pass": true,
+      "detail": "541 stations, 541 unique IDs"
+    },
+    "connectors_unique_pk": {
+      "pass": true,
+      "detail": "655 connectors, 655 unique IDs"
+    },
+    "operators_unique_pk": {
+      "pass": true,
+      "detail": "31 operators, 31 unique IDs"
+    },
+    "stations_operator_fk": {
+      "pass": true,
+      "detail": "0 orphan station operator references"
+    },
+    "connectors_station_fk": {
+      "pass": true,
+      "detail": "0 orphan connectors"
+    },
+    "uq_connectors_station_type_power": {
+      "pass": true,
+      "detail": "655 capacity groups, 655 unique"
+    },
+    "uq_station_source_link_source_record": {
+      "pass": true,
+      "detail": "541 source links, 541 unique"
+    },
+    "stations_geographic_bounds_india": {
+      "pass": true,
+      "detail": "0 out-of-bounds stations"
+    },
+    "stations_geographic_state_coordinate_consistency": {
+      "pass": true,
+      "detail": "0 stations with coordinates violating declared state bounds"
+    },
+    "stations_source_state_consistency": {
+      "pass": true,
+      "detail": "0 stations with normalized state conflicting with valid source state"
+    },
+    "operational_status_source_consistency": {
+      "pass": true,
+      "detail": "0 stations with unavailable source status exported as operational"
+    },
+    "stations_postal_code_check": {
+      "pass": true,
+      "detail": "0 invalid postal codes"
+    },
+    "stations_slug_format": {
+      "pass": true,
+      "detail": "0 invalid station slugs"
+    },
+    "operators_slug_format": {
+      "pass": true,
+      "detail": "0 invalid operator slugs"
+    },
+    "stations_chk_stations_hours": {
+      "pass": true,
+      "detail": "0 stations violating chk_stations_hours"
+    },
+    "pricing_no_estimate_in_verified": {
+      "pass": true,
+      "detail": "0 connectors with overlapping verified and estimate values"
+    },
+    "connectors_power_kw_positive": {
+      "pass": true,
+      "detail": "0 connectors with power <= 0"
+    },
+    "pricing_category_reconciliation": {
+      "pass": true,
+      "detail": "489 per-kWh, 2 free, 82 estimates, 82 unknown (sum 655 / 655)"
+    },
+    "source_id_resolves_to_snapshot": {
+      "pass": true,
+      "detail": "0 source IDs fail to resolve to raw snapshot"
+    },
+    "source_payload_hash_consistency": {
+      "pass": true,
+      "detail": "0 payload hash discrepancies"
+    },
+    "quarantine_reproducibility": {
+      "pass": true,
+      "detail": "373 quarantine records reproduced (target: 373)"
+    },
+    "exact_record_counts_reconciled": {
+      "pass": true,
+      "detail": "Stations: 541, Connectors: 655, Operators: 31, Quarantine: 373, Rejected: 2, Duplicates: 9"
+    }
+  },
+  "all_checks_passed": true
+}

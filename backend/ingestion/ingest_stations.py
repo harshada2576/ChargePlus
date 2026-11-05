@@ -1,7 +1,8 @@
 """
 backend/ingestion/ingest_stations.py
-ChargePlus — Phase 2 Real Data Ingestion (Mumbai Pilot)
-Extracts and normalizes charging stations across Mumbai metropolitan areas.
+ChargePlus — Offline Demo Fixture Generator (Demo / Seed Only)
+Generates simulated offline canonical stations for testing and offline demonstrations.
+NOT live ingestion: live ingestion uses backend.ingestion.runner with external source adapters.
 """
 
 import json
@@ -209,6 +210,9 @@ def generate_canonical_dataset():
             "opening_time": s.get("opening_time", "00:00:00" if s["is_24_hours"] else "06:00:00"),
             "closing_time": s.get("closing_time", "23:59:59" if s["is_24_hours"] else "23:00:00"),
             "operational_status": "operational",
+            "is_simulated": True,
+            "source_category": "simulated",
+            "source_name": "Offline Canonical Mumbai Demo Seed",
             "connectors": []
         }
         
@@ -223,7 +227,9 @@ def generate_canonical_dataset():
                 "quantity": c["quantity"],
                 "pricing_type": "per_kwh",
                 "price_per_kwh": c["price_per_kwh"],
-                "currency": "INR"
+                "currency": "INR",
+                "is_simulated": True,
+                "source_category": "simulated"
             })
         
         stations_out.append(station_record)

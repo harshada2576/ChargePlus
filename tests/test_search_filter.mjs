@@ -374,12 +374,24 @@ test("20. No fabricated stations in the search/filter path", async () => {
   for (const s of out) assert.ok(inputIds.has(s.id)); // closed world: nothing invented
 });
 
-test("21. Cold-start filters match nothing without evidence", () => {
+test("21. Cold-start lessBusy matches verified available stations and excludes busy/unknown/broken", () => {
   const all = catalog();
+  const lessBusyStations = filterAndSortStations(all, {
+    filters: { ...DEFAULT_EXPLORE_FILTERS, lessBusy: true },
+  });
+  // ROW_A is observed available; ROW_B (unknown), ROW_C (busy), ROW_D (broken) are excluded
+  assert.equal(lessBusyStations.length, 1);
+  assert.equal(lessBusyStations[0].id, "sf-a");
+
+  // When no verified available stations exist, returns 0 without inventing availability
+  const unkOnly = [all[1], all[2], all[3]];
   assert.equal(
-    filterAndSortStations(all, { filters: { ...DEFAULT_EXPLORE_FILTERS, lessBusy: true } }).length,
+    filterAndSortStations(unkOnly, {
+      filters: { ...DEFAULT_EXPLORE_FILTERS, lessBusy: true },
+    }).length,
     0
-  ); // busyWindows empty until ML/temporal evidence exists
+  );
+
   const rec = filterAndSortStations(all, { sort: "recommended" });
   assert.ok(rec.length > 0); // ranking still total, unknown ratings treated as 0
 });

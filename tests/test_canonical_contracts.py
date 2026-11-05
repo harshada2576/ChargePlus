@@ -467,8 +467,8 @@ class TestCanonicalContracts(unittest.TestCase):
         self.assertEqual(station.connectors[0].pricing_type, PricingType.UNKNOWN)
 
     def test_17_contract_version(self):
-        """17. Contract version: version is exposed and defaults to '1.0.0'."""
-        self.assertEqual(CONTRACT_VERSION, "1.0.0")
+        """17. Contract version: version is exposed and defaults to '1.1.0'."""
+        self.assertEqual(CONTRACT_VERSION, "1.1.0")
         station = NormalizedStationRecord(
             source_id="test_adapter",
             source_station_id="STN-VER-01",
@@ -476,7 +476,7 @@ class TestCanonicalContracts(unittest.TestCase):
             latitude=19.05,
             longitude=72.85,
         )
-        self.assertEqual(station.contract_version, "1.0.0")
+        self.assertEqual(station.contract_version, "1.1.0")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,97 @@
+{
+  "total_rows": 154099,
+  "files": [
+    {
+      "file": "alerts.csv",
+      "rows": 3000
+    },
+    {
+      "file": "connectors.csv",
+      "rows": 5002
+    },
+    {
+      "file": "data_dictionary.csv",
+      "rows": 235
+    },
+    {
+      "file": "data_sources.csv",
+      "rows": 5
+    },
+    {
+      "file": "dataset_manifest.csv",
+      "rows": 22
+    },
+    {
+      "file": "dim_date.csv",
+      "rows": 1095
+    },
+    {
+      "file": "dim_location.csv",
+      "rows": 2000
+    },
+    {
+      "file": "dim_station.csv",
+      "rows": 2000
+    },
+    {
+      "file": "dim_tariff.csv",
+      "rows": 1000
+    },
+    {
+      "file": "dim_time.csv",
+      "rows": 1440
+    },
+    {
+      "file": "dim_vehicle.csv",
+      "rows": 100
+    },
+    {
+      "file": "dim_weather.csv",
+      "rows": 10000
+    },
+    {
+      "file": "fact_charging_session.csv",
+      "rows": 30000
+    },
+    {
+      "file": "fact_station_daily_agg.csv",
+      "rows": 10000
+    },
+    {
+      "file": "favorites.csv",
+      "rows": 1000
+    },
+    {
+      "file": "ingestion_runs.csv",
+      "rows": 1000
+    },
+    {
+      "file": "operators.csv",
+      "rows": 100
+    },
+    {
+      "file": "profiles.csv",
+      "rows": 100
+    },
+    {
+      "file": "reviews.csv",
+      "rows": 10000
+    },
+    {
+      "file": "station_observations.csv",
+      "rows": 70000
+    },
+    {
+      "file": "station_source_link.csv",
+      "rows": 2000
+    },
+    {
+      "file": "stations.csv",
+      "rows": 2000
+    },
+    {
+      "file": "user_reports.csv",
+      "rows": 2000
+    }
+  ]
+}

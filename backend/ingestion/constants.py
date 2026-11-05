@@ -11,7 +11,7 @@ from enum import Enum
 from typing import Final
 
 # Authoritative Contract Specification Version
-CONTRACT_VERSION: Final[str] = "1.0.0"
+CONTRACT_VERSION: Final[str] = "1.1.0"
 
 # Geographic bounding boxes for validation
 # India geographic bounding box (approximate with marine/island safety margin)

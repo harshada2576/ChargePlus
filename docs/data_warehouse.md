@@ -319,3 +319,16 @@ Step 1.8 established the first canonical star-schema dimensional reporting view:
   - Quality & maturity: `data_completeness_score`, `source_count`, `maturity`, `has_evidence`
 - **Security & Access:** Created `WITH (security_invoker = true)`. Granted exclusively to `service_role`. Client roles (`anon`, `authenticated`) have zero access, preserving warehouse isolation.
 
+## 14. Academic OLAP SQL Suite (DWDM Syllabus Demonstration)
+
+ChargePlus includes a complete academic OLAP demonstration suite implementing multidimensional operations on the Kimball star schema:
+- **SQL Script:** [`docs/olap/olap_queries.sql`](file:///d:/Desktop/Projects/ChargePlus/docs/olap/olap_queries.sql)
+- **Detailed Guide & Results:** [`docs/olap/README.md`](file:///d:/Desktop/Projects/ChargePlus/docs/olap/README.md)
+- **Operations Implemented:**
+  1. **Roll-Up (Hierarchical Time Aggregation):** Calendar week $\rightarrow$ month $\rightarrow$ annual grand total using `GROUP BY ROLLUP`.
+  2. **Drill-Down (Geographic & Operator Granularity):** City $\rightarrow$ locality $\rightarrow$ operator $\rightarrow$ station level metrics.
+  3. **Slice & Dice (Multi-Dimensional Filtration):** High-speed corridors (Tata Power, Jio-bp) diced across business districts (BKC, Lower Parel) and weekday/weekend patterns.
+  4. **CUBE / Pivot (Cross-Tabulation):** Multi-operator $\times$ locality data cube using `GROUP BY CUBE`.
+  5. **Window Ranking Functions:** Intra-operator station congestion ranking via `DENSE_RANK() OVER (PARTITION BY operator_name ORDER BY AVG(busy_ratio) DESC)`.
+
+
